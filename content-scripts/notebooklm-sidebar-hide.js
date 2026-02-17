@@ -25,6 +25,25 @@
         overflow: hidden !important;
       }
 
+      /* Hide NotebookLM top header and buttons container */
+      [role="tablist"],
+      [role="tab"],
+      .tabs-container,
+      [class*="tab"][class*="container"],
+      header nav,
+      nav[role="navigation"]:has([role="tab"]),
+      .notebook-header,
+      [class*="notebook-header"],
+      [class*="header-buttons"],
+      div[class*="notebook-header-buttons-container"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
       /* Expand content area but keep input at bottom */
       [role="tabpanel"],
       .mat-mdc-tab-body-wrapper {
