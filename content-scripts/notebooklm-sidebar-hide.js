@@ -57,18 +57,20 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - transparent and non-blocking */
+      /* Keep input area at bottom - compressed but visible */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
         position: sticky !important;
         bottom: 0 !important;
-        background: transparent !important;
+        background: var(--surface-container, #1e1e1e) !important;
         border: none !important;
         box-shadow: none !important;
         z-index: 100 !important;
-        pointer-events: none !important;
-        transition: background 0.3s ease !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        overflow: hidden !important;
+        transition: max-height 0.3s ease !important;
       }
 
       /* Hide container padding and borders */
@@ -95,27 +97,20 @@
         border: none !important;
       }
 
-      /* Enable interaction and show background on hover - restore original style */
+      /* Expand on hover - restore original style */
       div.query-box:hover,
       [class*="query-box"]:hover,
       [class*="input-container"]:hover {
-        background: var(--surface-container, #1e1e1e) !important;
-        pointer-events: auto !important;
+        max-height: none !important;
+        min-height: auto !important;
       }
 
-      /* Keep enabled when focused */
+      /* Keep expanded when focused */
       div.query-box:focus-within,
       [class*="query-box"]:focus-within,
       [class*="input-container"]:focus-within {
-        background: var(--surface-container, #1e1e1e) !important;
-        pointer-events: auto !important;
-      }
-
-      /* Enable pointer events for children */
-      div.query-box *,
-      [class*="query-box"] *,
-      [class*="input-container"] * {
-        pointer-events: auto !important;
+        max-height: none !important;
+        min-height: auto !important;
       }
     `;
 
