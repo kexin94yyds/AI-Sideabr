@@ -2010,6 +2010,8 @@
   function parseDragPayload(event) {
     if (!event.dataTransfer) return null;
     
+    console.log('[AISB Folder] parseDragPayload called');
+    
     const candidates = [
       event.dataTransfer.getData(DRAG_MIME),
       event.dataTransfer.getData('application/json'),
