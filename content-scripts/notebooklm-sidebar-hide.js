@@ -36,11 +36,13 @@
         overflow: hidden !important;
       }
 
-      /* Expand content area but keep input at bottom */
+      /* Expand content area to full height */
       [role="tabpanel"],
       .mat-mdc-tab-body-wrapper {
-        height: calc(100vh - 80px) !important;
-        max-height: calc(100vh - 80px) !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
 
       main,
@@ -51,13 +53,18 @@
         width: 100% !important;
         margin: 0 auto !important;
         padding-top: 0 !important;
+        flex: 1 !important;
+        overflow-y: auto !important;
       }
 
-      /* Ensure input area stays visible at bottom */
-      [class*="input"],
-      [class*="composer"],
-      textarea,
-      [contenteditable="true"] {
+      /* Fix input area at bottom */
+      div.query-box,
+      [class*="query-box"],
+      [class*="input-container"] {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: var(--surface-container, #1e1e1e) !important;
+        z-index: 100 !important;
         display: block !important;
         visibility: visible !important;
       }
