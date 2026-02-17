@@ -77,6 +77,12 @@
     const button = createCollapseButton();
     if (!container.contains(button)) {
       container.appendChild(button);
+      
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        expand(container, true);
+      });
     }
   }
 
@@ -107,6 +113,19 @@
     if (!container) return;
     if (container.dataset.aisbCollapseEventsBound) return;
     container.dataset.aisbCollapseEventsBound = '1';
+
+    const button = container.querySelector(`#${BUTTON_ID}`);
+    if (button) {
+      button.addEventListener(
+        'click',
+        (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          expand(container, true);
+        },
+        { signal },
+      );
+    }
 
     container.addEventListener(
       'click',
