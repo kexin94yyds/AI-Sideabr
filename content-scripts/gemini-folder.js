@@ -38,6 +38,7 @@
       search: '',
       bulkMode: false,
       autoExpandOnSearch: true,
+      panelCollapsed: false,
     },
     currentAccountId: core.getCurrentAccountId(),
     selectedKeys: new Set(),
@@ -302,6 +303,7 @@
       state.settings.search = typeof saved.search === 'string' ? saved.search : '';
       state.settings.bulkMode = Boolean(saved.bulkMode);
       state.settings.autoExpandOnSearch = saved.autoExpandOnSearch !== false;
+      state.settings.panelCollapsed = Boolean(saved.panelCollapsed);
     }
   }
 
@@ -311,6 +313,7 @@
       search: state.settings.search,
       bulkMode: state.settings.bulkMode,
       autoExpandOnSearch: state.settings.autoExpandOnSearch,
+      panelCollapsed: state.settings.panelCollapsed,
     });
   }
 
@@ -2683,6 +2686,21 @@
     void saveSettings();
   }
 
+  function applyPanelCollapsedState() {
+    if (!state.ui.panel || !state.ui.collapseBtn) return;
+    const collapsed = Boolean(state.settings.panelCollapsed);
+    state.ui.panel.classList.toggle('collapsed', collapsed);
+    state.ui.collapseBtn.textContent = collapsed ? '▸' : '▾';
+    state.ui.collapseBtn.title = collapsed ? '展开' : '折叠';
+    state.ui.collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+
+  async function togglePanelCollapsed() {
+    state.settings.panelCollapsed = !state.settings.panelCollapsed;
+    applyPanelCollapsedState();
+    await saveSettings();
+  }
+
   function exitBulkMode() {
     state.settings.bulkMode = false;
     state.selectedKeys.clear();
@@ -2754,6 +2772,8 @@
     collapseBtn.className = 'aisb-folder-collapse-btn';
     collapseBtn.textContent = '▾';
     collapseBtn.title = '折叠/展开';
+    collapseBtn.setAttribute('aria-expanded', 'true');
+    state.ui.collapseBtn = collapseBtn;
     
     const title = document.createElement('span');
     title.className = 'aisb-folder-title';
@@ -2767,11 +2787,10 @@
     titleWrap.appendChild(title);
     titleWrap.appendChild(accountBadge);
     
-    let isCollapsed = false;
-    collapseBtn.addEventListener('click', () => {
-      isCollapsed = !isCollapsed;
-      collapseBtn.textContent = isCollapsed ? '▸' : '▾';
-      panel.classList.toggle('collapsed', isCollapsed);
+    collapseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void togglePanelCollapsed();
     });
 
     const actions = document.createElement('div');
@@ -2861,6 +2880,7 @@
     state.ui.importInput = importInput;
 
     updateBulkBar();
+    applyPanelCollapsedState();
     return panel;
   }
 
