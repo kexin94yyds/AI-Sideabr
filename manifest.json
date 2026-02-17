@@ -184,7 +184,6 @@
         "content-scripts/gemini-markdown-patcher.js",
         "content-scripts/gemini-watermark.js",
         "content-scripts/gemini-deep-research.js",
-        "content-scripts/gemini-tools.js",
         "content-scripts/gemini-cloud-sync.js",
         "content-scripts/gemini-file-upload.js",
         "content-scripts/gemini-input-resize.js",

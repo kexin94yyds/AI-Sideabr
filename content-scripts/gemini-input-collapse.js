@@ -5,28 +5,23 @@
   if (location.hostname !== 'gemini.google.com') return;
   window.__AISB_GEMINI_INPUT_COLLAPSE_LOADED__ = true;
 
-  const SETTINGS_KEY = 'gvToolsSettings';
-  const SETTINGS_FLAG = 'inputCollapsed';
-  const COLLAPSED_CLASS = 'aisb-tools-input-collapsed';
+  const COLLAPSED_CLASS = 'aisb-input-collapsed';
   const STYLE_ID = 'aisb-gemini-input-collapse-style';
+  const BUTTON_ID = 'aisb-input-collapse-button';
 
+  let enabled = false;
   let observer = null;
   let eventController = null;
   let lastPathname = window.location.pathname;
+  let collapseButton = null;
 
-  function parseSettings(raw) {
-    if (!raw || typeof raw !== 'object') return {};
-    return raw;
-  }
-
-  function getFeatureEnabled(callback) {
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-      callback(false);
-      return;
-    }
-    chrome.storage.local.get(SETTINGS_KEY, (result) => {
-      const settings = parseSettings(result[SETTINGS_KEY]);
-      callback(Boolean(settings[SETTINGS_FLAG]));
+  function storageGet(keys) {
+    return new Promise((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+        resolve({});
+        return;
+      }
+      chrome.storage.sync.get(keys, resolve);
     });
   }
 
@@ -34,14 +29,9 @@
     return document.querySelector('input-container');
   }
 
-  function stripLegacyClass(container) {
-    if (!container) return;
-    container.classList.remove('gv-input-collapsed');
-  }
-
   function shouldDisableAutoCollapse() {
     const path = window.location.pathname;
-    return path.includes('/gem/') || path.includes('/gems');
+    return path === '/' || path === '/app' || path.includes('/gem/') || path.includes('/gems');
   }
 
   function isInputEmpty(container) {
@@ -52,23 +42,59 @@
     return text.length === 0;
   }
 
+  function hasAttachments(container) {
+    if (!container) return false;
+    const attachments = container.querySelectorAll('[data-test-id="attachment"]');
+    return attachments.length > 0;
+  }
+
+  function createCollapseButton() {
+    if (collapseButton) return collapseButton;
+
+    const button = document.createElement('button');
+    button.id = BUTTON_ID;
+    button.type = 'button';
+    button.className = 'aisb-collapse-trigger';
+    button.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>给 Gemini 发消息</span>
+    `;
+
+    collapseButton = button;
+    return button;
+  }
+
   function tryCollapse(container) {
-    if (!container) return;
+    if (!container || !enabled) return;
     if (shouldDisableAutoCollapse()) return;
     if (!isInputEmpty(container)) return;
+    if (hasAttachments(container)) return;
+
     container.classList.add(COLLAPSED_CLASS);
+
+    const button = createCollapseButton();
+    if (!container.contains(button)) {
+      container.appendChild(button);
+    }
   }
 
   function expand(container, shouldFocus = true) {
     if (!container) return;
     container.classList.remove(COLLAPSED_CLASS);
+
+    if (collapseButton && collapseButton.parentElement) {
+      collapseButton.parentElement.removeChild(collapseButton);
+    }
+
     if (shouldFocus) {
       setTimeout(() => {
         const textarea = container.querySelector('rich-textarea [contenteditable="true"]');
         if (textarea) {
           textarea.focus();
         }
-      }, 80);
+      }, 100);
     }
   }
 
@@ -86,9 +112,11 @@
       'click',
       (event) => {
         if (!container.classList.contains(COLLAPSED_CLASS)) return;
-        event.preventDefault();
-        event.stopPropagation();
-        expand(container, true);
+        if (event.target.closest(`#${BUTTON_ID}`)) {
+          event.preventDefault();
+          event.stopPropagation();
+          expand(container, true);
+        }
       },
       { signal, capture: true },
     );
@@ -111,7 +139,7 @@
             return;
           }
           tryCollapse(container);
-        }, 120);
+        }, 150);
       },
       { signal },
     );
@@ -137,38 +165,69 @@
     style.id = STYLE_ID;
     style.textContent = `
       input-container.${COLLAPSED_CLASS} {
-        max-height: 48px !important;
-        min-height: 48px !important;
-        cursor: pointer;
-        transition: max-height 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        min-height: 56px !important;
+        max-height: 56px !important;
       }
 
-      input-container.${COLLAPSED_CLASS} .input-area-container {
-        max-height: 48px !important;
-        overflow: hidden;
-      }
-
+      input-container.${COLLAPSED_CLASS} .input-area-container,
       input-container.${COLLAPSED_CLASS} rich-textarea,
-      input-container.${COLLAPSED_CLASS} rich-textarea [contenteditable="true"] {
-        max-height: 32px !important;
-        min-height: 32px !important;
-        overflow: hidden;
-        cursor: pointer;
-      }
-
-      input-container.${COLLAPSED_CLASS} rich-textarea [contenteditable="true"]::before {
-        content: '点击展开输入框...';
-        color: #9ca3af;
-        pointer-events: none;
-      }
-
       input-container.${COLLAPSED_CLASS} .composer-buttons,
       input-container.${COLLAPSED_CLASS} .input-area-buttons {
-        opacity: 0.6;
+        display: none !important;
+      }
+
+      #${BUTTON_ID} {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #5f6368;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 180ms ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      #${BUTTON_ID}:hover {
+        background: rgba(255, 255, 255, 1);
+        border-color: rgba(0, 0, 0, 0.18);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+
+      #${BUTTON_ID} svg {
+        width: 20px;
+        height: 20px;
+        color: #5f6368;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #${BUTTON_ID} {
+          background: rgba(48, 49, 52, 0.9);
+          border-color: rgba(255, 255, 255, 0.12);
+          color: #e8eaed;
+        }
+
+        #${BUTTON_ID}:hover {
+          background: rgba(58, 59, 62, 1);
+          border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        #${BUTTON_ID} svg {
+          color: #e8eaed;
+        }
       }
     `;
 
-    (document.head || document.documentElement).appendChild(style);
+    document.head.appendChild(style);
   }
 
   function cleanup() {
@@ -184,6 +243,9 @@
     if (container) {
       container.classList.remove(COLLAPSED_CLASS);
       delete container.dataset.aisbCollapseEventsBound;
+      if (collapseButton && collapseButton.parentElement) {
+        collapseButton.parentElement.removeChild(collapseButton);
+      }
     }
   }
 
@@ -214,10 +276,8 @@
       const container = getInputContainer();
       if (!container) return;
 
-      stripLegacyClass(container);
-
       if (shouldDisableAutoCollapse()) {
-        container.classList.remove(COLLAPSED_CLASS);
+        expand(container, false);
       } else {
         tryCollapse(container);
       }
@@ -232,8 +292,11 @@
       const container = getInputContainer();
       if (!container) return;
 
-      stripLegacyClass(container);
       bindContainerEvents(container, signal);
+
+      if (!shouldDisableAutoCollapse() && isInputEmpty(container) && !hasAttachments(container)) {
+        tryCollapse(container);
+      }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -241,10 +304,15 @@
     const container = getInputContainer();
     if (container) {
       bindContainerEvents(container, signal);
+      if (!shouldDisableAutoCollapse()) {
+        tryCollapse(container);
+      }
     }
   }
 
-  function applyFeatureState(enabled) {
+  function applyFeatureState(nextEnabled) {
+    enabled = !!nextEnabled;
+
     if (enabled) {
       initInputCollapse();
     } else {
@@ -252,27 +320,24 @@
     }
   }
 
-  function handleStorageChange(changes, areaName) {
-    if (areaName !== 'local') return;
-    if (!changes || !changes[SETTINGS_KEY]) return;
-    const settings = parseSettings(changes[SETTINGS_KEY].newValue);
-    applyFeatureState(Boolean(settings[SETTINGS_FLAG]));
-  }
+  async function init() {
+    const stored = await storageGet(['gvInputCollapseEnabled']);
+    applyFeatureState(Boolean(stored.gvInputCollapseEnabled));
 
-  function bootstrap() {
-    getFeatureEnabled((enabled) => {
-      applyFeatureState(enabled);
-    });
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'sync') return;
 
-    if (
-      typeof chrome !== 'undefined' &&
-      chrome.storage &&
-      chrome.storage.onChanged &&
-      typeof chrome.storage.onChanged.addListener === 'function'
-    ) {
-      chrome.storage.onChanged.addListener(handleStorageChange);
+        if (changes.gvInputCollapseEnabled) {
+          applyFeatureState(Boolean(changes.gvInputCollapseEnabled.newValue));
+        }
+      });
     }
   }
 
-  bootstrap();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    void init();
+  }
 })();

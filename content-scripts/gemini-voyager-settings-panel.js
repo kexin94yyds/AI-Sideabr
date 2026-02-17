@@ -15,6 +15,8 @@
     gvSidebarAutoHide: false,
     gvSnowEffectEnabled: false,
     gvInputCollapseEnabled: false,
+    gvTimelineSyncEnabled: true,
+    gvHideRecentsEnabled: false,
   };
 
   const SLIDERS = {
@@ -24,9 +26,11 @@
   };
 
   const TOGGLES = {
-    gvSidebarAutoHide: { label: '侧边栏自动收起' },
-    gvSnowEffectEnabled: { label: '飘雪效果' },
-    gvInputCollapseEnabled: { label: '启用输入框折叠' },
+    gvInputCollapseEnabled: { label: '启用输入框折叠', hint: '输入框为空时自动折叠' },
+    gvTimelineSyncEnabled: { label: '标题同步', hint: '自动同步对话标题到时间轴' },
+    gvSidebarAutoHide: { label: '侧边栏自动收起', hint: '鼠标离开时自动收起' },
+    gvHideRecentsEnabled: { label: '隐藏最近对话', hint: '隐藏侧边栏的最近对话列表' },
+    gvSnowEffectEnabled: { label: '飘雪效果', hint: '装饰性飘雪动画' },
   };
 
   let settings = { ...DEFAULTS };
@@ -75,6 +79,30 @@
     }
 
     return next;
+  }
+
+  function applySettings() {
+    if (settings.gvTimelineSyncEnabled !== undefined) {
+      const oldKey = 'gvToolsSettings';
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(oldKey, (result) => {
+          const oldSettings = result[oldKey] || {};
+          oldSettings.titleSyncEnabled = settings.gvTimelineSyncEnabled;
+          chrome.storage.local.set({ [oldKey]: oldSettings });
+        });
+      }
+    }
+
+    if (settings.gvHideRecentsEnabled !== undefined) {
+      const oldKey = 'gvToolsSettings';
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(oldKey, (result) => {
+          const oldSettings = result[oldKey] || {};
+          oldSettings.hideRecents = settings.gvHideRecentsEnabled;
+          chrome.storage.local.set({ [oldKey]: oldSettings });
+        });
+      }
+    }
   }
 
   function formatValue(key, value) {
@@ -220,6 +248,13 @@
   color: #374151;
 }
 
+#${ROOT_ID} .gvsp-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
 #${ROOT_ID} .gvsp-value {
   font-size: 13px;
   color: #6b7280;
@@ -342,6 +377,10 @@
     color: #d1d5db;
   }
   
+  #${ROOT_ID} .gvsp-hint {
+    color: #6b7280;
+  }
+  
   #${ROOT_ID} .gvsp-value {
     color: #9ca3af;
   }
@@ -412,11 +451,22 @@
     const wrap = document.createElement('div');
     wrap.className = 'gvsp-toggle-wrap';
 
-    const label = document.createElement('label');
+    const labelWrap = document.createElement('div');
+    labelWrap.style.flex = '1';
+    labelWrap.style.cursor = 'pointer';
+
+    const label = document.createElement('div');
     label.className = 'gvsp-label';
     label.textContent = meta.label;
-    label.style.flex = '1';
-    label.style.cursor = 'pointer';
+
+    labelWrap.appendChild(label);
+
+    if (meta.hint) {
+      const hint = document.createElement('div');
+      hint.className = 'gvsp-hint';
+      hint.textContent = meta.hint;
+      labelWrap.appendChild(hint);
+    }
 
     const switchEl = document.createElement('div');
     switchEl.className = 'gvsp-switch';
@@ -430,12 +480,13 @@
       settings[key] = nextValue;
       switchEl.classList.toggle('on', nextValue);
       void storageSet({ [key]: nextValue });
+      applySettings();
     };
 
-    label.addEventListener('click', toggle);
+    labelWrap.addEventListener('click', toggle);
     switchEl.addEventListener('click', toggle);
 
-    wrap.append(label, switchEl);
+    wrap.append(labelWrap, switchEl);
     item.appendChild(wrap);
 
     return {
@@ -572,6 +623,7 @@
     settings = sanitize(stored);
 
     syncControls();
+    applySettings();
     attachStorageListener();
   }
 
