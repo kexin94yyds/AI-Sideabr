@@ -184,7 +184,8 @@
         "content-scripts/gemini-tools.js",
         "content-scripts/gemini-cloud-sync.js",
         "content-scripts/gemini-file-upload.js",
-        "content-scripts/gemini-input-resize.js"
+        "content-scripts/gemini-input-resize.js",
+        "content-scripts/gemini-input-collapse.js"
       ]
     },
     {
