@@ -6,49 +6,47 @@
   window.__AISB_GEMINI_INPUT_RESIZE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-gemini-input-resize-style';
+  const WIDTH = '60vw';
 
-  function injectStyles() {
-    if (document.getElementById(STYLE_ID)) {
-      console.log('[AISB Input Resize] 样式已存在，跳过注入');
-      return;
+  if (document.getElementById(STYLE_ID)) return;
+
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
+  style.textContent = `
+    .content-wrapper:has(input-container),
+    .main-content:has(input-container),
+    .content-container:has(input-container),
+    [role="main"]:has(input-container),
+    main > div:has(input-container) {
+      max-width: none !important;
+      width: 100% !important;
     }
 
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = `
-      /* 缩小 Gemini 输入框 - 超强选择器 */
-      rich-textarea,
-      rich-textarea *,
-      [role="textbox"],
-      .input-area-container,
-      .composer-container {
-        max-height: 90px !important;
-      }
+    input-container {
+      max-width: ${WIDTH} !important;
+      width: min(100%, ${WIDTH}) !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+    }
 
-      rich-textarea textarea,
-      rich-textarea div[contenteditable="true"],
-      rich-textarea [contenteditable="true"] {
-        max-height: 70px !important;
-        min-height: 35px !important;
-        font-size: 13px !important;
-        line-height: 1.3 !important;
-        padding: 6px 10px !important;
-        overflow-y: auto !important;
-      }
-    `;
+    input-container .input-area-container,
+    input-area-v2,
+    input-area-v2 .input-area {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
 
-    document.head.appendChild(style);
-    console.log('[AISB Input Resize] ✅ 样式已成功注入到页面');
-    console.log('[AISB Input Resize] Style element:', style);
-  }
+    input-area-v2 .input-area {
+      min-height: 44px !important;
+    }
 
-  function init() {
-    injectStyles();
-  }
+    input-area-v2 rich-textarea,
+    input-area-v2 [contenteditable="true"] {
+      max-height: 72px !important;
+      overflow-y: auto !important;
+    }
+  `;
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  (document.head || document.documentElement).appendChild(style);
+  console.log('[AISB Input Resize] ✅ 样式已注入 - 宽度:', WIDTH);
 })();
