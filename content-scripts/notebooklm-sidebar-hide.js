@@ -53,44 +53,9 @@
     console.log('[AISB NotebookLM] ✅ 顶部标签区域已隐藏');
   }
 
-  function removeStyles() {
-    const style = document.getElementById(STYLE_ID);
-    if (style) {
-      style.remove();
-      console.log('[AISB NotebookLM Sidebar Hide] ❌ 样式已移除');
-    }
-  }
-
-  function applyFeatureState(nextEnabled) {
-    enabled = !!nextEnabled;
-
-    if (enabled) {
-      injectStyles();
-    } else {
-      removeStyles();
-    }
-  }
-
-  async function init() {
-    const stored = await storageGet(['notebooklmSidebarHideEnabled']);
-    applyFeatureState(Boolean(stored.notebooklmSidebarHideEnabled));
-
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-      chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== 'sync') return;
-
-        if (changes.notebooklmSidebarHideEnabled) {
-          applyFeatureState(Boolean(changes.notebooklmSidebarHideEnabled.newValue));
-        }
-      });
-    }
-
-    console.log('[AISB NotebookLM Sidebar Hide] ✅ 已加载');
-  }
-
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
+    document.addEventListener('DOMContentLoaded', injectStyles, { once: true });
   } else {
-    void init();
+    injectStyles();
   }
 })();

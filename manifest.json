@@ -214,12 +214,6 @@
       ]
     },
     {
-      "matches": ["https://notebooklm.google.com/*"],
-      "all_frames": false,
-      "run_at": "document_start",
-      "js": ["content-scripts/notebooklm-hide-header.js"]
-    },
-    {
       "matches": ["<all_urls>"],
       "all_frames": false,
       "run_at": "document_end",
