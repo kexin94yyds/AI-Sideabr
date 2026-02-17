@@ -109,11 +109,11 @@
         border: none !important;
       }
 
-      /* Expand on hover - restore original style */
+      /* Expand on hover - limited height */
       div.query-box:hover,
       [class*="query-box"]:hover,
       [class*="input-container"]:hover {
-        max-height: none !important;
+        max-height: 150px !important;
         min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
       }
@@ -122,7 +122,7 @@
       div.query-box:focus-within,
       [class*="query-box"]:focus-within,
       [class*="input-container"]:focus-within {
-        max-height: none !important;
+        max-height: 150px !important;
         min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
       }
