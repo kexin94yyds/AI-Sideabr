@@ -80,6 +80,18 @@
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* Hide input-group container */
+      div.query-box .input-group,
+      [class*="query-box"] .input-group,
+      [class*="input-group"] {
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
       }
 
       /* Force hide all container visual elements */
