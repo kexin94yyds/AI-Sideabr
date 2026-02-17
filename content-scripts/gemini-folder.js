@@ -2269,6 +2269,24 @@
   }
 
   function bindConversationDropToFolder(element, folderId) {
+    let dragEnterCounter = 0;
+
+    element.addEventListener('dragenter', (event) => {
+      const payload = parseDragPayload(event);
+      if (!payload || payload.type !== 'conversation') return;
+      event.preventDefault();
+      event.stopPropagation();
+      dragEnterCounter++;
+      element.classList.add('aisb-folder-dragover');
+    });
+
+    element.addEventListener('dragleave', (event) => {
+      dragEnterCounter--;
+      if (dragEnterCounter === 0) {
+        element.classList.remove('aisb-folder-dragover');
+      }
+    });
+
     element.addEventListener('dragover', (event) => {
       const payload = parseDragPayload(event);
       if (!payload || payload.type !== 'conversation') return;
@@ -2277,10 +2295,21 @@
 
     element.addEventListener('drop', async (event) => {
       const payload = parseDragPayload(event);
-      if (!payload || payload.type !== 'conversation' || !payload.conversation) return;
+      if (!payload || payload.type !== 'conversation') return;
       event.preventDefault();
+      
+      dragEnterCounter = 0;
+      element.classList.remove('aisb-folder-dragover');
 
-      await addConversationToFolder(folderId, payload.conversation, payload.sourceFolderId || null);
+      const conversation = payload.conversation || {
+        conversationId: payload.conversationId,
+        title: payload.title,
+        url: payload.url,
+      };
+
+      if (!conversation.conversationId) return;
+
+      await addConversationToFolder(folderId, conversation, payload.sourceFolderId || null);
       renderFolderList();
       setStatus('会话已放入文件夹', 'success');
     });
