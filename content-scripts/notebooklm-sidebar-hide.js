@@ -57,20 +57,20 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - compressed but visible */
+      /* Keep input area at bottom - compressed and transparent */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
         position: sticky !important;
         bottom: 0 !important;
-        background: var(--surface-container, #1e1e1e) !important;
+        background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         z-index: 100 !important;
         min-height: 48px !important;
         max-height: 48px !important;
         overflow: hidden !important;
-        transition: max-height 0.3s ease !important;
+        transition: max-height 0.3s ease, background 0.3s ease !important;
       }
 
       /* Hide container padding and borders */
@@ -103,6 +103,7 @@
       [class*="input-container"]:hover {
         max-height: none !important;
         min-height: auto !important;
+        background: var(--surface-container, #1e1e1e) !important;
       }
 
       /* Keep expanded when focused */
@@ -111,6 +112,7 @@
       [class*="input-container"]:focus-within {
         max-height: none !important;
         min-height: auto !important;
+        background: var(--surface-container, #1e1e1e) !important;
       }
     `;
 
