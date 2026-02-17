@@ -35,57 +35,76 @@
       document.head.appendChild(style);
     }
 
+    const widthValue = `${currentWidth}vw`;
+
     style.textContent = `
       /* Remove outer container width limits */
-      chat-window,
-      main.main {
+      .content-wrapper:has(chat-window),
+      .main-content:has(chat-window),
+      .content-container:has(chat-window),
+      .content-container:has(.conversation-container),
+      [role="main"]:has(chat-window),
+      [role="main"]:has(.conversation-container) {
         max-width: none !important;
       }
 
+      chat-window,
+      .chat-container,
+      chat-window-content,
+      .chat-history-scroll-container,
+      .chat-history,
+      .conversation-container {
+        max-width: none !important;
+      }
+
+      main > div:has(user-query),
+      main > div:has(model-response),
+      main > div:has(.conversation-container) {
+        max-width: none !important;
+        width: 100% !important;
+      }
+
       /* User message containers */
-      message-set.user-query-set,
-      .user-query-set,
-      [class*="user"] message-content,
-      .query-content {
-        max-width: ${currentWidth}vw !important;
-        width: ${currentWidth}vw !important;
+      .user-query-bubble-container,
+      .user-query-container,
+      user-query-content,
+      user-query,
+      div[aria-label="User message"],
+      article[data-author="user"],
+      [data-message-author-role="user"] {
+        max-width: ${widthValue} !important;
+        width: min(100%, ${widthValue}) !important;
         margin-left: auto !important;
         margin-right: auto !important;
       }
 
       /* Model response containers */
-      message-set.model-response-set,
-      .model-response-set,
-      [class*="model"] message-content,
-      .response-content,
-      model-response {
-        max-width: ${currentWidth}vw !important;
-        width: ${currentWidth}vw !important;
+      model-response,
+      .model-response,
+      response-container,
+      .response-container,
+      .presented-response-container,
+      [aria-label="Gemini response"],
+      [data-message-author-role="assistant"],
+      [data-message-author-role="model"],
+      article[data-author="assistant"] {
+        max-width: ${widthValue} !important;
+        width: min(100%, ${widthValue}) !important;
         margin-left: auto !important;
         margin-right: auto !important;
       }
 
-      /* Conversation container */
-      .conversation-container,
-      conversation-turn {
-        max-width: ${currentWidth}vw !important;
-        width: 100% !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
+      /* Fallback for browsers without :has() support */
+      @supports not selector(:has(*)) {
+        .content-wrapper,
+        .main-content,
+        .content-container {
+          max-width: none !important;
+        }
 
-      @media (min-width: 1024px) {
-        message-set.user-query-set,
-        .user-query-set,
-        [class*="user"] message-content,
-        .query-content,
-        message-set.model-response-set,
-        .model-response-set,
-        [class*="model"] message-content,
-        .response-content,
-        model-response {
-          max-width: ${currentWidth}vw !important;
-          width: ${currentWidth}vw !important;
+        main > div:not(:has(button)):not(.main-menu-button) {
+          max-width: none !important;
+          width: 100% !important;
         }
       }
     `;

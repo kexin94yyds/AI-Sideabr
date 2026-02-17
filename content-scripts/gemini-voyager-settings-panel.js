@@ -17,6 +17,7 @@
     gvSidebarAutoHide: false,
     gvSnowEffectEnabled: false,
     gvInputCollapseEnabled: false,
+    universalInputCollapseEnabled: false,
     gvTimelineSyncEnabled: true,
     gvHideRecentsEnabled: false,
   };
@@ -30,7 +31,8 @@
   };
 
   const TOGGLES = {
-    gvInputCollapseEnabled: { label: '启用输入框折叠', hint: '输入框为空时自动折叠' },
+    gvInputCollapseEnabled: { label: '启用输入框折叠 (Gemini)', hint: '输入框为空时自动折叠' },
+    universalInputCollapseEnabled: { label: '启用输入框折叠 (所有AI)', hint: '在 NotebookLM、ChatGPT、Claude 等所有 AI 平台启用输入框折叠' },
     gvTimelineSyncEnabled: { label: '标题同步', hint: '自动同步对话标题到时间轴' },
     gvSidebarAutoHide: { label: '侧边栏自动收起', hint: '鼠标离开时自动收起' },
     gvHideRecentsEnabled: { label: '隐藏最近对话', hint: '隐藏侧边栏的最近对话列表' },
