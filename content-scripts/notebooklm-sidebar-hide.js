@@ -13,18 +13,17 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* Hide NotebookLM top tab area based on actual DOM structure */
-      /* Target the mat-tab-group container */
-      div[id^="mat-tab-group-"][id$="-label"],
-      [role="tablist"],
-      .mat-mdc-tab-labels,
-      .mat-mdc-tab-label-container,
-      div[class*="mat-mdc-tab"]:has([role="tab"]) {
+      /* Hide specific tabs but keep the chat tab */
+      /* Hide first and third tab (来源 and Studio), keep second tab (对话) */
+      [role="tab"]:first-child,
+      [role="tab"]:last-child {
         display: none !important;
         visibility: hidden !important;
-        height: 0 !important;
-        min-height: 0 !important;
-        overflow: hidden !important;
+      }
+      
+      /* Adjust tab container to fit remaining tab */
+      [role="tablist"] {
+        min-height: 48px !important;
       }
 
       /* Expand content area */
