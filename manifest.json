@@ -186,7 +186,17 @@
     },
     {
       "matches": [
-        "https://notebooklm.google.com/*",
+        "https://notebooklm.google.com/*"
+      ],
+      "all_frames": true,
+      "run_at": "document_idle",
+      "js": [
+        "content-scripts/universal-input-collapse.js",
+        "content-scripts/notebooklm-sidebar-hide.js"
+      ]
+    },
+    {
+      "matches": [
         "https://chatgpt.com/*",
         "https://claude.ai/*",
         "https://chat.deepseek.com/*",
