@@ -57,28 +57,45 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - fully transparent background */
+      /* Keep input area at bottom - transparent and non-blocking */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
-        position: sticky !important;
+        position: fixed !important;
         bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
         background: transparent !important;
         z-index: 100 !important;
         min-height: 48px !important;
         max-height: 48px !important;
-        transition: max-height 0.3s ease, background 0.3s ease !important;
+        pointer-events: none !important;
+        transition: max-height 0.3s ease, background 0.3s ease, pointer-events 0s !important;
       }
 
-      /* Expand and show background on hover/focus */
+      /* Enable interaction and show background on hover */
       div.query-box:hover,
-      div.query-box:focus-within,
       [class*="query-box"]:hover,
+      [class*="input-container"]:hover {
+        max-height: 200px !important;
+        background: var(--surface-container, #1e1e1e) !important;
+        pointer-events: auto !important;
+      }
+
+      /* Keep enabled when focused */
+      div.query-box:focus-within,
       [class*="query-box"]:focus-within,
-      [class*="input-container"]:hover,
       [class*="input-container"]:focus-within {
         max-height: 200px !important;
         background: var(--surface-container, #1e1e1e) !important;
+        pointer-events: auto !important;
+      }
+
+      /* Enable pointer events for children */
+      div.query-box *,
+      [class*="query-box"] *,
+      [class*="input-container"] * {
+        pointer-events: auto !important;
       }
     `;
 
