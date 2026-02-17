@@ -80,6 +80,21 @@
         box-shadow: none !important;
       }
 
+      /* Force hide all container visual elements */
+      div.query-box::before,
+      div.query-box::after,
+      [class*="query-box"]::before,
+      [class*="query-box"]::after {
+        display: none !important;
+      }
+
+      /* Hide specific Material Design container elements */
+      div.query-box .mat-mdc-form-field,
+      [class*="query-box"] .mat-mdc-form-field {
+        background: transparent !important;
+        border: none !important;
+      }
+
       /* Enable interaction and show background on hover - restore original style */
       div.query-box:hover,
       [class*="query-box"]:hover,
