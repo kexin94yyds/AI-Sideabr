@@ -7,10 +7,11 @@
 
   const STYLE_ID = 'aisb-edit-input-width-style';
   const DEFAULT_WIDTH = 60;
-  const MIN_WIDTH = 20;
+  const MIN_WIDTH = 30;
   const MAX_WIDTH = 100;
 
   let currentWidth = DEFAULT_WIDTH;
+  let observer = null;
 
   function storageGet(keys) {
     return new Promise((resolve) => {
@@ -35,17 +36,81 @@
     }
 
     style.textContent = `
-      input-area-v2[contenteditable="true"],
-      .input-area-container {
+      /* Edit mode containers */
+      .query-content.edit-mode,
+      div.edit-mode,
+      [class*="edit-mode"] {
         max-width: ${currentWidth}vw !important;
+        width: ${currentWidth}vw !important;
+      }
+
+      .edit-mode .edit-container,
+      .query-content.edit-mode .edit-container {
+        max-width: ${currentWidth}vw !important;
+        width: ${currentWidth}vw !important;
+      }
+
+      .edit-mode .mat-mdc-form-field,
+      .edit-container .mat-mdc-form-field,
+      .edit-mode .edit-form {
+        max-width: ${currentWidth}vw !important;
+        width: 100% !important;
+      }
+
+      .edit-mode textarea,
+      .edit-container textarea,
+      .edit-mode .mat-mdc-input-element,
+      .edit-mode .cdk-textarea-autosize {
+        max-width: ${currentWidth}vw !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Main chat input area */
+      input-container {
+        max-width: ${currentWidth}vw !important;
+        width: ${currentWidth}vw !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
+      input-container .input-area-container {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+
+      input-area-v2 {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+
+      input-area-v2 .input-area {
+        max-width: 100% !important;
+        width: 100% !important;
       }
     `;
+  }
+
+  function startObserver() {
+    if (observer) return;
+
+    observer = new MutationObserver(() => {
+      applyWidth();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
   }
 
   async function init() {
     const stored = await storageGet(['geminiEditInputWidth']);
     currentWidth = clamp(Number(stored.geminiEditInputWidth) || DEFAULT_WIDTH, MIN_WIDTH, MAX_WIDTH);
     applyWidth();
+    startObserver();
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, areaName) => {

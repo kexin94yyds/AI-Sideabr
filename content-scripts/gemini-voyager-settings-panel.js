@@ -25,8 +25,8 @@
     gvFolderSpacing: { label: '文件夹间距', min: 0, max: 16, unit: 'px' },
     gvFolderTreeIndent: { label: '子文件缩进', min: -8, max: 32, unit: 'px' },
     geminiSidebarWidth: { label: '侧边栏宽度', min: 180, max: 540, unit: 'px' },
-    geminiChatWidth: { label: '对话区域宽度', min: 20, max: 100, unit: '%' },
-    geminiEditInputWidth: { label: '编辑输入框宽度', min: 20, max: 100, unit: '%' },
+    geminiChatWidth: { label: '对话区域宽度', min: 30, max: 100, unit: '%' },
+    geminiEditInputWidth: { label: '编辑输入框宽度', min: 30, max: 100, unit: '%' },
   };
 
   const TOGGLES = {

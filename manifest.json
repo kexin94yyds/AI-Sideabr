@@ -179,7 +179,6 @@
         "content-scripts/gemini-chat-width.js",
         "content-scripts/gemini-edit-input-width.js",
         "content-scripts/gemini-timeline.js",
-        "content-scripts/gemini-input-resize.js",
         "content-scripts/gemini-input-collapse.js",
         "content-scripts/gemini-snow-effect.js",
         "content-scripts/gemini-voyager-settings-panel.js"
