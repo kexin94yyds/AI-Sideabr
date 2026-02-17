@@ -57,14 +57,36 @@
         overflow-y: auto !important;
       }
 
-      /* Fix input area at bottom */
+      /* Keep input area at bottom - transparent and minimal */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
         position: sticky !important;
         bottom: 0 !important;
-        background: var(--surface-container, #1e1e1e) !important;
+        background: transparent !important;
         z-index: 100 !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        opacity: 0.3 !important;
+        transition: opacity 0.3s ease, max-height 0.3s ease !important;
+      }
+
+      /* Expand and show on hover/focus */
+      div.query-box:hover,
+      div.query-box:focus-within,
+      [class*="query-box"]:hover,
+      [class*="query-box"]:focus-within,
+      [class*="input-container"]:hover,
+      [class*="input-container"]:focus-within {
+        opacity: 1 !important;
+        max-height: 200px !important;
+        background: var(--surface-container, #1e1e1e) !important;
+      }
+
+      /* Fix input area at bottom */
+      div.query-box,
+      [class*="query-box"],
+      [class*="input-container"] {
         display: block !important;
         visibility: visible !important;
       }
