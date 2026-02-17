@@ -663,12 +663,36 @@
       #${PANEL_ID} .aisb-folder-title-wrap {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+      }
+      #${PANEL_ID} .aisb-folder-collapse-btn {
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 14px;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background-color 150ms, transform 150ms;
+      }
+      #${PANEL_ID} .aisb-folder-collapse-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
       }
       #${PANEL_ID} .aisb-folder-title {
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: .3px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      #${PANEL_ID}.collapsed .aisb-folder-search-row,
+      #${PANEL_ID}.collapsed .aisb-folder-status,
+      #${PANEL_ID}.collapsed .aisb-folder-list,
+      #${PANEL_ID}.collapsed .aisb-folder-bulkbar {
+        display: none !important;
       }
       #${PANEL_ID} .aisb-folder-account {
         font-size: 12px;
@@ -2725,6 +2749,12 @@
     const titleWrap = document.createElement('div');
     titleWrap.className = 'aisb-folder-title-wrap';
 
+    const collapseBtn = document.createElement('button');
+    collapseBtn.type = 'button';
+    collapseBtn.className = 'aisb-folder-collapse-btn';
+    collapseBtn.textContent = '▾';
+    collapseBtn.title = '折叠/展开';
+    
     const title = document.createElement('span');
     title.className = 'aisb-folder-title';
     title.textContent = '文件夹';
@@ -2733,8 +2763,16 @@
     accountBadge.className = 'aisb-folder-account';
     accountBadge.textContent = `/u/${state.currentAccountId}`;
 
+    titleWrap.appendChild(collapseBtn);
     titleWrap.appendChild(title);
     titleWrap.appendChild(accountBadge);
+    
+    let isCollapsed = false;
+    collapseBtn.addEventListener('click', () => {
+      isCollapsed = !isCollapsed;
+      collapseBtn.textContent = isCollapsed ? '▸' : '▾';
+      panel.classList.toggle('collapsed', isCollapsed);
+    });
 
     const actions = document.createElement('div');
     actions.className = 'aisb-folder-actions';
