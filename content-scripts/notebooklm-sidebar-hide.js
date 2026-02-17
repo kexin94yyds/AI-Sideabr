@@ -61,26 +61,18 @@
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
-        position: fixed !important;
+        position: sticky !important;
         bottom: 0 !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        max-width: 800px !important;
-        width: 90% !important;
         background: transparent !important;
         z-index: 100 !important;
-        min-height: 48px !important;
-        max-height: 48px !important;
         pointer-events: none !important;
-        transition: max-height 0.3s ease, background 0.3s ease, pointer-events 0s !important;
+        transition: background 0.3s ease !important;
       }
 
-      /* Enable interaction and show background on hover */
+      /* Enable interaction and show background on hover - restore original style */
       div.query-box:hover,
       [class*="query-box"]:hover,
       [class*="input-container"]:hover {
-        max-height: 150px !important;
-        min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
       }
@@ -89,8 +81,6 @@
       div.query-box:focus-within,
       [class*="query-box"]:focus-within,
       [class*="input-container"]:focus-within {
-        max-height: 150px !important;
-        min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
       }
