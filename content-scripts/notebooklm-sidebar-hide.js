@@ -63,8 +63,10 @@
       [class*="input-container"] {
         position: fixed !important;
         bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: 800px !important;
+        width: 90% !important;
         background: transparent !important;
         z-index: 100 !important;
         min-height: 48px !important;
@@ -77,7 +79,7 @@
       div.query-box:hover,
       [class*="query-box"]:hover,
       [class*="input-container"]:hover {
-        max-height: none !important;
+        max-height: 150px !important;
         min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
@@ -87,7 +89,7 @@
       div.query-box:focus-within,
       [class*="query-box"]:focus-within,
       [class*="input-container"]:focus-within {
-        max-height: none !important;
+        max-height: 150px !important;
         min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
