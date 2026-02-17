@@ -6,6 +6,17 @@
   window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
+  let enabled = false;
+
+  function storageGet(keys) {
+    return new Promise((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.sync) {
+        resolve({});
+        return;
+      }
+      chrome.storage.sync.get(keys, resolve);
+    });
+  }
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -26,7 +37,6 @@
       }
 
       /* Hide NotebookLM top header and buttons container */
-      [role="tablist"],
       [role="tab"],
       .tabs-container,
       [class*="tab"][class*="container"],
@@ -72,12 +82,47 @@
     `;
 
     document.head.appendChild(style);
-    console.log('[AISB NotebookLM] 顶部标签区域已隐藏');
+    console.log('[AISB NotebookLM] ✅ 顶部标签区域已隐藏');
+  }
+
+  function removeStyles() {
+    const style = document.getElementById(STYLE_ID);
+    if (style) {
+      style.remove();
+      console.log('[AISB NotebookLM] ❌ 样式已移除');
+    }
+  }
+
+  function applyFeatureState(nextEnabled) {
+    enabled = !!nextEnabled;
+
+    if (enabled) {
+      injectStyles();
+    } else {
+      removeStyles();
+    }
+  }
+
+  async function init() {
+    const stored = await storageGet(['notebooklmSidebarHideEnabled']);
+    applyFeatureState(Boolean(stored.notebooklmSidebarHideEnabled));
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== 'sync') return;
+
+        if (changes.notebooklmSidebarHideEnabled) {
+          applyFeatureState(Boolean(changes.notebooklmSidebarHideEnabled.newValue));
+        }
+      });
+    }
+
+    console.log('[AISB NotebookLM] ✅ 已加载');
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectStyles, { once: true });
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
-    injectStyles();
+    void init();
   }
 })();
