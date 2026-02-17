@@ -91,13 +91,24 @@
 
   function getInputContainer() {
     const config = getCurrentConfig();
-    if (!config) return null;
+    if (!config) {
+      console.log('[AISB] No config for', location.hostname);
+      return null;
+    }
 
-    const container = document.querySelector(config.containerSelector);
-    if (!container) return null;
-
-    const input = container.querySelector(config.inputSelector);
-    return input ? container : null;
+    const containers = document.querySelectorAll(config.containerSelector);
+    console.log('[AISB] Found', containers.length, 'potential containers');
+    
+    for (const container of containers) {
+      const input = container.querySelector(config.inputSelector);
+      if (input) {
+        console.log('[AISB] Found input container:', container, 'input:', input);
+        return container;
+      }
+    }
+    
+    console.log('[AISB] No valid input container found');
+    return null;
   }
 
   function getInput(container) {
@@ -387,19 +398,26 @@
   async function init() {
     const config = getCurrentConfig();
     if (!config) {
-      console.log('[AISB Universal Input Collapse] ⚠️ 当前平台不支持');
+      console.log('[AISB Universal Input Collapse] ⚠️ 当前平台不支持:', location.hostname);
       return;
     }
 
+    console.log('[AISB Universal Input Collapse] 🔧 配置:', config);
+
     const stored = await storageGet(['universalInputCollapseEnabled']);
-    applyFeatureState(Boolean(stored.universalInputCollapseEnabled));
+    const isEnabled = Boolean(stored.universalInputCollapseEnabled);
+    console.log('[AISB Universal Input Collapse] 设置状态:', isEnabled);
+    
+    applyFeatureState(isEnabled);
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== 'sync') return;
 
         if (changes.universalInputCollapseEnabled) {
-          applyFeatureState(Boolean(changes.universalInputCollapseEnabled.newValue));
+          const newValue = Boolean(changes.universalInputCollapseEnabled.newValue);
+          console.log('[AISB Universal Input Collapse] 设置变更:', newValue);
+          applyFeatureState(newValue);
         }
       });
     }
