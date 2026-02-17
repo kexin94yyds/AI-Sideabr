@@ -64,9 +64,20 @@
         position: sticky !important;
         bottom: 0 !important;
         background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
         z-index: 100 !important;
         pointer-events: none !important;
         transition: background 0.3s ease !important;
+      }
+
+      /* Hide container padding and borders */
+      div.query-box > *,
+      [class*="query-box"] > *,
+      [class*="input-container"] > * {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
       }
 
       /* Enable interaction and show background on hover - restore original style */
