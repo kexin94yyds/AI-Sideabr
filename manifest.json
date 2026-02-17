@@ -176,6 +176,8 @@
         "content-scripts/gemini-folder-layout.js",
         "content-scripts/gemini-sidebar-width.js",
         "content-scripts/gemini-sidebar-auto-hide.js",
+        "content-scripts/gemini-chat-width.js",
+        "content-scripts/gemini-edit-input-width.js",
         "content-scripts/gemini-timeline.js",
         "content-scripts/gemini-input-resize.js",
         "content-scripts/gemini-input-collapse.js",
