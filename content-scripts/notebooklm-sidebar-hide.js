@@ -77,7 +77,8 @@
       div.query-box:hover,
       [class*="query-box"]:hover,
       [class*="input-container"]:hover {
-        max-height: 200px !important;
+        max-height: none !important;
+        min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
       }
@@ -86,7 +87,8 @@
       div.query-box:focus-within,
       [class*="query-box"]:focus-within,
       [class*="input-container"]:focus-within {
-        max-height: 200px !important;
+        max-height: none !important;
+        min-height: auto !important;
         background: var(--surface-container, #1e1e1e) !important;
         pointer-events: auto !important;
       }
