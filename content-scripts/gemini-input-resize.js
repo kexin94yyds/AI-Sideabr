@@ -13,41 +13,42 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* 缩小 Gemini 输入框 */
-      rich-textarea,
+      /* 缩小 Gemini 输入框 - 使用更强的选择器 */
+      rich-textarea {
+        max-height: 100px !important;
+        min-height: 50px !important;
+      }
+
       rich-textarea textarea,
+      rich-textarea div[contenteditable="true"] {
+        max-height: 80px !important;
+        min-height: 40px !important;
+        font-size: 13px !important;
+        line-height: 1.4 !important;
+        padding: 6px 10px !important;
+      }
+
+      /* 输入框容器 */
       .input-area-container,
       .composer-container,
-      mat-form-field.mat-mdc-form-field {
-        max-height: 120px !important;
-        min-height: 60px !important;
+      mat-form-field.mat-mdc-form-field,
+      .mdc-text-field {
+        max-height: 100px !important;
       }
 
-      rich-textarea textarea {
-        font-size: 14px !important;
-        line-height: 1.5 !important;
-        padding: 8px 12px !important;
-      }
-
-      /* 调整输入框容器 */
+      /* 调整文本区域 */
       .input-area,
-      .composer-input-wrapper {
-        max-height: 120px !important;
+      .composer-input-wrapper,
+      .mat-mdc-form-field-infix {
+        max-height: 80px !important;
       }
 
       /* 调整按钮区域 */
       .composer-buttons,
-      .input-area-buttons {
-        padding: 4px 8px !important;
-      }
-
-      /* 深色模式适配 */
-      html.dark-theme rich-textarea textarea,
-      body.dark-theme rich-textarea textarea,
-      html[data-theme="dark"] rich-textarea textarea,
-      body[data-theme="dark"] rich-textarea textarea {
-        background: rgba(31, 41, 55, 0.6) !important;
-        color: #e5e7eb !important;
+      .input-area-buttons,
+      .mat-mdc-form-field-subscript-wrapper {
+        padding: 2px 6px !important;
+        min-height: auto !important;
       }
     `;
 

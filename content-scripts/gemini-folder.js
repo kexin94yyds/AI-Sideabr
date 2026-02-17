@@ -2707,42 +2707,7 @@
       void handleCreateFolder(null);
     });
 
-    const bulkButton = createButton('批量', 'aisb-folder-btn', '批量选择', () => {
-      if (state.settings.bulkMode) {
-        exitBulkMode();
-      } else {
-        enterBulkMode();
-      }
-    });
-    bulkButton.classList.toggle('active', state.settings.bulkMode);
-
-    const accountButton = createButton('账号过滤', 'aisb-folder-btn', '仅显示当前账号', () => {
-      state.settings.currentAccountOnly = !state.settings.currentAccountOnly;
-      accountButton.classList.toggle('active', state.settings.currentAccountOnly);
-      void saveSettings();
-      renderFolderList();
-      setStatus(state.settings.currentAccountOnly ? '仅显示当前账号内容' : '显示全部账号内容', 'success');
-    });
-    accountButton.classList.toggle('active', state.settings.currentAccountOnly);
-
-    const exportButton = createButton('导出', 'aisb-folder-btn', '导出文件夹数据', () => {
-      const mode = confirm('点击“确定”导出全部账号；点击“取消”仅导出当前账号。') ? 'all' : 'current';
-      const payload = buildExportPayload(mode);
-      core.utils.downloadText(buildExportFilename(), JSON.stringify(payload, null, 2), 'application/json');
-      setStatus(mode === 'all' ? '已导出全部账号数据' : '已导出当前账号数据', 'success');
-    });
-
-    const importButton = createButton('导入', 'aisb-folder-btn', '导入文件夹数据', () => {
-      if (state.ui.importInput) {
-        state.ui.importInput.click();
-      }
-    });
-
     actions.appendChild(newButton);
-    actions.appendChild(bulkButton);
-    actions.appendChild(accountButton);
-    actions.appendChild(importButton);
-    actions.appendChild(exportButton);
 
     header.appendChild(titleWrap);
     header.appendChild(actions);
