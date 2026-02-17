@@ -13,43 +13,47 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* Hide specific tabs but keep the chat tab */
-      /* Hide first and third tab (来源 and Studio), keep second tab (对话) */
-      [role="tab"]:first-child,
-      [role="tab"]:last-child {
+      /* Hide NotebookLM top tab area */
+      div[id^="mat-tab-group-"][id$="-label"],
+      [role="tablist"],
+      .mat-mdc-tab-labels,
+      .mat-mdc-tab-label-container {
         display: none !important;
         visibility: hidden !important;
-      }
-      
-      /* Adjust tab container to fit remaining tab */
-      [role="tablist"] {
-        min-height: 48px !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
       }
 
-      /* Expand content area */
+      /* Expand content area but keep input at bottom */
       [role="tabpanel"],
-      .mat-mdc-tab-body-wrapper,
+      .mat-mdc-tab-body-wrapper {
+        height: calc(100vh - 80px) !important;
+        max-height: calc(100vh - 80px) !important;
+      }
+
       main,
       [role="main"],
       .main-content,
       .content-area {
-        height: 100vh !important;
-        max-height: 100vh !important;
         max-width: 100% !important;
         width: 100% !important;
         margin: 0 auto !important;
         padding-top: 0 !important;
       }
 
-      /* Adjust body */
-      body {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
+      /* Ensure input area stays visible at bottom */
+      [class*="input"],
+      [class*="composer"],
+      textarea,
+      [contenteditable="true"] {
+        display: block !important;
+        visibility: visible !important;
       }
     `;
 
     document.head.appendChild(style);
-    console.log('[AISB NotebookLM] ✅ 顶部标签区域已隐藏');
+    console.log('[AISB NotebookLM] 顶部标签区域已隐藏');
   }
 
   if (document.readyState === 'loading') {
