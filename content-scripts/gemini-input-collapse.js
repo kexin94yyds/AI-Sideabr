@@ -13,7 +13,6 @@
   let observer = null;
   let eventController = null;
   let lastPathname = window.location.pathname;
-  let collapseButton = null;
 
   function storageGet(keys) {
     return new Promise((resolve) => {
@@ -48,24 +47,6 @@
     return attachments.length > 0;
   }
 
-  function createCollapseButton() {
-    if (collapseButton) return collapseButton;
-
-    const button = document.createElement('button');
-    button.id = BUTTON_ID;
-    button.type = 'button';
-    button.className = 'aisb-collapse-trigger';
-    button.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>给 Gemini 发消息</span>
-    `;
-
-    collapseButton = button;
-    return button;
-  }
-
   function tryCollapse(container) {
     if (!container || !enabled) return;
     if (shouldDisableAutoCollapse()) return;
@@ -73,26 +54,27 @@
     if (hasAttachments(container)) return;
 
     container.classList.add(COLLAPSED_CLASS);
+    ensurePlaceholder(container);
+  }
 
-    const button = createCollapseButton();
-    if (!container.contains(button)) {
-      container.appendChild(button);
-      
-      button.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        expand(container, true);
-      });
-    }
+  function ensurePlaceholder(container) {
+    const placeholderClass = 'aisb-collapse-placeholder';
+    if (container.querySelector(`.${placeholderClass}`)) return;
+
+    const placeholder = document.createElement('div');
+    placeholder.className = placeholderClass;
+    placeholder.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>给 Gemini 发消息</span>
+    `;
+    container.appendChild(placeholder);
   }
 
   function expand(container, shouldFocus = true) {
     if (!container) return;
     container.classList.remove(COLLAPSED_CLASS);
-
-    if (collapseButton && collapseButton.parentElement) {
-      collapseButton.parentElement.removeChild(collapseButton);
-    }
 
     if (shouldFocus) {
       setTimeout(() => {
@@ -114,38 +96,18 @@
     if (container.dataset.aisbCollapseEventsBound) return;
     container.dataset.aisbCollapseEventsBound = '1';
 
-    const button = container.querySelector(`#${BUTTON_ID}`);
-    if (button) {
-      button.addEventListener(
-        'click',
-        (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          expand(container, true);
-        },
-        { signal },
-      );
-    }
-
     container.addEventListener(
       'click',
-      (event) => {
-        if (!container.classList.contains(COLLAPSED_CLASS)) return;
-        if (event.target.closest(`#${BUTTON_ID}`)) {
-          event.preventDefault();
-          event.stopPropagation();
-          expand(container, true);
-        }
+      () => {
+        expand(container, true);
       },
-      { signal, capture: true },
+      { signal },
     );
 
     container.addEventListener(
       'focusin',
       () => {
-        if (container.classList.contains(COLLAPSED_CLASS)) {
-          expand(container, false);
-        }
+        expand(container, true);
       },
       { signal },
     );
@@ -184,64 +146,75 @@
     style.id = STYLE_ID;
     style.textContent = `
       input-container.${COLLAPSED_CLASS} {
-        position: relative;
-        min-height: 56px !important;
-        max-height: 56px !important;
+        height: 48px !important;
+        min-height: 48px !important;
+        max-height: 48px !important;
+        border-radius: 24px !important;
+        width: auto !important;
+        min-width: 200px !important;
+        max-width: 600px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 0 24px !important;
+        overflow: hidden !important;
+        background-color: var(--gm3-sys-color-surface-container, #f0f4f9) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        border: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        position: relative !important;
+        z-index: 999 !important;
+        gap: 0 !important;
+        transform: none !important;
       }
 
-      input-container.${COLLAPSED_CLASS} .input-area-container,
-      input-container.${COLLAPSED_CLASS} rich-textarea,
-      input-container.${COLLAPSED_CLASS} .composer-buttons,
-      input-container.${COLLAPSED_CLASS} .input-area-buttons {
+      input-container.${COLLAPSED_CLASS} > *:not(.aisb-collapse-placeholder) {
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+      }
+
+      .aisb-collapse-placeholder {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
       }
 
-      #${BUTTON_ID} {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        border: 1px solid rgba(0, 0, 0, 0.12);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.9);
-        color: #5f6368;
-        font-size: 14px;
+      input-container.${COLLAPSED_CLASS} > .aisb-collapse-placeholder {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
+        position: relative !important;
+        color: var(--gm3-sys-color-on-surface, #1f1f1f);
+        font-family: Google Sans, Roboto, sans-serif;
+        font-size: 15px;
         font-weight: 500;
-        cursor: pointer;
-        transition: all 180ms ease;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        white-space: nowrap;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none;
       }
 
-      #${BUTTON_ID}:hover {
-        background: rgba(255, 255, 255, 1);
-        border-color: rgba(0, 0, 0, 0.18);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      }
-
-      #${BUTTON_ID} svg {
+      .aisb-collapse-placeholder svg {
         width: 20px;
         height: 20px;
-        color: #5f6368;
       }
 
       @media (prefers-color-scheme: dark) {
-        #${BUTTON_ID} {
-          background: rgba(48, 49, 52, 0.9);
-          border-color: rgba(255, 255, 255, 0.12);
-          color: #e8eaed;
+        input-container.${COLLAPSED_CLASS} {
+          background-color: var(--gm3-sys-color-surface-container-high, #2b2b2b) !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
         }
 
-        #${BUTTON_ID}:hover {
-          background: rgba(58, 59, 62, 1);
-          border-color: rgba(255, 255, 255, 0.18);
-        }
-
-        #${BUTTON_ID} svg {
-          color: #e8eaed;
+        input-container.${COLLAPSED_CLASS} > .aisb-collapse-placeholder {
+          color: var(--gm3-sys-color-on-surface, #e8eaed);
         }
       }
     `;
@@ -262,9 +235,6 @@
     if (container) {
       container.classList.remove(COLLAPSED_CLASS);
       delete container.dataset.aisbCollapseEventsBound;
-      if (collapseButton && collapseButton.parentElement) {
-        collapseButton.parentElement.removeChild(collapseButton);
-      }
     }
   }
 
