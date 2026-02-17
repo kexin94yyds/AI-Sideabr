@@ -6,7 +6,7 @@
   window.__AISB_CHAT_WIDTH_LOADED__ = true;
 
   const STYLE_ID = 'aisb-chat-width-style';
-  const DEFAULT_WIDTH = 41;
+  const DEFAULT_WIDTH = 70;
   const MIN_WIDTH = 20;
   const MAX_WIDTH = 100;
 

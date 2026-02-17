@@ -6,7 +6,7 @@
   window.__AISB_EDIT_INPUT_WIDTH_LOADED__ = true;
 
   const STYLE_ID = 'aisb-edit-input-width-style';
-  const DEFAULT_WIDTH = 30;
+  const DEFAULT_WIDTH = 60;
   const MIN_WIDTH = 20;
   const MAX_WIDTH = 100;
 

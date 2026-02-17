@@ -31,8 +31,9 @@
     sidebarContainer = document.querySelector('bard-sidenav-container') || 
                        document.querySelector('aside[role="navigation"]');
     
-    toggleButton = document.querySelector('[aria-label*="navigation"]') ||
-                   document.querySelector('button[aria-label*="Menu"]');
+    toggleButton = document.querySelector('[data-test-id="side-nav-menu-button"]') ||
+                   document.querySelector('button[aria-label*="Menu"]') ||
+                   document.querySelector('[aria-label*="navigation"]');
   }
 
   function isSidebarCollapsed() {

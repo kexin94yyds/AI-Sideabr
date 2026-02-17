@@ -39,16 +39,16 @@
     const dialogChildIndent = Math.max(0, 12 + indent);
 
     style.textContent = `
-      #${PANEL_ID} .aisb-folder-item {
+      #${PANEL_ID} .aisb-folder-row {
         padding-top: ${vPad}px !important;
         padding-bottom: ${vPad}px !important;
       }
       
-      #${PANEL_ID} .aisb-folder-item[data-level="1"] {
+      #${PANEL_ID} .aisb-folder-row.level-1 {
         padding-left: ${childFolderIndent}px !important;
       }
       
-      #${PANEL_ID} .aisb-folder-item[data-level="2"] {
+      #${PANEL_ID} .aisb-folder-row.level-2 {
         padding-left: ${childFolderIndent * 2}px !important;
       }
       
@@ -56,15 +56,15 @@
         padding-left: ${childConvIndent}px !important;
       }
       
-      #${PANEL_ID} .aisb-folder-item[data-level="1"] .aisb-folder-conversation {
+      #${PANEL_ID} .aisb-folder-conversation.level-1 {
         padding-left: ${childConvIndent + childFolderIndent}px !important;
       }
       
-      .aisb-folder-dialog .aisb-folder-item[data-level="1"] {
+      .aisb-folder-dialog .aisb-folder-row.level-1 {
         padding-left: ${dialogChildIndent}px !important;
       }
       
-      .aisb-folder-dialog .aisb-folder-item[data-level="2"] {
+      .aisb-folder-dialog .aisb-folder-row.level-2 {
         padding-left: ${dialogChildIndent * 2}px !important;
       }
     `;
@@ -72,8 +72,8 @@
 
   async function init() {
     const stored = await storageGet(['gvFolderSpacing', 'gvFolderTreeIndent']);
-    spacing = clamp(Number(stored.gvFolderSpacing) || 2, 0, 16);
-    indent = clamp(Number(stored.gvFolderTreeIndent) || -8, -8, 32);
+    spacing = Number.isFinite(stored.gvFolderSpacing) ? clamp(stored.gvFolderSpacing, 0, 16) : 2;
+    indent = Number.isFinite(stored.gvFolderTreeIndent) ? clamp(stored.gvFolderTreeIndent, -8, 32) : -8;
     applyLayout();
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
@@ -81,12 +81,14 @@
         if (areaName !== 'sync') return;
         
         if (changes.gvFolderSpacing) {
-          spacing = clamp(Number(changes.gvFolderSpacing.newValue) || 2, 0, 16);
+          const newValue = changes.gvFolderSpacing.newValue;
+          spacing = Number.isFinite(newValue) ? clamp(newValue, 0, 16) : 2;
           applyLayout();
         }
         
         if (changes.gvFolderTreeIndent) {
-          indent = clamp(Number(changes.gvFolderTreeIndent.newValue) || -8, -8, 32);
+          const newValue = changes.gvFolderTreeIndent.newValue;
+          indent = Number.isFinite(newValue) ? clamp(newValue, -8, 32) : -8;
           applyLayout();
         }
       });
