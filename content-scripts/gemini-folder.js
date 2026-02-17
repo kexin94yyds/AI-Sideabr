@@ -796,6 +796,11 @@
         background: #f3f4f6;
         transform: none;
       }
+      #${PANEL_ID} .aisb-folder-row.aisb-folder-dragover {
+        background: rgba(59, 130, 246, 0.12);
+        outline: 2px dashed rgba(59, 130, 246, 0.64);
+        outline-offset: -1px;
+      }
       #${PANEL_ID} .aisb-folder-toggle {
         border: none;
         width: 16px;
