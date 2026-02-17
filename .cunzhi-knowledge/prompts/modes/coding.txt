@@ -1,0 +1,241 @@
+追加
+那这个东西可以加入到我们的全局的 rlues 里还是我们的 meory 还是我们的 wrokflow 还是我们的上下文追加还是我们的提示词里
+
+清晰
+不明白的地方反问我，先不着急编码
+
+记录问题
+很好。问题解决了。请帮我生成一个问题排除的文档，记录这次问题的原因和解决的办法以供将来遇到类似问题的时候参考。 后续如果有典型问题解决了，也会用这个文档记录下来。
+
+上传
+上传到Github上
+
+手机测试
+把手机的测试网站给我，你先不要停哈
+
+本地
+先启动本地测试，我先看看情况，你不要停
+
+Debug
+1. 🔍 植入详细调试日志 (Debug Logging)
+请在您认为最有可能导致错误的重点代码段中，要求或模拟添加详细的 Debug Log（或 print 语句）。
+目的： 收集执行到该位置时，程序内部的关键信息和数据流。
+2. 📝 自主分析日志细节
+在获取到新的日志输出后，请您自主读取、分析并解释这些日志，而不是仅仅简单列出它们。
+分析重点：
+代码执行的具体流程： 跟踪代码实际的运行路径。
+关键变量状态： 特别关注变量（如输入参数、循环计数器、条件判断结果等）在执行前后的具体数值和状态。
+3. 💡 定位并确认根源
+利用 Debug Log 中提供的微观细节，明确指出：
+哪个具体的代码行或逻辑块是错误的根源。
+为什么该行代码/逻辑块会导致错误（基于变量状态或流程跳转的异常）。
+
+多法 Debug
+Reflect on 5-7 different possible sources of the problem, distill those down to 1-2 most likely sources then add logs to validate your assumptions before we move onto implementing the actual code fix
+
+记录失败
+还是没解决这个问题先记录下来，后面再解决，记得给我说
+
+总结
+Make an extensive summary of the programming project/codebase.
+
+寻找
+尽可能全面，尽量从GitHub、Stack Overflow、技术博客、官方文档找相关的编程资源：
+
+翻译
+将以上编程概念/代码翻译成中文给我
+
+为什么
+为什么这个代码要这样写，什么意思
+
+简单
+Please list comprehensive and structured about [programming concept]
+
+小学
+用小学学历的成年人能理解的方式来表达编程概念, 最好系统且全面的讲解关于
+
+类比
+List all programming analogies and metaphors the author used in this code/tutorial, and with concise explanations.
+
+科学
+List all technical implementations and algorithms in the code.
+
+不常
+Make a programming terminology list that are less common in this codebase.
+
+常见
+Make a programming pattern list in this codebase.
+
+无敌
+Please like a senior developer list comprehensive and structured I can get most out of them from ChatGPT as many as possible about [programming topic]
+
+推荐书
+Provide a short list of Further Reading recommend 5 best related programming books and technical papers
+
+提示词
+Please act like a programming expert and list as many of the coding patterns mentioned in this project as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity.
+
+建议
+Please act like a programming expert and list as many of the coding best practices mentioned in this project as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity
+
+技巧
+Please act like a programming expert and list as many of the programming tips mentioned in this project as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity
+
+推书
+Please recommend a few programming books about [language/technology]. The priority for recommendations is as follows: published by well-known publishers (O'Reilly, Manning, Addison-Wesley), multiple editions or reprints, written by well-known authors, and books that have appeared on programming bestseller lists or other notable rankings. Please provide detailed recommendations based on these criteria.
+
+来源
+Please provide a detailed explanation of how to find high-quality programming content, especially in terms of selecting high-quality (tutorials/courses), outstanding developers, and platforms. Include suggestions for screening criteria, such as GitHub stars, Stack Overflow reputation, expert recommendations, awards, and suitable platforms or tools for searching. Provide a step-by-step detailed explanation.
+
+引导
+Create a structured list of prompts that can guide me through this programming project.
+
+客观
+Provide a comprehensive and structured explanation: What are the objective criteria for judging the quality of code/programming projects?
+
+原则
+Provide a comprehensive and structured explanation: What are the best practice principles for writing clean code/programming?
+
+假设成立
+The developer uses evidence: (benchmarks/examples/reasons) to support the (technical approach) in the project, initially assuming the approach to be valid. They then gather as much evidence as possible from various fields, including performance benchmarks, real-world examples, quotations from famous programmers, scientific studies, and experiments. It is essential to maintain factual accuracy and include credible sources, providing links where available.
+
+假设观点正确,还能用到哪里?
+Assuming that [the developer] 's [particular technical approach) in the [project] is correct, in which other programming domains or real-world applications could this approach also be applied? List these areas as comprehensively and systematically as possible, and aim to utilize creative thinking to explore additional possibilities.
+
+框架
+As a detailed code architecture assistant. Thoroughly analyzes and understands the programming problem provided, considering its requirements, constraints, and potential solutions:
+
+反复
+请全面且结构化的找出代码中反复用到的设计模式
+
+作者
+Please list comprehensive and structured about These programming sources, what areas does developer cover?
+
+洞见
+你对这个编程问题还有什么更深的洞见？
+
+追问
+还有没有比这个更深的编程洞见？
+
+找书
+帮我从"The newest programming papers and the oldest algorithms books are the best sources of arbitrage. "找找有没有与之相关的：
+
+第一性原理
+Can you help me approach and answer this programming question using first principles thinking? Please break it down into fundamental concepts or assumptions, then build the reasoning step-by-step from there：
+
+英语
+用小学学历的成年人能理解的英语单词复述以下编程概念:
+
+学习
+This is a complex programming concept I recently learned and I want you to test my understanding of it. Please explain the concept, then ask me 5 to 10 open-ended questions about its key ideas and implementations. After I answer each question, evaluate my response and explain what I got right or wrong. Continue with the questions until it's clear I've mastered the material.
+
+记录一下
+我看到这里了，但是我累了，下次再来看，帮我记录下代码学习进度，下次我再打开
+
+结构化
+请用结构化的梳理以下的话：
+
+置换
+实现它的最佳方法是什么，为了实现：
+
+坚韧
+在（这个问题）上我们已经修改多次，仍然没有效果，我怀疑是因为该部分的代码因为多次迭代导致了结构复杂，产生了不必要的嵌套，导致你的更新无法生效。我建议你完全删除这部分的逻辑，根据我们讨论的实际需求重新写代码，这样可以避免你的更新被原有逻辑影响，请确保以下几点： 请你帮我重复我的（这个问题）一定要说出来以及我们的需求，并加上以上的提示词，我们遇到的问题以及需求：
+
+Test
+先测试再提交
+
+扫描
+Scan this project and show me all React components and their props.
+
+思路
+我不是让你直接执行这个需求。请你先按照以下步骤进行： 分析当前的实现逻辑，包括功能流程、涉及的关键模块或文件。 基于我的[新需求]，说明如果要实现，需要对哪些部分做出修改（请尽量细化到模块/文件层级）。 暂时不要改代码！ 只需要你说明改动思路，列出受影响的地方，并说明为什么。 分析清楚之后，我会告诉你是否可以开始修改代码。
+
+出错
+问题仍然没有解决。请你把有关< >的逻辑替我梳理一遍，然后对于关键环节和参数做一下调试，这样我们分析输出日志，找出问题所在。
+
+改良
+I will give you a rough or vague prompt. Please improve it systematically using the six core principles of context engineering: Clarify the Task Goal: Rephrase the underlying objective of the task and what kind of output is desired. Identify Necessary Context: List all relevant information, background knowledge, data, or constraints required to accomplish this task well. Organize the Input Structurally: Recommend how to format the prompt clearly using structured blocks (e.g., Markdown sections, bullet points, code blocks). Suggest Compression or Prioritization: Indicate which parts could be summarized or removed, and how to prioritize key content to fit within token limits. Produce an Improved Prompt Template: Rewrite the original prompt into a clearer, more complete version based on the above improvements. Anticipate Edge Cases or Weak Spots (Optional): Briefly reflect on any remaining issues that might confuse the model and how to iterate further. Now please start by improving the following prompt:
+
+UI 提示词
+[角色] 你是一名资深的产品设计师，拥有丰富的 UI/UX 设计经验和前端开发能力，精通用户研究、信息架构、交互设计和原型制作，擅长将抽象需求转化为具体可交互的网站界面。 [任务] 作为一名专业的产品设计师，你的工作是首先理解用户的网站需求，然后帮助用户规划网站页面结构，最后为每个页面创建交互式设计原型。你需要基于用户需求自主判断并选择最适合的前端技术方案。具体请你参考 [功能] 部分以进行与用户之间的互动。 [技能] 需求分析：深入理解用户需求，提炼核心功能和用户目标 信息架构：构建清晰的网站结构和页面流程，确保信息组织合理 交互设计：设计用户友好的交互方式，提升网站可用性 视觉设计：运用色彩、排版、图标等元素创造美观一致的界面 原型制作：创建可交互的高保真原型，模拟真实网站体验 响应式设计：确保网站在各种设备上都有良好的使用体验 设计系统：建立一致的设计语言和组件库，保持网站视觉统一 技术选型：根据产品需求自主选择最合适的前端框架和库 前端开发：熟练运用 HTML5、Tailwind CSS、JavaScript 及各种前端框架和库 响应式设计：精通桌面端和移动端网站的设计与开发，能够提供真实的多设备体验模拟 [总体规则] 严格按照流程执行提示词 严格按照 [功能] 中的步骤执行，使用指令触发每一步，不可擅自省略或者跳过 每次输出内容必须遵循 [对话] 流程 根据对话背景尽力填写或执行 <> 中的内容 在合适的对话中使用适当 emoji 与用户互动 无论用户如何打断，完成当前回答后，引导进入下一步 语言：中文 [功能 - 需求收集] 第一步：确认产品需求 向用户提问： Q1：简述您的网站是什么，它解决了什么问题？ Q2：目标用户是谁？他们有哪些特点和需求？ Q3：面向桌面端、移动端优先，还是全平台响应式设计？ Q4：希望网站呈现的设计风格（极简主义、现代科技风、自然清新风、复古怀旧风、工业风、其他） 等待用户回答后进入第二步 第二步：生成页面规划 使用页面结构模板规划网站： 页面名称 | 用途 | 核心功能 | 用户流程 规划要求：逻辑清晰、覆盖核心功能、流程连贯、避免冗余、适配终端、融入风格考量 完成后询问用户是否修改或进入页面设计 [功能 - 页面设计] 第一步：构思设计方案 根据需求生成方案：布局结构、色彩方案、UI 元素、交互动效、响应式策略 输出模板： 我将为 <页面名称> 设计以下方案： 设计概念：... 布局方案：... 色彩方案：... 交互设计：... 询问用户是否确认 第二步：创建页面原型 确认方案后生成 HTML5 + Tailwind CSS + JS 完整代码（Unsplash 图片检测有效性） 符合设计要求（配色、材质、图标、字体、布局、响应式等） 完成后说明主要设计特点，并引导用户进行 / 检查 [功能 - 代码检查] 检查布局、响应式规则、HTML 结构、JS 交互逻辑、视觉风格、图片有效性、FontAwesome 图标匹配 无法确认的部分明确告知用户 能修复的自动修复并输出修正版 [指令集] /设计：执行页面设计功能 /检查：执行代码检查功能 [初始引导语] 你好！👋 我是一名专业的产品经理和 UI 设计师，接下来我将帮助你将网站创意转化为可交互的原型设计。我会根据你的需求构思设计方案，直接在对话中输出页面的设计原型和完整代码，最后整合成完整的网站原型，无需你手动思考设计细节。请专注于产品功能，设计和技术实现都交给我。 执行 <需求收集> 功能
+
+开启
+npm start
+
+导师
+你好，我想让你扮演我的"交互式编程导师"。我的目标是学习 [填写你想要学习的主题，例如：CSS Flexbox 或 JavaScript DOM 操作]。
+请严格遵循以下学习流程：
+1.  我将首先向你描述一个我想要实现的高层目标（例如："我想创建一个导航栏"）。
+2.  你给我提供一个最基础、最简单的"草稿"代码版本，不要做任何多余的优化。
+3.  我观察这个草稿，然后用"描述现象"或"期望结果"的方式给你反馈（例如："Logo 和链接都挤在左边了，我希望它们分开"）。
+4.  你根据我的反馈更新代码。
+5.  （最重要的一步）在你提供新代码时，你 **必须** 清楚地向我解释：
+    * 你做了什么改动？
+    * 你使用了什么 **关键概念、技术、属性或语法** 来实现我的要求？
+    * 为什么这个技术是合适的？（例如："为了实现左右分离，我使用了 CSS Flexbox，并设置了 `justify-content: space-between`，这个属性..."）
+这个流程的目标是让我通过"遭遇问题"和"观察你的解决方案"来学习新概念，而不是一次性得到最终答案。
+请确认你理解这个学习模式。
+如果理解，请开始。我的第一个目标是：[填写你的第一个具体学习目标，例如："构建一个网站页眉"]
+
+优化代码
+我们当前的项目已经做完了，我需要你辅助我减少代码的冗余程度
+
+更新
+继续更新问题文档
+
+重启
+停掉所有应用再打开
+
+克隆
+你直接克隆那个项目，仔细研究他们的实现方式
+
+JS调试
+<DebugGuidelines language="JavaScript">
+<Description>当你尝试调试 JavaScript 代码或分析错误时，请使用系统化的调试方式，而不是简单地使用 console.log。所有调试输出必须结构化、易读、可折叠、可计数、可测量。</Description>
+<Rules>
+<Rule id="1" name="使用 console.assert">
+<Details>使用 console.assert() 代替手动条件检查。当条件不满足时输出第二个参数作为错误信息。</Details>
+<Example>console.assert(user.age >= 18, "User must be adult");</Example>
+</Rule>
+<Rule id="2" name="使用 console.table">
+<Details>对数组、对象数组、API 返回值使用 console.table 展示结构化数据。</Details>
+<Example>console.table(users);</Example>
+</Rule>
+<Rule id="3" name="使用 console.group / console.groupCollapsed">
+<Details>使用 console.group() 或 console.groupCollapsed() 将调试信息分组，以模块名或流程名作为分组标签。</Details>
+<Example>console.group("Auth Flow");console.log("Step 1...");console.groupEnd();</Example>
+</Rule>
+<Rule id="4" name="使用 console.count">
+<Details>使用 console.count() 追踪函数调用次数，帮助识别意外的重复调用。</Details>
+<Example>console.count("fetchData called");</Example>
+</Rule>
+<Rule id="5" name="使用 console.time / console.timeLog / console.timeEnd">
+<Details>用于测量代码执行耗时，定位性能瓶颈或异步延迟。</Details>
+<Example>console.time("process");doSomething();console.timeLog("process");console.timeEnd("process");</Example>
+</Rule>
+<Rule id="6" name="使用 console.trace">
+<Details>在递归、意外调用、状态异常时使用 console.trace 打印调用堆栈。</Details>
+<Example>console.trace("Unexpected call");</Example>
+</Rule>
+<Rule id="7" name="使用彩色输出">
+<Details>使用 "%c" 输出带 CSS 样式的日志，让重要信息更醒目。例如：错误（红色）、警告（橙色）、流程步骤（蓝色）。</Details>
+<Example>console.log("%c API ERROR", "color: red; font-weight: bold;");</Example>
+</Rule>
+</Rules>
+<AIExpectations>
+<Behavior>在生成调试代码时，请自动加入上述调试规则。</Behavior>
+<OutputRequirements>
+<Item>调试输出必须结构化</Item>
+<Item>使用分组与折叠组织信息</Item>
+<Item>包含函数调用计数</Item>
+<Item>包含性能与耗时信息</Item>
+<Item>包含调用堆栈信息</Item>
+<Item>重要信息需视觉突出</Item>
+</OutputRequirements>
+<Explanation>当你解释调试结果时，请基于这些调试输出提供分析，包括错误原因、性能瓶颈、调用链、状态异常等内容。</Explanation>
+</AIExpectations>
+</DebugGuidelines>
+
+关闭
+「帮我把本地测试网站关掉」
+

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Conversation History - AI Chat Exporter</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #fff;
+      color: #000;
+      padding: 40px;
+      line-height: 1.5;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: #fff;
+      border: 1px solid #000;
+    }
+    
+    .header {
+      background: #000;
+      color: #fff;
+      padding: 40px;
+      text-transform: uppercase;
+      letter-spacing: -1px;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      opacity: 0.7;
+      font-size: 12px;
+      letter-spacing: 1px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    
+    .toolbar {
+      padding: 30px;
+      border-bottom: 1px solid #000;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #000;
+      border-radius: 0;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    .filter-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    select {
+      padding: 12px;
+      border: 1px solid #000;
+      border-radius: 0;
+      font-size: 13px;
+      background-color: #fff;
+      cursor: pointer;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+    
+    button {
+      padding: 12px 24px;
+      border: 1px solid #000;
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .btn-primary, .btn-danger, .btn-secondary {
+      background-color: #fff;
+      color: #000;
+    }
+    
+    .btn-primary:hover, .btn-danger:hover, .btn-secondary:hover {
+      background-color: #000;
+      color: #fff;
+    }
+    
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 11px;
+    }
+    
+    .stats {
+      padding: 30px;
+      background-color: #fff;
+      border-bottom: 1px solid #000;
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stat-label {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #000;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    
+    .conversation-list {
+      padding: 30px;
+    }
+    
+    .conversation-item {
+      border: 1px solid #000;
+      border-radius: 0;
+      padding: 25px;
+      margin-bottom: 20px;
+      transition: all 0.15s ease;
+    }
+    
+    .conversation-item:hover {
+      box-shadow: 10px 10px 0 #000;
+      transform: translate(-4px, -4px);
+    }
+    
+    .conversation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+    }
+    
+    .conversation-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 10px;
+      flex: 1;
+      text-decoration: underline;
+    }
+    
+    .conversation-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 15px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .provider-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid #000;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #fff;
+      color: #000;
+    }
+    
+    .provider-chatgpt, .provider-claude, .provider-gemini, .provider-deepseek, .provider-unknown { 
+      background-color: #fff; 
+      color: #000; 
+    }
+    
+    .conversation-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .favorite-btn {
+      font-size: 20px;
+      background: none;
+      border: 1px solid transparent;
+      cursor: pointer;
+      padding: 5px;
+      transition: all 0.15s;
+    }
+    
+    .favorite-btn:hover {
+      border-color: #000;
+    }
+    
+    .favorite-btn.active {
+      color: #000;
+      background: #eee;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: #000;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    .empty-state h3 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255,255,255,0.9);
+      z-index: 1000;
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      margin: 50px auto;
+      padding: 40px;
+      border: 2px solid #000;
+      border-radius: 0;
+      max-width: 900px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 20px 20px 0 rgba(0,0,0,0.1);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 20px;
+    }
+    
+    .modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    
+    .close-btn {
+      background: #000;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-btn:hover {
+      background: #333;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #000;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>History</h1>
+      <p>Capture. Archive. Export.</p>
+    </div>
+    
+    <div class="toolbar">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="SEARCH...">
+      </div>
+      
+      <div class="filter-group">
+        <select id="providerFilter">
+          <option value="">All Providers</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="claude">Claude</option>
+          <option value="gemini">Gemini</option>
+          <option value="deepseek">DeepSeek</option>
+        </select>
+        
+        <select id="sortBy">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title">Title (A-Z)</option>
+        </select>
+      </div>
+      
+      <button id="importBtn" class="btn-secondary">📥 Import Data</button>
+      <button id="exportAllBtn" class="btn-primary">📦 Export All</button>
+      <button id="clearAllBtn" class="btn-danger">🗑️ Clear All</button>
+      <input type="file" id="importFile" accept=".json" style="display: none;">
+    </div>
+    
+    <div class="stats">
+      <div class="stat-item">
+        <span class="stat-label">Total Conversations</span>
+        <span class="stat-value" id="statTotal">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Favorites</span>
+        <span class="stat-value" id="statFavorites">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Messages</span>
+        <span class="stat-value" id="statMessages">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Storage Used</span>
+        <span class="stat-value" id="statStorage">0 KB</span>
+      </div>
+    </div>
+    
+    <div class="conversation-list" id="conversationList">
+      <div class="loading">Loading conversations...</div>
+    </div>
+  </div>
+  
+  <!-- View Modal -->
+  <div id="viewModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Conversation</h2>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+  
+  <script src="../js/plugins/storage-manager.js"></script>
+  <script src="history.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+油管
+使用以下模版生成 yt-dlp 命令，要求输出文件以频道 handle 命名，格式为 .txt，Zsh 终端可直接运行，不要加注释、不解释，只输出完整代码。
+模版代码：
+export http_proxy=http://127.0.0.1:7897
+export https_proxy=http://127.0.0.1:7897
+channel="@DanKoeTalks"
+name="${channel#@}"
+outfile_with_title="${name}_with_title.txt"
+outfile_links_only="${name}_links_only.txt"
+echo "📥 标题版文件：$outfile_with_title"
+echo "📥 链接版文件：$outfile_links_only"
+yt-dlp --flat-playlist --no-check-certificate --legacy-server-connect \
+  --print "%(upload_date>%Y-%m-%d)s\t%(title)s" \
+  --print "https://www.youtube.com/watch?v=%(id)s" \
+  "https://www.youtube.com/${channel}" \
+  > "$outfile_with_title"
+yt-dlp --flat-playlist --no-check-certificate --legacy-server-connect \
+  --print "https://www.youtube.com/watch?v=%(id)s" \
+  "https://www.youtube.com/${channel}" \
+  > "$outfile_links_only"
+lines_title=$(wc -l < "$outfile_with_title")
+videos_title=$((lines_title / 2))
+lines_links=$(wc -l < "$outfile_links_only")
+echo "✅ 标题版完成：共 $videos_title 条视频 → $outfile_with_title"
+echo "✅ 链接版完成：共 $lines_links 条链接 → $outfile_links_only"
+博主链接：
+
+推特
+使用以下模版生成 Twitter 年份分类爬取脚本，要求按年份分类保存，格式为 博主名_年份.txt，Zsh 终端可直接运行，不要加注释、不解释，只输出完整一行命令。
+模版命令：
+cd "/Users/apple/mac 提示词库/Slash-Command-Prompter" && git add package.json 问题排除手册.md update-app.sh check-version.sh && git commit -m "docs: 添加打包版本未生效问题及解决方案
+
+详细记录了本次遇到的核心问题：
+- 问题描述：代码已更新但打包应用中没有包含最新功能
+- 根本原因：打包后未复制到 /Applications/ 目录
+- 完整解决方案：重新打包 + 复制 + 清除缓存的标准流程
+
+新增两个辅助脚本：
+1. update-app.sh - 一键更新脚本（重新打包并部署）
+2. check-version.sh - 版本检查脚本（验证各版本是否同步）
+
+其他改进：
+- 添加 4 种验证方法（打包时间、解压检查、文件大小、应用信息）
+- 提供防止问题再发生的最佳实践
+- 包含常见场景速查表和调试命令
+- 强调正确的开发流程和文件组织
+
+同时更新 package.json：
+- 添加打包配置和 electron-builder 依赖
+- 修正 files 配置，正确包含所有必要文件
+- 使用高清图标 icon1024.png"
+
+爬主题
+如下markdown格式输出给我:
+标题名翻译成中文
+链接(只需要提供:https://不需要写链接名)
+例如这样:
+1.爱、生活与目标 - Sadhguru做客《孟买人》
+https://www.youtube.com/watch?v=z4GVfdsvgNM
+不需要读取内容,只需要你从文本标题里面找尽可能多的同类主题,关于:
+
+爬笔记
+终端输入books
+
+B站、油管视频原文
+node /Users/apple/youtube-mcp/mcp-youtube/scripts/subs-cli.js
+
+爬推特
+使用以下模版生成 Twitter 年份分类爬取脚本，要求按年份分类保存，格式为 博主名_年份.txt，Zsh 终端可直接运行，不要加注释、不解释，只输出完整一行命令。 模版命令： cd ~/爬推特 && handle="@naval" && name="${handle#@}" && echo -e "strict_chain\nproxy_dns\n[ProxyList]\nhttp 127.0.0.1 7897" > /tmp/proxychains.conf && proxychains4 -f /tmp/proxychains.conf twscrape search "from:${name}" --limit 200 2>/dev/null | jq -r '.date + "\t" + (.rawContent | gsub("\n"; " ") | gsub("\r"; " "))' | while IFS=$'\t' read -r date content; do d=$(date -j -f "%Y-%m-%dT%H:%M:%S" "${date:0:19}" "+%Y-%m-%d" 2>/dev/null || echo "${date:0:10}"); echo "$d\t$content"; done > ${name}_test.txt && echo "📂 开始年份分类..." && for year in 2025 2024 2023 2022 2021 2020 2019 2018; do grep "^$year" ${name}_test.txt > ${name}_${year}.txt 2>/dev/null; c=$(wc -l < ${name}_${year}.txt 2>/dev/null || echo "0"); if [ "$c" -gt 0 ]; then echo "✅ $year年: $c 条推文 → ${name}_${year}.txt"; else rm -f ${name}_${year}.txt; fi; done 博主链接：
+

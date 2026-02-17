@@ -1,0 +1,119 @@
+总结
+Make an extensive summary of the article.
+
+数学
+Oral explanation in words
+Visuals – Creating charts
+Algebra - Writing Equations
+Numerical - Make a numerical example
+Computation - Writing solvers or algorithms
+History – where it came from
+Please list comprehensive and structured about Understand from linguistic, visual, algebraic, numerical, computational, and historical perspectives:
+
+寻找
+尽可能全面，尽量从油管、推特、Reddit 找相关的：
+
+翻译
+将以上内容翻译成中文给我
+
+为什么
+为什么，什么意思
+
+简单
+Please list comprehensive and structured about
+
+小学
+用小学学历的成年人能理解的方式来表达, 最好系统且全面的讲解关于
+
+类比
+List all analogies and metaphors the author used in this article, and with concise explanations.
+
+科学
+List all scientific findings in the article.
+
+不常
+Make a word list that are less common in the article.
+
+常见
+Make a phrase list in this article.
+
+无敌
+Please be a super pro list  comprehensive and structured  I can get most out of them from you  as many as possible about
+
+推荐书
+Provide a short list of Further Reading recommend 5 best related books and scientific papers
+
+提示词
+Please act like a super expert and list as many of the prompt mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity.
+
+建议
+Please act like a super expert and list as many of the suggestions mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity
+
+技巧
+Please act like a super expert and list as many of the tips mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity
+
+推书
+Please recommend a few books about [ ]. The priority for
+recommendations is as follows: published by well-known publishers, multiple editions or reprints, written by well-known authors, and books that have appeared on bestseller lists or other notable rankings. Please provide detailed recommendations based on these criteria.
+
+来源
+Please provide a detailed explanation of how to find high-quality content, especially in terms of selecting high-quality (), outstanding authors, and publishers. Include suggestions for screening criteria, such as user reviews, expert recommendations, awards, and suitable platforms or tools for searching. Provide a step-by-step detailed explanation.
+
+引导
+Create a structured list of prompts that can guide me through this
+book.
+
+客观
+Provide a comprehensive and structured explanation: What are the objective criteria for judging the quality of
+
+原则
+Provide a comprehensive and structured explanation: What are the best practice principles for doing
+
+假设成立
+The author uses evidence: (examples/reasons) to support the (argument) in the book, initially assuming the argument to be valid. They then gather as much evidence as possible from various fields, including examples, anecdotes of quotations from famous individuals, scientific studies, and experiments. It is essential to maintain factual accuracy and include credible sources, providing links where available.
+
+假设观点正确,还能用到哪里?
+Assuming that [the author] 's [particular viewpoint) in the [book] is correct, in which areas of everyday life could this viewpoint also be applied? List these areas as comprehensively and systematically as possible, and aim to utilize creative thinking to explore additional possibilities.
+
+框架
+As a detailed outline assistant.  Thoroughly analyzes and understands the sentence or topic provided, considering its meaning, context, and potential viewpoints:
+
+反复
+请全面且结构化的找出文章中反复用到的类比
+
+作者
+Please list comprehensive and structured about These sources, what areas does author cover?
+
+洞见
+你对此还有什么更深的洞见？
+
+追问
+还有没有比这个更深的洞见？
+
+找书
+帮我从“The newest technical papers and the oldest books are the best sources of arbitrage. ”找找有没有与之相关的：
+
+第一性原理
+Can you help me approach and answer this question using first principles thinking? Please break it down into fundamental concepts or assumptions, then build the reasoning step-by-step from there：
+
+英语
+用小学学历的成年人能理解的英语单词复述以下的话:
+
+学习
+This is a long article I recently read and I want you to
+test my understanding of it. Please read the article,
+then ask me 5 to 10 open-ended questions about its
+key ideas and concepts. After I answer each question,
+evaluate my response and explain what I got right or
+wrong. Continue with the questions until it's clear I've
+mastered the material.
+
+上传
+上传到Github上
+
+记录一下
+我看到这里了，但是我累了，下次再来看，帮我记录下观看时间点，下次我再打开
+
+递归
+Please be a super pro list  comprehensive and structured  I can get most out of them from you  as many as possible about
+

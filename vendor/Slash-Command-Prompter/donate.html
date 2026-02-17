@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>赞助我一杯咖啡</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      background-color: #f5f7fa;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+    
+    p {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    .qr-container {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin: 0 auto;
+      max-width: 800px;
+    }
+    
+    .qr-code {
+      width: 300px;
+      margin-bottom: 30px;
+    }
+    
+    .qr-code img {
+      width: 250px;
+      height: 300px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .qr-code img:hover {
+      transform: scale(1.05);
+    }
+    
+    .qr-code p {
+      font-weight: bold;
+      margin: 5px 0;
+      color: #333;
+    }
+    
+    .back-button {
+      margin-top: 30px;
+      padding: 10px 20px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .back-button:hover {
+      background-color: #3b78e7;
+    }
+    
+    /* 弹窗样式 */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+    
+    .modal-content img {
+      max-width: 100%;
+      max-height: 70vh;
+    }
+    
+    .close-button {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      color: #333;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧋赞助我一杯奶茶</h1>
+  <p>如果您喜欢这个插件，可以请我喝杯奶茶。您的支持是我持续迭代的动力！</p>
+  
+  <div class="qr-container">
+    <div class="qr-code">
+      <p>Wecaht Tips</p>
+      <img id="wechat-qr" src="images/wechat-qr.png" alt="微信收款码" onclick="openModal(this.src, '微信支付')">
+    </div>
+    
+    <div class="qr-code">
+      <p>Alipay Tips</p>
+      <img id="alipay-qr" src="images/alipay-qr.png" alt="支付宝收款码" onclick="openModal(this.src, '支付宝')">
+    </div>
+  </div>
+
+  <div class="contact-info">
+    <p style="margin-top: 30px; color: #666; font-size: 14px;">
+      我的微信号：ymx94yyds
+    </p>
+    <p style="margin-top: 10px; color: #666; font-size: 14px;">
+      <a href="https://mp.weixin.qq.com/s/x8a3cLB_YRRfmVvpUqYnYA" target="_blank" style="color: #4285f4; text-decoration: none;">功能详细介绍</a>
+    </p>
+  </div>
+  
+  <!-- 弹窗 -->
+  <div id="qrModal" class="modal">
+    <div class="modal-content">
+      <button class="close-button" onclick="closeModal()">&times;</button>
+      <h2 id="modalTitle"></h2>
+      <img id="modalImage" src="" alt="二维码大图">
+    </div>
+  </div>
+  
+  <script>
+    // 打开弹窗
+    function openModal(imgSrc, title) {
+      const modal = document.getElementById('qrModal');
+      const modalImg = document.getElementById('modalImage');
+      const modalTitle = document.getElementById('modalTitle');
+      
+      modalImg.src = imgSrc;
+      modalTitle.textContent = title + '二维码';
+      modal.style.display = 'flex';
+      
+      // 点击弹窗外部关闭
+      modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+    }
+    
+    // 关闭弹窗
+    function closeModal() {
+      document.getElementById('qrModal').style.display = 'none';
+    }
+  </script>
+</body>
+</html> 

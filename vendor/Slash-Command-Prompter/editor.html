@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>提示词编辑器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f7fa;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+    
+    .buttons {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: 20px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background-color: #3367d6;
+    }
+    
+    button.cancel {
+      background-color: #f1f3f4;
+      color: #333;
+    }
+    
+    button.cancel:hover {
+      background-color: #e8eaed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="editor-title">添加提示词</h1>
+    
+    <form id="editor-form">
+      <input type="hidden" id="prompt-id">
+      
+      <div class="form-group">
+        <label for="prompt-name">标题:</label>
+        <input type="text" id="prompt-name" placeholder="输入提示词名称" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="prompt-content">提示词内容:</label>
+        <textarea id="prompt-content" placeholder="输入提示词内容" required></textarea>
+      </div>
+      
+      <div class="buttons">
+        <button type="submit" id="save-button">保存</button>
+        <button type="button" id="cancel-button" class="cancel">关闭</button>
+      </div>
+    </form>
+  </div>
+  
+  <script src="editor.js"></script>
+</body>
+</html> 

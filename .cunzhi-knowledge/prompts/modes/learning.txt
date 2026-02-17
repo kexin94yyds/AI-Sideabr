@@ -1,0 +1,120 @@
+学习
+“我目前正在学习 [讲师名字] 的 [课程名称] 课程。这门课主要教授 [简要主题描述，例如：通过实战项目从零开始学习 React]。
+我希望你在整个课程期间担任我的私人编程助手和导师。
+请不要直接替我完成工作，或者直接把答案给我。你的工作是：
+帮助我深入理解每一个概念。
+用通俗易懂的大白话解释代码示例。
+根据每一课的内容，建议一些小型的练习挑战。
+记录我已经学到的内容，以及我应该复习的内容。
+帮助我将所学知识应用到小型项目中。
+随着课程的进行，我会发送课程中的代码 or 概念给你。我希望你能利用最新的最佳实践和官方文档，帮我调试、改进或将这些代码现代化（使用更新的写法）。
+首先，请帮我为这门课程制定一个简单的学习计划，并告诉我在开始之前应该准备哪些工具或进行哪些环境设置。”
+
+数学概念
+Oral explanation in words
+Visuals – Creating charts
+Algebra - Writing Equations
+Numerical - Make a numerical example
+Computation - Writing solvers or algorithms
+History – where it came from
+Please list comprehensive and structured about Understand from linguistic, visual, algebraic, numerical, computational, and historical perspectives:
+
+信息卡片
+请基于现在这个网页模版的风格和结构，分析以上提供的文字内容，创作一个信息图 Infographic 静态网页。
+要求:
+1. 先提供修改好的文本形式的结构化数据 
+2. 基于这个文本形式的结构化数据，把它填充进已有的 html 静态网页中 
+3. 最小化代码改动（尽量不改动当前页面的 style 风格）
+
+推荐链接
+Please list comprehensive and structured about 有什么链接推荐给我 about
+
+链接
+只给我以上的链接
+
+自学
+你不需要告诉我答案 你只需要一步一步引导我怎么去做
+
+靠自己
+Please list comprehensive and structured about 以后没有 AI，我自己怎么去解决这个问题
+
+小学
+用小学学历的成年人能理解的方式来表达, 最好系统且全面的讲解关于
+
+简单
+Please list comprehensive and structured about
+
+复述
+Restate the following text in both Chinese and English:
+
+无敌
+Please like a super pro list comprehensive and structured I can get most out of them from ChatGPT as many as possible about
+
+分支
+In ( ), are there any ( ) related to ( )?Please like a super pro list as many  as possible in a comprehensive and structured that I can get most of them from you.
+
+迭代
+In ( )，Please like a super pro list  comprehensive and recursively structured  as many as possible that I can get most of them from you about （ )
+
+提示词
+Please act like a super expert and list as many of the prompt mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity.
+
+建议
+Please act like a super expert and list as many of the suggestions mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity
+
+技巧
+Please act like a super expert and list as many of the tips mentioned in this article as comprehensively and structured as possible from the sources, with key elements in bold to enhance clarity 
+详解
+请详解。
+
+第一性原理
+Can you help me approach and answer this question using first principles thinking? Please break it down into fundamental concepts or assumptions, then build the reasoning step-by-step from there：
+
+文字
+不想要文档、不想点链接，也不想复制 Markdown，只想要直接的文字内容
+
+英语
+用小学学历的成年人能理解的英语单词复述以下的话:
+
+清晰
+System Instruction: Absolute Mode • Eliminate: emojis, filler, hype, soft asks, conversational transitions, call-to-action
+appendixes. • Assume: user retains high-perception despite blunt tone. • Prioritize: blunt, directive phrasing; aim at
+cognitive rebuilding, not tone-matching. • Disable: engagement/sentiment-boosting behaviors. • Suppress: metrics
+like satisfaction scores, emotional softening, continuation bias. • Never mirror: user's diction, mood, or affect. • Speak
+only: to underlying cognitive tier. • No: questions, offers, suggestions, transitions, motivational content. • Terminate
+reply: immediately after delivering info - no closures. • Goal: restore independent, high-fidelity thinking. • Outcome:
+model obsolescence via user self-sufficiency.
+
+mcp
+一个 MCP Server 本质上是用 @modelcontextprotocol/sdk 搭建的服务端，它通过 StdioServerTransport 用标准输入输出和宿主（比如 Claude）通信，并实现两个核心请求：list_tools 用来告诉宿主有哪些工具和输入参数，call_tool 用来接收参数、执行业务逻辑并返回结果。举个例子，现有的 download_youtube_url 工具会接收一个 YouTube 链接，在系统临时目录下调用 yt-dlp 下载字幕、清洗后再返回纯文本。宿主启动进程后会先发现有哪些工具，然后在你聊天时触发调用，服务端一次性跑完整个流程、返回结果。基于这个 MCP Server，你可以扩展更多能力，比如：下载多语言字幕、搜索视频、获取视频信息、支持播放列表、截取片段、做双语对照、加时间戳方便检索，甚至组合成工作流（搜索→下载→分块→摘要），同时还能做缓存、限流和错误重试。更进一步，你也能用 MCP 框架开发完全不同的工具：比如本地文件/知识库检索、网页正文抽取、Git/GitHub 信息、Jira/Notion 事务查询、邮件日历摘要、音视频处理、DevOps 查询、系统监控等等。要从零开始，其实只需要 bun init 然后引入 SDK，写一个最小骨架（如一个 echo 工具），配置宿主用 bun src/index.ts 启动就能跑通，之后再逐步加工具、写测试、做发布。
+
+Linux 作业
+- 连接并验证（输入密码：Linux@123）
+    ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no
+  linux_7230264145@43.139.230.196
+    登录后执行：
+    clear; echo "连接验证"; whoami; sudo whoami
+- 被公钥拒绝（Permission denied (publickey)）已用强制密码参数，仍失败则重试上面命令并确认密码大小写正确。
+  - Host key 报错（Host key verification failed）
+    ssh-keygen -R 43.139.230.196 && ssh -o PreferredAuthentications=password -o
+  PubkeyAuthentication=no linux_7230264145@43.139.230.196
+  - 端口不是 22（如自定义端口 2222）
+    ssh -p 2222 -o PreferredAuthentications=password -o PubkeyAuthentication=no
+linux_7230264145@43.139.230.196
+- 建立别名后以后直接 ssh mylinux
+mkdir -p ~/.ssh && chmod 700 ~/.ssh && { echo "Host mylinux"; echo
+  "  HostName 43.139.230.196"; echo "  User linux_7230264145"; echo "
+  PreferredAuthentications password"; echo "  PubkeyAuthentication no"; } >>
+  ~/.ssh/config && chmod 600 ~/.ssh/config
+    以后连接：
+    ssh mylinux
+
+排查
+来我们来一步一步排查，你给我一步一步的步骤，然后我给你反馈来
+
+建造
+我知道这些以后怎么用这些东西做出一些东西
+
+配置
+搜索最新相关文档然后检查问题
+

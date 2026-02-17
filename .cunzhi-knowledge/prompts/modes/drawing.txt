@@ -1,0 +1,28 @@
+icon
+expressive brush strokes, cinematic composition, strong perspective and foreshortening, heroic and powerful visual impact. high-contrast shading, In the lower right corner you can add，wide composition --ar 2.35:1 --v 5 --style expressive --q 2"关于:
+
+论文
+写什么样的提示词可以让写出类似这样的效果呢？从各个角度分析并说明，例如风格、修辞、视角、正式、客观、简洁、精确、中立等等等等。
+
+卡通
+[ensure the same character or object for all related cards], [consistent clothing, hairstyle, and appearance if human], 
+[pure solid color background: light pastel tone], [flat cartoon style, no outlines, vector-like], 
+[minimal details, clean composition], [aspect ratio: 3:4 vertical], [full body or half body as specified], 
+[bright, vibrant colors], [even lighting, no shadows], [clear contrast between the two actions or states], 
+no text, no watermark：
+
+同样的
+同样的浅蓝色的背景
+
+公众号
+High-intensity digital illustration in comic book style, vibrant and saturated colors, dynamic action pose, dramatic rim lighting, abstract energy background with expressive brush strokes, cinematic composition, strong perspective and foreshortening, heroic and powerful visual impact.关于:
+
+电影风格
+expressive brush strokes, cinematic composition, strong perspective and foreshortening, heroic and powerful visual impact. high-contrast shading, In the lower right corner you can add “AI 生成”，wide composition --ar 2.35:1 --v 5 --style expressive --q 2"关于:
+
+风格
+写什么样的提示词可以让画出类似这样的效果呢？从各个角度分析并说明，例如风格、颜色、视角、光线、构图等等等等。
+
+卡通
+[a cute or stylized subject], [main color scheme and mood], [specific style like cartoon, vector illustration, flat design], [viewpoint and perspective details], [key shape/feature details], [background setting and elements], [lighting and shadow description], [composition style], [color tone and texture details], high quality, clean lines, vibrant colors --ar [aspect ratio] --v [version] --style [style type] --q [quality]画一个：
+

@@ -1,0 +1,39 @@
+幻灯片
+I want you to create a slide deck on the following.
+Please only put maximum 20 words per slide.
+But also have the script for each slide in a collapsable (default collapsed state)
+And include charts.
+
+框架
+I have built a project called "[Project Name]" using AI assistance. 
+I have the working code, but I want to "reverse engineer" my understanding of the entire system architecture.
+I will provide you with the **File Structure**, **Package.json**, and **Database Schema**.
+Based on these artifacts, please act as a **Senior System Architect** and analyze my project through the **6 Layers of Modern Development**.
+Please generate a **Technical Architecture Whitepaper** for me.
+---
+### Analysis Framework:
+#### 1. Tech Stack & Language Strategy (The Foundation)
+* **Analysis:** Based on `package.json`, what is the specific "flavor" of this stack? (e.g., T3 Stack, MERN, Jamstack?)
+* **Why:** Why were these specific libraries (e.g., Tailwind, Zustand, Zod) chosen over others? How do they work together?
+#### 2. Framework & App Lifecycle (The Engine)
+* **Analysis:** Based on the file tree (e.g., `app/` vs `pages/`), explain the routing strategy. Is this Server-Side Rendered (SSR), Static (SSG), or Client-Side?
+* **Visual:** Draw a high-level **ASCII Architectural Diagram** showing the request flow: User -> Browser -> Next.js Server -> API -> DB.
+#### 3. Data Model & Relationships (The Memory)
+* **Analysis:** Translate my raw Schema into a logical story. What are the core entities? How do they relate?
+* **Visual:** Draw a clear **Entity-Relationship (ER) Diagram** (text-based).
+* **Insight:** Are there any potential bottlenecks in this data model if users scale to 10,000?
+#### 4. System Architecture & Patterns (The Blueprint)
+* **Analysis:** Look at my folder structure (`components`, `lib`, `hooks`, `services`). What architectural pattern am I following? (e.g., Feature-based, Layered, Screaming Architecture?)
+* **Insight:** What is the "Mental Model" I should hold in my head when navigating this codebase?
+#### 5. Workflow & Scalability (The Growth)
+* **Analysis:** Based on the dependencies (e.g., eslint, typescript), how strict is the development environment?
+* **Scenario:** If I wanted to add a "Team Feature" to this project, which folders would I likely need to touch?
+#### 6. Deployment & Infrastructure (The World)
+* **Analysis:** Based on the config, where is this likely hosted? (Vercel/AWS/Docker?)
+* **Visual:** Draw a **Deployment Pipeline Diagram** showing how code goes from my disk to the cloud.
+---
+**Goal:** help me build a complete mental map of this project so I can modify it confidently without breaking it.
+
+重启
+先关掉本项目相关的进程，再进行重启
+

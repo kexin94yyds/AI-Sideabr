@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Slash Command Prompter",
+  "version": "2.0",
+  "description": "2.0大版本：新增多模式管理（支持自定义、切换、分组、排序提示词），每个模式下可独立管理提示词。修复提示词上移仅在当前模式内有效的bug，优化斜杠菜单触发逻辑。原有功能全面优化。",
+  "permissions": ["storage", "activeTab"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["donate.html", "images/wechat-qr.png", "images/alipay-qr.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+} 

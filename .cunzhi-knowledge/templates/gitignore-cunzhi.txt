@@ -1,0 +1,29 @@
+# ===========================================
+# cunzhi 知识库保护规则
+# ===========================================
+# 说明：如果项目使用了 *.md 等通配符忽略规则，
+# 必须添加以下例外以保护 .cunzhi-knowledge/ 目录
+
+# 保护 cunzhi 知识库（独立 git 仓库）
+!.cunzhi-knowledge/
+
+# 保护 cunzhi 临时记忆
+!.cunzhi-memory/
+
+# 如果项目有 *.json 忽略规则，也需要保护配置文件
+!.cunzhi-knowledge/**/*.json
+!.cunzhi-memory/**/*.json
+
+# ===========================================
+# 使用方式
+# ===========================================
+# 1. 检查项目 .gitignore 是否有 *.md 规则
+# 2. 如果有，将上述规则添加到 .gitignore 末尾
+# 3. 执行 git status 验证 .cunzhi-knowledge/ 文件可见
+#
+# 快速应用（在项目根目录执行）：
+# cat .cunzhi-knowledge/templates/gitignore-cunzhi.txt >> .gitignore
+#
+# 验证：
+# git status .cunzhi-knowledge/
+# 应该显示文件变更，而不是被忽略
