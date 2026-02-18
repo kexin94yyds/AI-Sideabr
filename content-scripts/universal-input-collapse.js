@@ -396,6 +396,10 @@
   }
 
   async function init() {
+    if (location.hostname.includes('notebooklm.google.com')) {
+      return;
+    }
+
     const config = getCurrentConfig();
     if (!config) {
       console.log('[AISB Universal Input Collapse] ⚠️ 当前平台不支持:', location.hostname);
