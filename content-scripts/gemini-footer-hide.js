@@ -92,13 +92,6 @@
       current = current.nextElementSibling;
       count++;
     }
-
-    const allDivs = document.querySelectorAll('div');
-    for (const div of allDivs) {
-      if (hideFooterByText(div)) {
-        break;
-      }
-    }
   }
 
   function init() {

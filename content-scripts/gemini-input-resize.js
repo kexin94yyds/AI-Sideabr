@@ -53,10 +53,25 @@
     console.log('[AISB Input Resize] ✅ 输入框高度已更新:', height + 'px');
   }
 
+  let observer = null;
+
+  function startObserver() {
+    if (observer) return;
+    observer = new MutationObserver(() => {
+      updateInputHeight(currentHeight);
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+
   async function init() {
     const stored = await storageGet(['geminiInputHeight']);
-    const height = stored.geminiInputHeight || 58;
-    updateInputHeight(height);
+    updateInputHeight(stored.geminiInputHeight || 58);
+    startObserver();
 
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -68,5 +83,9 @@
     }
   }
 
-  init();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    void init();
+  }
 })();
