@@ -317,10 +317,11 @@
       const container = getInputContainer();
       if (!container) return;
 
-      bindContainerEvents(container, signal);
-
-      if (!shouldDisableAutoCollapse() && isInputEmpty(container) && !hasAttachments(container)) {
-        tryCollapse(container);
+      if (!container.dataset.aisbCollapseEventsBound) {
+        bindContainerEvents(container, signal);
+        if (!shouldDisableAutoCollapse()) {
+          tryCollapse(container);
+        }
       }
     });
 
