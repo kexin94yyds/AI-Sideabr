@@ -52,7 +52,16 @@
     return /^\/(?:u\/\d+\/)?gems\/(?:create|edit)\/?/.test(pathname);
   }
 
+  function isInIframe() {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  }
+
   function shouldDisableAutoCollapse() {
+    if (isInIframe()) return false;
     return isHomepageOrNewConversation() || isGemsEditorPage();
   }
 
