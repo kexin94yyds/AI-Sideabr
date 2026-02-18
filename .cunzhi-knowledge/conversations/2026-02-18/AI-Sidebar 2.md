@@ -2798,3 +2798,66 @@ document.querySelectorAll('button').forEach(b => console.log(b.textContent.trim(
 ❌不要截图了
 
 ---
+## 19:45:09  @ AI-Sidebar 2
+
+### 🤖 AI
+## 评估可行性
+
+NotebookLM 的"时间线"（类似 Gemini 的对话历史）对应的是**笔记本列表**。
+
+**技术挑战**：
+- NotebookLM 没有像 Gemini 那样的左侧侧边栏显示笔记本列表
+- 笔记本列表在首页（`notebooklm.google.com/`），进入笔记本后就看不到了
+- 要实现类似 Gemini 时间线，需要：
+  1. 抓取首页的笔记本列表数据
+  2. 在侧边栏注入 UI 显示这些笔记本
+  3. 点击切换笔记本
+
+**问题**：你说的"时间线"具体指什么？
+1. **笔记本列表**（所有笔记本，点击可跳转）
+2. **当前笔记本的对话历史**（Sources/Chat 里的历史记录）
+3. 其他？
+
+请确认一下，我来评估工作量。
+
+### 👤 用户
+这是我们每个聊天的时间线。比如我点开了这个，当前我跟他聊过一次天，它就有那个回复的时间线。
+
+能懂我的意思吗？就跟那个 Gemini 一样，你可以看我们刚刚做的那个 Gemini 的时间线（timeline）。
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
