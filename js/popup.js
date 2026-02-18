@@ -1803,23 +1803,14 @@ const initializeBar = async () => {
     });
   })();
 
-  // Left sidebar: NotebookLM panel switcher
+  // Left sidebar: NotebookLM tab toggle strip
   (() => {
     const leftSidebar = document.getElementById('left-sidebar');
     if (!leftSidebar) return;
 
-    let panel = null;
-    let hideTimer = null;
-    let showTimer = null;
+    let tabsVisible = false;
 
-    const NOTEBOOKLM_TABS = [
-      { label: '📚 来源', tab: 0, title: 'Sources' },
-      { label: '💬 对话', tab: 1, title: 'Chat' },
-      { label: '🎙️ Studio', tab: 2, title: 'Studio' },
-      { label: '➕ 新建笔记库', tab: -1, title: 'Create Notebook' },
-    ];
-
-    function sendTabMessage(msg) {
+    function sendMsg(msg) {
       const frame = cachedFrames['notebooklm'];
       if (frame && frame.contentWindow) {
         try { frame.contentWindow.postMessage(msg, '*'); } catch (_) {}
@@ -1833,69 +1824,26 @@ const initializeBar = async () => {
       }
     }
 
-    function showPanel() {
-      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-      showTimer = setTimeout(() => {
-        if (panel) panel.classList.add('visible');
-        sendTabMessage('aisb-notebooklm-show-tabs');
-      }, 150);
-    }
-
-    function hidePanel() {
-      if (showTimer) { clearTimeout(showTimer); showTimer = null; }
-      hideTimer = setTimeout(() => {
-        if (panel) panel.classList.remove('visible');
-        sendTabMessage('aisb-notebooklm-hide-tabs');
-      }, 600);
-    }
-
     function buildLeftSidebar(providerKey) {
       leftSidebar.innerHTML = '';
-      if (panel) { panel.remove(); panel = null; }
+      leftSidebar.classList.remove('has-items');
+      tabsVisible = false;
 
-      if (providerKey !== 'notebooklm') {
-        leftSidebar.classList.remove('has-items');
-        return;
-      }
+      if (providerKey !== 'notebooklm') return;
 
       leftSidebar.classList.add('has-items');
 
-      const toggle = document.createElement('button');
-      toggle.id = 'left-sidebar-toggle';
-      toggle.textContent = '›';
-      toggle.title = '展开面板';
-      leftSidebar.appendChild(toggle);
+      const strip = document.createElement('button');
+      strip.id = 'left-sidebar-toggle';
+      strip.textContent = '›';
+      strip.title = '展开/收起标签栏';
+      leftSidebar.appendChild(strip);
 
-      panel = document.createElement('div');
-      panel.id = 'left-sidebar-panel';
-
-      const header = document.createElement('div');
-      header.className = 'lsp-header';
-      header.textContent = 'NotebookLM';
-      panel.appendChild(header);
-
-      NOTEBOOKLM_TABS.forEach(({ label, tab, title }) => {
-        const item = document.createElement('div');
-        item.className = 'lsp-item';
-        item.textContent = label;
-        item.title = title;
-        item.addEventListener('click', () => {
-          if (tab === -1) {
-            sendTabMessage('aisb-notebooklm-create-notebook');
-          } else {
-            sendTabMessage({ type: 'aisb-notebooklm-switch-tab', tab });
-          }
-          hidePanel();
-        });
-        panel.appendChild(item);
+      strip.addEventListener('click', () => {
+        tabsVisible = !tabsVisible;
+        strip.textContent = tabsVisible ? '‹' : '›';
+        sendMsg(tabsVisible ? 'aisb-notebooklm-show-tabs' : 'aisb-notebooklm-hide-tabs');
       });
-
-      document.body.appendChild(panel);
-
-      toggle.addEventListener('mouseenter', showPanel);
-      toggle.addEventListener('mouseleave', hidePanel);
-      panel.addEventListener('mouseenter', showPanel);
-      panel.addEventListener('mouseleave', hidePanel);
     }
 
     buildLeftSidebar(currentProviderKey);

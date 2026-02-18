@@ -1258,33 +1258,25 @@ html {
   background: #4b5563;
 }
 
-/* 左侧竖向快捷栏 */
+/* 左侧竖向折叠条（仅 NotebookLM 时显示） */
 #left-sidebar {
   width: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  background: #f8fafc;
-  border-right: 1px solid #e5e7eb;
+  justify-content: center;
   overflow: visible;
-  transition: width 0.2s ease;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
 }
 
 #left-sidebar.has-items {
-  width: 36px;
+  width: 12px;
 }
 
-/* 左侧折叠触发条 */
 #left-sidebar-toggle {
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  transform: translateY(-50%);
   width: 12px;
   height: 48px;
   background: #e5e7eb;
@@ -1294,78 +1286,13 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
-  color: #6b7280;
-  z-index: 20;
-  transition: background 0.15s;
-}
-#left-sidebar-toggle:hover {
-  background: #d1d5db;
-  color: #374151;
-}
-
-/* 左侧面板按钮 */
-#left-sidebar .ls-btn {
-  width: 32px;
-  height: 32px;
-  margin: 4px 0;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
+  font-size: 10px;
   color: #6b7280;
   transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
 }
-#left-sidebar .ls-btn:hover,
-#left-sidebar .ls-btn.active {
-  background: #e8f0fe;
-  color: #1a73e8;
-}
-
-/* 左侧面板弹出层 */
-#left-sidebar-panel {
-  position: fixed;
-  left: 36px;
-  top: 0;
-  width: 220px;
-  height: 100vh;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.08);
-  z-index: 9999;
-  display: none;
-  flex-direction: column;
-  overflow-y: auto;
-}
-#left-sidebar-panel.visible {
-  display: flex;
-}
-#left-sidebar-panel .lsp-header {
-  padding: 12px 14px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #f1f5f9;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-#left-sidebar-panel .lsp-item {
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #374151;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid #f8fafc;
-  transition: background 0.1s;
-}
-#left-sidebar-panel .lsp-item:hover {
-  background: #f0f7ff;
+#left-sidebar-toggle:hover {
+  background: #c7d2fe;
   color: #1a73e8;
 }
