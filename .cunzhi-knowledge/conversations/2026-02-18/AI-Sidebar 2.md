@@ -1415,3 +1415,64 @@ provider可以不过左边的不可以,ask
 ❌不要截图了
 
 ---
+## 15:12:18  @ AI-Sidebar 2
+
+### 🤖 AI
+## 需要确认
+
+AI Sidebar 的 HTML 结构是：左边是 `main-content`（包含 iframe），右边是 `provider-tabs`（provider 图标列表）。
+
+你说"AI Sidebar 侧边栏还没有实现"，是指：
+
+**A.** 给 AI Sidebar 加一个**左侧侧边栏**（比如历史记录、收藏夹等）
+**B.** Gemini iframe 里的 `bard-sidenav` 自动收起功能在 AI Sidebar 里不工作
+**C.** 其他（请描述）
+
+### 👤 用户
+边栏（比如历史记录、收藏夹等），目前我觉得这个已经实现的很好了。
+
+我再看一看还有什么要求需要加。我们的时间节点和文件都已经有了，我想要求的是：
+1. 文件夹功能
+   (a) 比如我们左边的文件夹，你可以完全模仿那个 Java 的做法去做
+   (b) 当我拖动消息时，能够把它拖动到文件夹里面
+   (c) 如果没有创建文件夹，它也能够直接拖动到上方
+2. 框架实现
+   (a) 一个是原生的，一个是我的 ASL8 iframe 框架里面的
+   (b) 你看一看，完全模仿它的做法去做就行了，对吧
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
