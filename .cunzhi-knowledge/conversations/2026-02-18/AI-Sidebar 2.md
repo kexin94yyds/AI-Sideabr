@@ -129,3 +129,70 @@
 📷 *附图 1 张*
 
 ---
+## 09:54:46  @ AI-Sidebar 2
+
+### 🤖 AI
+## NotebookLM 输入框改动历史分析
+
+**时间线**：
+1. c6deb2e (2月17日 23:23) - flexbox + sticky 修复 ✅ 应该能输入
+2. e4dcbc6 (2月18日 08:04) - 固定 50px 高度
+3. 16d59a8 (2月18日 08:12) - 改为 30px 高度
+4. c51ddf9 (2月18日 08:31) - 去掉双框 ❌ **当前版本，无法输入**
+
+**建议方案**：
+
+**方案 1**：回退到 c6deb2e（最稳定）
+- 昨晚的版本，应该能正常输入
+- 可能有双框问题
+
+**方案 2**：回退到 e4dcbc6
+- 今早第一个版本
+
+**方案 3**：分析当前代码，只修复无法点击的 bug
+- 保留双框修复，只改输入问题
+
+**我需要你决定**：
+1. 想回退到哪个版本？（建议 c6deb2e）
+2. 还是先看看每个版本的详细 diff？
+3. 双框问题严重吗？
+
+### 👤 用户
+1
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
