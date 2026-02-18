@@ -1828,22 +1828,6 @@ const initializeBar = async () => {
       leftSidebar.innerHTML = '';
       leftSidebar.classList.remove('has-items');
       tabsVisible = false;
-
-      if (providerKey !== 'notebooklm') return;
-
-      leftSidebar.classList.add('has-items');
-
-      const strip = document.createElement('button');
-      strip.id = 'left-sidebar-toggle';
-      strip.textContent = '›';
-      strip.title = '展开/收起标签栏';
-      leftSidebar.appendChild(strip);
-
-      strip.addEventListener('click', () => {
-        tabsVisible = !tabsVisible;
-        strip.textContent = tabsVisible ? '‹' : '›';
-        sendMsg(tabsVisible ? 'aisb-notebooklm-show-tabs' : 'aisb-notebooklm-hide-tabs');
-      });
     }
 
     buildLeftSidebar(currentProviderKey);
