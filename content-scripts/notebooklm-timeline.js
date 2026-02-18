@@ -3,6 +3,7 @@
 
   if (window.__AISB_NOTEBOOKLM_TIMELINE_LOADED__) return;
   if (!location.hostname.includes('notebooklm.google.com')) return;
+  if (window.self !== window.top) return;
   window.__AISB_NOTEBOOKLM_TIMELINE_LOADED__ = true;
 
   const BAR_ID = 'aisb-nblm-timeline-bar';
@@ -176,12 +177,18 @@
   }
 
   let rebuildTimer = null;
+  let lastTurnCount = 0;
+
   function scheduleRebuild() {
     if (rebuildTimer) clearTimeout(rebuildTimer);
     rebuildTimer = setTimeout(() => {
       rebuildTimer = null;
-      buildBar(findTurns());
-    }, 800);
+      const turns = findTurns();
+      if (turns.length !== lastTurnCount) {
+        lastTurnCount = turns.length;
+        buildBar(turns);
+      }
+    }, 1500);
   }
 
   function init() {
