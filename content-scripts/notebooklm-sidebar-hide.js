@@ -9,10 +9,8 @@
   const SHOW_CLASS = 'aisb-header-visible';
   const HOVER_ZONE_PX = 56;
   const LEAVE_DELAY = 600;
-  const IS_IFRAME = window.self !== window.top;
 
   let leaveTimer = null;
-  let pinnedOpen = false;
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -61,33 +59,6 @@
         opacity: 1 !important;
         pointer-events: auto !important;
       }
-
-
-      /* Native page left toggle strip */
-      #aisb-native-left-strip {
-        position: fixed !important;
-        left: 0 !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        width: 12px !important;
-        height: 48px !important;
-        background: rgba(128,128,128,0.25) !important;
-        border: none !important;
-        border-radius: 0 6px 6px 0 !important;
-        cursor: pointer !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 10px !important;
-        color: currentColor !important;
-        z-index: 99999 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-        transition: background 0.15s !important;
-      }
-      #aisb-native-left-strip:hover {
-        background: rgba(128,128,128,0.45) !important;
-      }
     `;
 
     document.head.appendChild(style);
@@ -99,7 +70,6 @@
   }
 
   function hideHeader() {
-    if (pinnedOpen) return;
     if (leaveTimer) clearTimeout(leaveTimer);
     leaveTimer = setTimeout(() => {
       document.body.classList.remove(SHOW_CLASS);
@@ -108,7 +78,6 @@
 
   function setupHoverZone() {
     document.addEventListener('mousemove', (e) => {
-      if (pinnedOpen) return;
       if (e.clientY <= HOVER_ZONE_PX) {
         showHeader();
       } else if (document.body.classList.contains(SHOW_CLASS)) {
@@ -117,43 +86,11 @@
     });
   }
 
-  function injectNativeStrip() {
-    if (IS_IFRAME) return;
-
-    const doInject = () => {
-      if (document.getElementById('aisb-native-left-strip')) return;
-
-      const strip = document.createElement('button');
-      strip.id = 'aisb-native-left-strip';
-      strip.textContent = '›';
-      strip.title = '展开/收起标签栏';
-
-      strip.addEventListener('click', () => {
-        pinnedOpen = !pinnedOpen;
-        strip.textContent = pinnedOpen ? '‹' : '›';
-        if (pinnedOpen) {
-          showHeader();
-        } else {
-          if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-          document.body.classList.remove(SHOW_CLASS);
-        }
-      });
-
-      document.body.appendChild(strip);
-    };
-
-    setTimeout(doInject, 800);
-  }
-
   function listenForParentMessages() {
-    if (!IS_IFRAME) return;
+    if (window.self === window.top) return;
     window.addEventListener('message', (e) => {
-      if (e.data === 'aisb-notebooklm-show-tabs') {
-        pinnedOpen = true;
-        showHeader();
-      }
+      if (e.data === 'aisb-notebooklm-show-tabs') showHeader();
       if (e.data === 'aisb-notebooklm-hide-tabs') {
-        pinnedOpen = false;
         if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
         document.body.classList.remove(SHOW_CLASS);
       }
@@ -163,7 +100,6 @@
   function init() {
     injectStyles();
     setupHoverZone();
-    injectNativeStrip();
     listenForParentMessages();
   }
 
