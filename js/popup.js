@@ -1764,6 +1764,41 @@ const initializeBar = async () => {
   // 渲染右侧导航栏
   await renderProviderTabs(currentProviderKey, overrides);
 
+  // Provider tabs hover auto-collapse
+  (() => {
+    const tabs = document.getElementById('provider-tabs');
+    if (!tabs) return;
+
+    let collapseTimer = null;
+    let expandTimer = null;
+    const COLLAPSE_DELAY = 600;
+    const EXPAND_DELAY = 200;
+
+    tabs.addEventListener('mouseenter', () => {
+      if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
+      expandTimer = setTimeout(async () => {
+        expandTimer = null;
+        if (tabs.classList.contains('collapsed')) {
+          tabs.classList.remove('collapsed');
+          const toggle = tabs.querySelector('.tabs-toggle');
+          if (toggle) { toggle.innerHTML = '»'; toggle.title = 'Collapse'; }
+        }
+      }, EXPAND_DELAY);
+    });
+
+    tabs.addEventListener('mouseleave', () => {
+      if (expandTimer) { clearTimeout(expandTimer); expandTimer = null; }
+      collapseTimer = setTimeout(async () => {
+        collapseTimer = null;
+        if (!tabs.classList.contains('collapsed')) {
+          tabs.classList.add('collapsed');
+          const toggle = tabs.querySelector('.tabs-toggle');
+          if (toggle) { toggle.innerHTML = '«'; toggle.title = 'Expand'; }
+        }
+      }, COLLAPSE_DELAY);
+    });
+  })();
+
   // helper: request host permission for a provider URL and add DNR rule
   const ensureAccessFor = (url) => {
     let origin = null;
