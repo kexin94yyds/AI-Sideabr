@@ -30,15 +30,25 @@
         pointer-events: none !important;
       }
 
-      /* Restore entire header when toggled on */
+      /* Restore header containers when toggled on */
       body.${SHOW_CLASS} div.notebook-header-buttons-container,
       body.${SHOW_CLASS} [class*="notebook-header"],
       body.${SHOW_CLASS} [class*="header-buttons-container"],
-      body.${SHOW_CLASS} .configure-settings-button-tab-view-container,
+      body.${SHOW_CLASS} .configure-settings-button-tab-view-container {
+        display: flex !important;
+        height: revert !important;
+        min-height: revert !important;
+        overflow: revert !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* Restore tab list as horizontal flex row */
       body.${SHOW_CLASS} [role="tablist"],
       body.${SHOW_CLASS} .mat-mdc-tab-labels,
       body.${SHOW_CLASS} .mat-mdc-tab-label-container {
-        display: revert !important;
+        display: flex !important;
+        flex-direction: row !important;
         height: revert !important;
         min-height: revert !important;
         overflow: revert !important;
