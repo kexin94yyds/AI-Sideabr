@@ -9,6 +9,7 @@
   const SHOW_CLASS = 'aisb-header-visible';
   const HOVER_ZONE_PX = 56;
   const LEAVE_DELAY = 600;
+  const IS_IFRAME = window.self !== window.top;
 
   let leaveTimer = null;
   let pinnedOpen = false;
@@ -60,6 +61,33 @@
         opacity: 1 !important;
         pointer-events: auto !important;
       }
+
+      /* Native page left toggle strip */
+      #aisb-native-left-strip {
+        position: fixed !important;
+        left: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 12px !important;
+        height: 48px !important;
+        background: #e5e7eb !important;
+        border: none !important;
+        border-radius: 0 6px 6px 0 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 10px !important;
+        color: #6b7280 !important;
+        z-index: 99999 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        transition: background 0.15s, color 0.15s !important;
+      }
+      #aisb-native-left-strip:hover {
+        background: #c7d2fe !important;
+        color: #1a73e8 !important;
+      }
     `;
 
     document.head.appendChild(style);
@@ -89,7 +117,31 @@
     });
   }
 
+  function injectNativeStrip() {
+    if (IS_IFRAME) return;
+    if (document.getElementById('aisb-native-left-strip')) return;
+
+    const strip = document.createElement('button');
+    strip.id = 'aisb-native-left-strip';
+    strip.textContent = '›';
+    strip.title = '展开/收起标签栏';
+
+    strip.addEventListener('click', () => {
+      pinnedOpen = !pinnedOpen;
+      strip.textContent = pinnedOpen ? '‹' : '›';
+      if (pinnedOpen) {
+        showHeader();
+      } else {
+        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+        document.body.classList.remove(SHOW_CLASS);
+      }
+    });
+
+    document.body.appendChild(strip);
+  }
+
   function listenForParentMessages() {
+    if (!IS_IFRAME) return;
     window.addEventListener('message', (e) => {
       if (e.data === 'aisb-notebooklm-show-tabs') {
         pinnedOpen = true;
@@ -106,6 +158,7 @@
   function init() {
     injectStyles();
     setupHoverZone();
+    injectNativeStrip();
     listenForParentMessages();
   }
 
