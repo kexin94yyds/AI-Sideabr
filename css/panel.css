@@ -856,6 +856,18 @@ html {
   overflow: visible; /* 允许开关浮出 */
   pointer-events: none; /* 只有开关可点 */
 }
+
+/* 折叠时在右边缘创建透明 hover 感应区 */
+#provider-tabs.collapsed::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 100001;
+}
 #provider-tabs.collapsed button[data-provider-id] { display: none; }
 #provider-tabs.collapsed .tabs-header {
   position: absolute;
