@@ -3,8 +3,9 @@
 
   if (window.__AISB_NOTEBOOKLM_TIMELINE_LOADED__) return;
   if (!location.hostname.includes('notebooklm.google.com')) return;
-  if (window.self !== window.top) return;
   window.__AISB_NOTEBOOKLM_TIMELINE_LOADED__ = true;
+
+  const IS_IFRAME = window.self !== window.top;
 
   const BAR_ID = 'aisb-nblm-timeline-bar';
   const STYLE_ID = 'aisb-nblm-timeline-style';
