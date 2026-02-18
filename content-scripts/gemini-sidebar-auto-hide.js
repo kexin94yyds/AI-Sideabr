@@ -78,9 +78,14 @@
     return false;
   }
 
+  function isInIframe() {
+    try { return window.self !== window.top; } catch (e) { return true; }
+  }
+
   function isSidebarVisible() {
     const sidenav = document.querySelector('bard-sidenav');
     if (!sidenav) return false;
+    if (isInIframe()) return true;
     const rect = sidenav.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
