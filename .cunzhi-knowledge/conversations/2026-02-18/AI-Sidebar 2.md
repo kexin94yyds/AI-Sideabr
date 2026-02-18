@@ -267,3 +267,91 @@
 📷 *附图 2 张*
 
 ---
+## 09:59:32  @ AI-Sidebar 2
+
+### 🤖 AI
+## 理解你的需求
+
+**从图片看到**：
+- 图1：Gemini 对话界面
+- 图2：DevTools 显示输入框高度 58px
+
+**你想要**：
+1. ✅ 改名：Voyager Settings → Sidecar Settings
+2. ✅ 添加输入框高度滑块控制
+3. ❓ 删除"Jupyter 的这个东西"
+
+## 我需要确认（先不编码）
+
+**问题 1**：输入框高度调整范围？
+- 建议：30px - 100px？
+- 或者你有其他想法？
+
+**问题 2**："Jupyter 的这个东西"具体指什么？
+- DevTools 的提示？
+- 某个按钮/标签？
+- 输入框上方的元素？
+
+**问题 3**：参考 NotebookLM 的做法
+- 是要隐藏顶部元素吗？
+- 还是其他功能？
+
+请先回答这些问题，我再开始编码！
+
+### 👤 用户
+很好很好，现在就差不多了。
+
+比方说这个 gemini对吧？它现在的宽度太宽了，高度也太高了，我要把它设置小一点。你可以把我们的 settings 改成 Sidecar settings，然后调整一下对话区域的宽度，也就是我们编辑输入框的高度。
+
+编辑输入框的高度也是可以调整的，能懂我的意思吧？现在这个太高了。
+
+然后我们的这个，比方说我们 Jupyter 的这个东西，对吧？它那个是一款什么东西，这个也删掉。
+
+我们也其实和我们的这个同理，和我们的 NotebookLM 怎么去搞的，我们就怎么去搞，好吧？
+
+我先跟你说清楚，关于输入框的高度，我希望你在我们的设置里面也要这样去处理。
+
+然后第二个问题，我也回答了：
+1. 我看了一下，那个所谓的 Jupyter 高度（或者是 Gemline），其实就是 Gemline。
+2. 关于那个 Gemline，我之前不是给你弹幕提示了吗？你把底下那个东西给删了，和我们的 NotebookLM 一样，把那个东西隐藏掉。
+
+对的对的。
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+📷 *附图 1 张*
+
+---
