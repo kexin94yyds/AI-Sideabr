@@ -28,18 +28,32 @@
   }
 
   function findSidebarElements() {
-    sidebarContainer = document.querySelector('bard-sidenav-container') || 
-                       document.querySelector('aside[role="navigation"]');
+    sidebarContainer = document.querySelector('bard-sidenav');
     
-    toggleButton = document.querySelector('[data-test-id="side-nav-menu-button"]') ||
-                   document.querySelector('button[aria-label*="Menu"]') ||
-                   document.querySelector('[aria-label*="navigation"]');
+    toggleButton = document.querySelector('button[data-test-id="side-nav-menu-button"]') ||
+                   document.querySelector('side-nav-menu-button button');
   }
 
   function isSidebarCollapsed() {
-    if (!sidebarContainer) return true;
-    const state = sidebarContainer.getAttribute('data-sidenav-state');
-    return state === 'closed' || state === 'collapsed';
+    if (document.body.classList.contains('mat-sidenav-opened')) return false;
+
+    const sideContent = document.querySelector('bard-sidenav side-navigation-content > div');
+    if (sideContent?.classList.contains('collapsed')) return true;
+
+    const sidenav = document.querySelector('bard-sidenav');
+    if (sidenav) {
+      const width = sidenav.getBoundingClientRect().width;
+      if (width < 80) return true;
+    }
+
+    return false;
+  }
+
+  function isSidebarVisible() {
+    const sidenav = document.querySelector('bard-sidenav');
+    if (!sidenav) return false;
+    const rect = sidenav.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
   }
 
   function isPopupOrDialogOpen() {
