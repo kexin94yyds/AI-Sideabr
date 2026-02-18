@@ -139,13 +139,16 @@
   }
 
   function findCreateNotebookBtn() {
+    const byAriaLabel = document.querySelector('button[aria-label="创建笔记本"], button[aria-label="New notebook"], button[aria-label="Create notebook"]');
+    if (byAriaLabel) return byAriaLabel;
+
     const candidates = [
       ...document.querySelectorAll('button'),
       ...document.querySelectorAll('a'),
     ];
     return candidates.find(el => {
       const label = (el.getAttribute('aria-label') || el.textContent || '').toLowerCase();
-      return /new notebook|create notebook|新建笔记|新建 notebook/i.test(label);
+      return /创建笔记本|new notebook|create notebook|新建笔记/i.test(label);
     }) || null;
   }
 
