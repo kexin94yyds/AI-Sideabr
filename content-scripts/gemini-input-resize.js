@@ -35,13 +35,17 @@
     }
 
     style.textContent = `
+      input-container .input-area-container,
+      input-area-v2,
       input-area-v2 .input-area {
         min-height: ${height}px !important;
+        height: auto !important;
       }
 
       input-area-v2 rich-textarea,
       input-area-v2 [contenteditable="true"] {
-        max-height: ${height + 14}px !important;
+        min-height: ${height}px !important;
+        max-height: ${height + 40}px !important;
         overflow-y: auto !important;
       }
     `;

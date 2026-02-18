@@ -25,34 +25,21 @@
   }
 
   function getInputContainer() {
+    const direct = document.querySelector('input-container');
+    if (direct) return direct;
+
     const textarea = document.querySelector('rich-textarea');
     if (!textarea) return null;
 
     let current = textarea.parentElement;
-    let bestCandidate = null;
-
     for (let i = 0; i < 8; i++) {
       if (!current) break;
-
-      const style = window.getComputedStyle(current);
-      const hasBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent';
-      const isFlex = style.display.includes('flex');
-
-      if (hasBackground) {
-        bestCandidate = current;
-        if (isFlex) {
-          break;
-        }
-      }
-
-      if (current.tagName === 'MAIN' || current.tagName === 'BODY' || current.classList.contains('content-wrapper')) {
-        break;
-      }
-
+      if (current.tagName && current.tagName.toLowerCase() === 'input-container') return current;
+      if (current.tagName === 'MAIN' || current.tagName === 'BODY') break;
       current = current.parentElement;
     }
 
-    return bestCandidate || textarea.parentElement?.parentElement || textarea.parentElement;
+    return null;
   }
 
   function isHomepageOrNewConversation() {
