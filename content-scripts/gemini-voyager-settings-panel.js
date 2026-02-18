@@ -14,6 +14,7 @@
     geminiSidebarWidth: 312,
     geminiChatWidth: 70,
     geminiEditInputWidth: 60,
+    geminiInputHeight: 58,
     gvSidebarAutoHide: false,
     gvSnowEffectEnabled: false,
     gvInputCollapseEnabled: false,
@@ -29,6 +30,7 @@
     geminiSidebarWidth: { label: '侧边栏宽度', min: 180, max: 540, unit: 'px' },
     geminiChatWidth: { label: '对话区域宽度', min: 30, max: 100, unit: '%' },
     geminiEditInputWidth: { label: '编辑输入框宽度', min: 30, max: 100, unit: '%' },
+    geminiInputHeight: { label: '输入框高度', min: 30, max: 100, unit: 'px' },
   };
 
   const TOGGLES = {
@@ -556,7 +558,7 @@
 
     const title = document.createElement('h3');
     title.className = 'gvsp-title';
-    title.textContent = 'Voyager Settings';
+    title.textContent = 'Sidecar Settings';
 
     const closeBtn = document.createElement('button');
     closeBtn.type = 'button';
