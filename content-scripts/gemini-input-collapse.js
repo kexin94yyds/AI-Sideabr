@@ -74,12 +74,23 @@
 
   function tryCollapse(container) {
     if (!container || !enabled) return;
-    if (shouldDisableAutoCollapse()) return;
-    if (!isInputEmpty(container)) return;
-    if (hasAttachments(container)) return;
 
-    container.classList.add(COLLAPSED_CLASS);
-    ensurePlaceholder(container);
+    setTimeout(() => {
+      if (!enabled) return;
+      if (shouldDisableAutoCollapse()) {
+        container.classList.remove(COLLAPSED_CLASS);
+        return;
+      }
+
+      const active = document.activeElement;
+      if (active && container.contains(active)) return;
+
+      if (!isInputEmpty(container)) return;
+      if (hasAttachments(container)) return;
+
+      container.classList.add(COLLAPSED_CLASS);
+      ensurePlaceholder(container);
+    }, 150);
   }
 
   function ensurePlaceholder(container) {
