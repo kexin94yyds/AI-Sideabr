@@ -143,6 +143,15 @@
         visibility: visible !important;
         opacity: 1 !important;
       }
+
+      /* Hide footer disclaimer */
+      footer.footer,
+      footer[class*="mat-body"],
+      [class*="footer"][class*="mat-body"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+      }
     `;
 
     document.head.appendChild(style);
