@@ -32,11 +32,11 @@
         overflow: hidden !important;
       }
 
-      /* Cloned Create Notebook button */
+      /* Cloned Create Notebook button - bottom left */
       #aisb-create-notebook-clone {
         position: fixed !important;
-        top: 8px !important;
-        right: 60px !important;
+        bottom: 60px !important;
+        left: 16px !important;
         z-index: 9999 !important;
         display: none !important;
       }
