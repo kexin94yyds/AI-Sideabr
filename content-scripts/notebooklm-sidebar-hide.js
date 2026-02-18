@@ -59,42 +59,58 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - minimal height and transparent */
+      /* Outer box: single visible frame */
       div.query-box,
-      [class*="query-box"],
-      [class*="input-container"] {
+      [class*="query-box"] {
         position: sticky !important;
         bottom: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
         z-index: 100 !important;
-        height: 30px !important;
-        min-height: 30px !important;
-        max-height: 30px !important;
-        overflow: visible !important;
-        transition: background 0.3s ease !important;
-      }
-
-      /* Hide container padding and borders */
-      div.query-box > *,
-      [class*="query-box"] > *,
-      [class*="input-container"] > * {
-        background: transparent !important;
-        border: none !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        padding: 0 12px !important;
+        background: var(--surface-container, #1e1e1e) !important;
+        border: 1px solid var(--outline-variant, rgba(255,255,255,.12)) !important;
+        border-radius: 8px !important;
         box-shadow: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
       }
 
-      /* Hide input-group container */
+      /* Inner layer: remove second frame visual */
       div.query-box .input-group,
       [class*="query-box"] .input-group,
-      [class*="input-group"] {
-        background: transparent !important;
+      div.query-box .input-group.aisb-input-collapsed,
+      [class*="query-box"] .input-group.aisb-input-collapsed {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
         margin: 0 !important;
         padding: 0 !important;
-        border: none !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+
+      /* Override universal-input-collapse hiding logic */
+      div.query-box .input-group.aisb-input-collapsed > *:not(.aisb-collapse-placeholder),
+      [class*="query-box"] .input-group.aisb-input-collapsed > *:not(.aisb-collapse-placeholder) {
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: auto !important;
+        height: auto !important;
+        position: static !important;
+        pointer-events: auto !important;
+      }
+
+      div.query-box .input-group .aisb-collapse-placeholder,
+      [class*="query-box"] .input-group .aisb-collapse-placeholder {
+        display: none !important;
       }
 
       /* Force hide all container visual elements */
@@ -134,11 +150,20 @@
         display: none !important;
       }
 
-      /* Show textarea directly */
+      /* Input area: fit outer frame directly */
       div.query-box textarea,
       [class*="query-box"] textarea,
       div.query-box [contenteditable="true"],
       [class*="query-box"] [contenteditable="true"] {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-height: 28px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        outline: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
