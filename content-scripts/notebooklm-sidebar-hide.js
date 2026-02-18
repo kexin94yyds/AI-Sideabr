@@ -57,7 +57,7 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - compressed and transparent */
+      /* Keep input area at bottom - 50px height and transparent */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
@@ -67,10 +67,11 @@
         border: none !important;
         box-shadow: none !important;
         z-index: 100 !important;
-        min-height: 48px !important;
-        max-height: 48px !important;
-        overflow: hidden !important;
-        transition: max-height 0.3s ease, background 0.3s ease !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        overflow: visible !important;
+        transition: background 0.3s ease !important;
       }
 
       /* Hide container padding and borders */
@@ -109,22 +110,36 @@
         border: none !important;
       }
 
-      /* Expand on hover - limited height */
+      /* Show background on hover or focus */
       div.query-box:hover,
+      div.query-box:focus-within,
       [class*="query-box"]:hover,
-      [class*="input-container"]:hover {
-        max-height: 150px !important;
-        min-height: auto !important;
+      [class*="query-box"]:focus-within,
+      [class*="input-container"]:hover,
+      [class*="input-container"]:focus-within {
         background: var(--surface-container, #1e1e1e) !important;
       }
 
-      /* Keep expanded when focused */
-      div.query-box:focus-within,
-      [class*="query-box"]:focus-within,
-      [class*="input-container"]:focus-within {
-        max-height: 150px !important;
-        min-height: auto !important;
-        background: var(--surface-container, #1e1e1e) !important;
+      /* Hide prompt button */
+      div.query-box button[aria-label*="开始"],
+      div.query-box button[aria-label*="输入"],
+      div.query-box button:not([type="submit"]),
+      [class*="query-box"] button[aria-label*="开始"],
+      [class*="query-box"] button[aria-label*="输入"],
+      [class*="query-box"] button:not([type="submit"]),
+      div.query-box > button:first-child,
+      [class*="query-box"] > button:first-child {
+        display: none !important;
+      }
+
+      /* Show textarea directly */
+      div.query-box textarea,
+      [class*="query-box"] textarea,
+      div.query-box [contenteditable="true"],
+      [class*="query-box"] [contenteditable="true"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
       }
     `;
 
