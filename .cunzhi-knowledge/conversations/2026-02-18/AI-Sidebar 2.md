@@ -674,3 +674,69 @@ yan
 ❌不要截图了
 
 ---
+## 10:37:16  @ AI-Sidebar 2
+
+### 🤖 AI
+## ✅ 两个修复已提交（commit 1e55013）
+
+**修复内容**：
+
+1. **内容空白问题**：`gemini-footer-hide.js` 之前遍历所有 div 匹配"AI 工具"关键词，会误隐藏对话内容。现在只检查 `input-container` 的相邻兄弟元素，安全了。
+
+2. **高度没生效**：`gemini-input-resize.js` 缺少 MutationObserver，Gemini 是 SPA，DOM 动态变化后样式不会重新注入。现在添加了 Observer，与宽度脚本保持一致。
+
+**下一步**：
+1. 重新加载扩展
+2. 刷新 Gemini 页面
+3. 测试：高度滑块 + 历史对话是否还空白
+
+### 👤 用户
+然后你把我们的标题同步，还有侧边栏自动收起这些功能，都做到我们的 ASI Bar 以及原生浏览器上。
+
+现在这些功能都没做到，你需要把它们补齐。因为我们已经有现成的项目参考了，你直接照着抄（参考）不就行了吗？
+
+目前很多功能你好像都没做到位，你去看看人家是怎么做的，然后把它实现。就这么简单的事，为什么完不成呢？不可能完不成吧？
+
+
+而且我们这个东西就两个：
+1. 我们原始浏览器
+2. 我们的 ASI Bar 上
+
+特别难上，对吧？
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
