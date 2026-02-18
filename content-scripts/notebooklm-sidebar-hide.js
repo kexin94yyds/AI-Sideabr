@@ -6,6 +6,13 @@
   window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
+  const HOVER_ZONE_ID = 'aisb-notebooklm-hover-zone';
+  const SHOW_CLASS = 'aisb-tabs-visible';
+  const LEAVE_DELAY = 500;
+  const ENTER_DELAY = 150;
+
+  let leaveTimer = null;
+  let enterTimer = null;
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -24,16 +31,24 @@
         overflow: hidden !important;
       }
 
-      /* Hide NotebookLM top tab area */
-      div[id^="mat-tab-group-"][id$="-label"],
+      /* Tab area: collapsed by default, slides down on hover */
       [role="tablist"],
       .mat-mdc-tab-labels,
       .mat-mdc-tab-label-container {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
-        min-height: 0 !important;
+        max-height: 0 !important;
         overflow: hidden !important;
+        transition: max-height 0.25s ease, opacity 0.2s ease !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /* Tab area visible state */
+      body.${SHOW_CLASS} [role="tablist"],
+      body.${SHOW_CLASS} .mat-mdc-tab-labels,
+      body.${SHOW_CLASS} .mat-mdc-tab-label-container {
+        max-height: 60px !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
       }
 
       /* Expand content area to full height */
@@ -68,15 +83,68 @@
         display: block !important;
         visibility: visible !important;
       }
+
+      /* Hover zone: thin strip at top to trigger tab reveal */
+      #${HOVER_ZONE_ID} {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 20px !important;
+        z-index: 9999 !important;
+        pointer-events: auto !important;
+        background: transparent !important;
+      }
     `;
 
     document.head.appendChild(style);
-    console.log('[AISB NotebookLM] 顶部标签区域已隐藏');
+  }
+
+  function showTabs() {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    enterTimer = setTimeout(() => {
+      document.body.classList.add(SHOW_CLASS);
+    }, ENTER_DELAY);
+  }
+
+  function hideTabs() {
+    if (enterTimer) { clearTimeout(enterTimer); enterTimer = null; }
+    leaveTimer = setTimeout(() => {
+      document.body.classList.remove(SHOW_CLASS);
+    }, LEAVE_DELAY);
+  }
+
+  function injectHoverZone() {
+    if (document.getElementById(HOVER_ZONE_ID)) return;
+
+    const zone = document.createElement('div');
+    zone.id = HOVER_ZONE_ID;
+    document.body.appendChild(zone);
+
+    zone.addEventListener('mouseenter', showTabs);
+    zone.addEventListener('mouseleave', hideTabs);
+
+    const tabAreas = () => document.querySelectorAll('[role="tablist"], .mat-mdc-tab-labels, .mat-mdc-tab-label-container');
+    document.addEventListener('mouseover', (e) => {
+      for (const el of tabAreas()) {
+        if (el.contains(e.target)) { showTabs(); return; }
+      }
+    });
+    document.addEventListener('mouseout', (e) => {
+      for (const el of tabAreas()) {
+        if (el.contains(e.target) && !el.contains(e.relatedTarget)) { hideTabs(); return; }
+      }
+    });
+  }
+
+  function init() {
+    injectStyles();
+    injectHoverZone();
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectStyles, { once: true });
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
-    injectStyles();
+    init();
   }
 })();
