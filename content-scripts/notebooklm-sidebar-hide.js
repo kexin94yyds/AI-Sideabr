@@ -69,9 +69,9 @@
         left: 0 !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
-        width: 16px !important;
-        height: 56px !important;
-        background: rgba(100,100,100,0.5) !important;
+        width: 12px !important;
+        height: 48px !important;
+        background: rgba(128,128,128,0.25) !important;
         border: none !important;
         border-radius: 0 6px 6px 0 !important;
         cursor: pointer !important;
@@ -80,16 +80,10 @@
         justify-content: center !important;
         font-size: 10px !important;
         color: currentColor !important;
-        z-index: 2147483647 !important;
+        z-index: 99999 !important;
         padding: 0 !important;
         line-height: 1 !important;
         transition: background 0.15s !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        clip: auto !important;
-        clip-path: none !important;
-        overflow: visible !important;
       }
       #aisb-native-left-strip:hover {
         background: rgba(128,128,128,0.45) !important;
@@ -131,36 +125,8 @@
 
       const strip = document.createElement('button');
       strip.id = 'aisb-native-left-strip';
-      strip.textContent = pinnedOpen ? '‹' : '›';
+      strip.textContent = '›';
       strip.title = '展开/收起标签栏';
-
-      const updatePos = () => {
-        const h = 56;
-        strip.style.cssText = [
-          'position: fixed',
-          'left: 0',
-          `top: ${Math.round((window.innerHeight - h) / 2)}px`,
-          `width: 16px`,
-          `height: ${h}px`,
-          'background: rgba(100,100,100,0.5)',
-          'border: none',
-          'border-radius: 0 6px 6px 0',
-          'cursor: pointer',
-          'display: flex',
-          'align-items: center',
-          'justify-content: center',
-          'font-size: 11px',
-          'color: white',
-          'z-index: 2147483647',
-          'padding: 0',
-          'line-height: 1',
-          'visibility: visible',
-          'opacity: 1',
-          'pointer-events: auto',
-        ].join(' !important; ') + ' !important';
-      };
-      updatePos();
-      window.addEventListener('resize', updatePos);
 
       strip.addEventListener('click', () => {
         pinnedOpen = !pinnedOpen;
@@ -177,12 +143,6 @@
     };
 
     setTimeout(doInject, 800);
-
-    setInterval(() => {
-      if (!document.getElementById('aisb-native-left-strip')) {
-        doInject();
-      }
-    }, 1000);
   }
 
   function listenForParentMessages() {
