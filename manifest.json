@@ -194,7 +194,8 @@
       "run_at": "document_idle",
       "js": [
         "content-scripts/universal-input-collapse.js",
-        "content-scripts/notebooklm-sidebar-hide.js"
+        "content-scripts/notebooklm-sidebar-hide.js",
+        "content-scripts/notebooklm-timeline.js"
       ]
     },
     {
