@@ -1820,13 +1820,17 @@ const initializeBar = async () => {
     ];
 
     function sendTabMessage(msg) {
-      const iframe = document.getElementById('iframe');
-      if (!iframe) return;
-      const frames = iframe.querySelectorAll('iframe');
-      const target = frames.length ? frames[0] : iframe;
-      try {
-        if (target.contentWindow) target.contentWindow.postMessage(msg, '*');
-      } catch (_) {}
+      const frame = cachedFrames['notebooklm'];
+      if (frame && frame.contentWindow) {
+        try { frame.contentWindow.postMessage(msg, '*'); } catch (_) {}
+        return;
+      }
+      const container = document.getElementById('iframe');
+      if (!container) return;
+      const iframes = container.querySelectorAll('iframe');
+      if (iframes[0] && iframes[0].contentWindow) {
+        try { iframes[0].contentWindow.postMessage(msg, '*'); } catch (_) {}
+      }
     }
 
     function showPanel() {
