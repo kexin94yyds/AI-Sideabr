@@ -6,9 +6,9 @@
   window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
-  const HOVER_ZONE_ID = 'aisb-notebooklm-hover-zone';
+  const TOGGLE_ID = 'aisb-notebooklm-tab-toggle';
   const SHOW_CLASS = 'aisb-tabs-visible';
-  const LEAVE_DELAY = 500;
+  const LEAVE_DELAY = 600;
   const ENTER_DELAY = 150;
 
   let leaveTimer = null;
@@ -31,7 +31,7 @@
         overflow: hidden !important;
       }
 
-      /* Tab area: collapsed by default, slides down on hover */
+      /* Tab area: collapsed by default */
       [role="tablist"],
       .mat-mdc-tab-labels,
       .mat-mdc-tab-label-container {
@@ -84,16 +84,28 @@
         visibility: visible !important;
       }
 
-      /* Hover zone: thin strip at top to trigger tab reveal */
-      #${HOVER_ZONE_ID} {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 20px !important;
-        z-index: 9999 !important;
-        pointer-events: auto !important;
-        background: transparent !important;
+      /* Tab toggle button: sits below AI Sidebar toolbar */
+      #${TOGGLE_ID} {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+        height: 24px !important;
+        background: var(--surface-container-low, rgba(255,255,255,0.04)) !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        color: var(--on-surface-variant, #aaa) !important;
+        font-size: 11px !important;
+        cursor: pointer !important;
+        user-select: none !important;
+        transition: background 0.15s !important;
+        position: relative !important;
+        z-index: 200 !important;
+      }
+      #${TOGGLE_ID}:hover {
+        background: var(--surface-container, rgba(255,255,255,0.08)) !important;
+        color: var(--on-surface, #fff) !important;
       }
     `;
 
@@ -104,6 +116,8 @@
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
     enterTimer = setTimeout(() => {
       document.body.classList.add(SHOW_CLASS);
+      const btn = document.getElementById(TOGGLE_ID);
+      if (btn) btn.textContent = '▲ 来源 · 对话 · Studio';
     }, ENTER_DELAY);
   }
 
@@ -111,18 +125,21 @@
     if (enterTimer) { clearTimeout(enterTimer); enterTimer = null; }
     leaveTimer = setTimeout(() => {
       document.body.classList.remove(SHOW_CLASS);
+      const btn = document.getElementById(TOGGLE_ID);
+      if (btn) btn.textContent = '▼ 来源 · 对话 · Studio';
     }, LEAVE_DELAY);
   }
 
-  function injectHoverZone() {
-    if (document.getElementById(HOVER_ZONE_ID)) return;
+  function injectToggleButton() {
+    if (document.getElementById(TOGGLE_ID)) return;
 
-    const zone = document.createElement('div');
-    zone.id = HOVER_ZONE_ID;
-    document.body.appendChild(zone);
+    const btn = document.createElement('button');
+    btn.id = TOGGLE_ID;
+    btn.textContent = '▼ 来源 · 对话 · Studio';
+    btn.title = '悬停展开标签栏';
 
-    zone.addEventListener('mouseenter', showTabs);
-    zone.addEventListener('mouseleave', hideTabs);
+    btn.addEventListener('mouseenter', showTabs);
+    btn.addEventListener('mouseleave', hideTabs);
 
     const tabAreas = () => document.querySelectorAll('[role="tablist"], .mat-mdc-tab-labels, .mat-mdc-tab-label-container');
     document.addEventListener('mouseover', (e) => {
@@ -135,11 +152,31 @@
         if (el.contains(e.target) && !el.contains(e.relatedTarget)) { hideTabs(); return; }
       }
     });
+
+    const tryInsert = () => {
+      const body = document.querySelector('mat-tab-group, [role="tabpanel"]')?.closest('mat-tab-group')?.parentElement
+        || document.querySelector('.mat-mdc-tab-body-wrapper')?.parentElement
+        || document.body;
+
+      const tabGroup = document.querySelector('mat-tab-group');
+      if (tabGroup && tabGroup.parentElement) {
+        tabGroup.parentElement.insertBefore(btn, tabGroup);
+        return true;
+      }
+      return false;
+    };
+
+    if (!tryInsert()) {
+      const obs = new MutationObserver(() => {
+        if (tryInsert()) obs.disconnect();
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+    }
   }
 
   function init() {
     injectStyles();
-    injectHoverZone();
+    injectToggleButton();
   }
 
   if (document.readyState === 'loading') {
