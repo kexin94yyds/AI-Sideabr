@@ -125,7 +125,7 @@
 
       const strip = document.createElement('button');
       strip.id = 'aisb-native-left-strip';
-      strip.textContent = '›';
+      strip.textContent = pinnedOpen ? '‹' : '›';
       strip.title = '展开/收起标签栏';
 
       strip.addEventListener('click', () => {
@@ -143,6 +143,13 @@
     };
 
     setTimeout(doInject, 800);
+
+    const obs = new MutationObserver(() => {
+      if (!document.getElementById('aisb-native-left-strip')) {
+        setTimeout(doInject, 200);
+      }
+    });
+    obs.observe(document.body, { childList: true });
   }
 
   function listenForParentMessages() {
