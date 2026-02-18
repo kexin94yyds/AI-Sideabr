@@ -15,14 +15,12 @@
     '.query-text',
     'user-query',
     '.human-turn',
-  ];
-
-  const AI_SELECTORS = [
-    '[data-role="assistant"]',
-    '.assistant-message',
-    '.response-text',
-    '.model-response',
-    '.ai-turn',
+    '.user-query-text',
+    'query-box .query-text',
+    '.chat-query',
+    '[class*="user-query"]',
+    '[class*="human-message"]',
+    '[class*="query-bubble"]',
   ];
 
   function injectStyles() {
@@ -107,30 +105,21 @@
     let turns = [];
 
     for (const sel of USER_SELECTORS) {
-      const nodes = root.querySelectorAll(sel);
-      if (nodes.length) {
-        nodes.forEach((n) => turns.push({ node: n, type: 'user' }));
-        break;
-      }
+      try {
+        const nodes = root.querySelectorAll(sel);
+        if (nodes.length) {
+          nodes.forEach((n) => turns.push({ node: n, type: 'user' }));
+          break;
+        }
+      } catch (_) {}
     }
 
-    for (const sel of AI_SELECTORS) {
-      const nodes = root.querySelectorAll(sel);
-      if (nodes.length) {
-        nodes.forEach((n) => turns.push({ node: n, type: 'ai' }));
-        break;
-      }
+    if (turns.length > 1) {
+      turns.sort((a, b) => {
+        const pos = a.node.compareDocumentPosition(b.node);
+        return pos & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
     }
-
-    if (!turns.length) {
-      const allParagraphs = root.querySelectorAll('p, .paragraph, .turn, .message');
-      allParagraphs.forEach((n) => turns.push({ node: n, type: 'ai' }));
-    }
-
-    turns.sort((a, b) => {
-      const pos = a.node.compareDocumentPosition(b.node);
-      return pos & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-    });
 
     return turns;
   }
