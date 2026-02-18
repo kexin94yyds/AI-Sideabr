@@ -32,22 +32,16 @@
         overflow: hidden !important;
       }
 
-      /* Re-show Create Notebook button from hidden header */
-      button[aria-label="New notebook"],
-      button[aria-label="Create new notebook"],
-      button[aria-label="新建笔记本"],
-      button[data-test-id="new-notebook-button"],
-      a[href*="/notebook/new"],
-      .new-notebook-button {
-        display: inline-flex !important;
-        visibility: visible !important;
+      /* Cloned Create Notebook button */
+      #aisb-create-notebook-clone {
         position: fixed !important;
         top: 8px !important;
         right: 60px !important;
         z-index: 9999 !important;
-        height: auto !important;
-        min-height: 0 !important;
-        overflow: visible !important;
+        display: none !important;
+      }
+      body.${SHOW_CLASS} #aisb-create-notebook-clone {
+        display: inline-flex !important;
       }
 
       /* Tab area: collapsed by default */
@@ -144,6 +138,44 @@
     if (found) found.click();
   }
 
+  function findCreateNotebookBtn() {
+    const candidates = [
+      ...document.querySelectorAll('button'),
+      ...document.querySelectorAll('a'),
+    ];
+    return candidates.find(el => {
+      const label = (el.getAttribute('aria-label') || el.textContent || '').toLowerCase();
+      return /new notebook|create notebook|新建笔记|新建 notebook/i.test(label);
+    }) || null;
+  }
+
+  function injectCreateNotebookClone() {
+    if (document.getElementById('aisb-create-notebook-clone')) return;
+
+    const tryClone = () => {
+      const original = findCreateNotebookBtn();
+      if (!original) return false;
+
+      const clone = original.cloneNode(true);
+      clone.id = 'aisb-create-notebook-clone';
+      clone.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        original.click();
+      });
+      document.body.appendChild(clone);
+      return true;
+    };
+
+    if (!tryClone()) {
+      const obs = new MutationObserver(() => {
+        if (tryClone()) obs.disconnect();
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(() => obs.disconnect(), 10000);
+    }
+  }
+
   function listenForParentMessages() {
     window.addEventListener('message', (e) => {
       if (e.data === 'aisb-notebooklm-show-tabs') showTabs();
@@ -158,6 +190,7 @@
 
   function init() {
     injectStyles();
+    injectCreateNotebookClone();
     listenForParentMessages();
   }
 
