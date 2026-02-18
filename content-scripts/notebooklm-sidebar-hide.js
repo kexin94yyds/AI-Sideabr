@@ -139,7 +139,7 @@
         }
       });
 
-      document.body.appendChild(strip);
+      document.documentElement.appendChild(strip);
     };
 
     setTimeout(doInject, 800);
