@@ -170,7 +170,8 @@
     rebuildTimer = setTimeout(() => {
       rebuildTimer = null;
       const turns = findTurns();
-      if (turns.length !== lastTurnCount) {
+      const barMissing = !document.getElementById(BAR_ID);
+      if (turns.length !== lastTurnCount || barMissing) {
         lastTurnCount = turns.length;
         buildBar(turns);
       }
