@@ -71,7 +71,7 @@
         transform: translateY(-50%) !important;
         width: 12px !important;
         height: 48px !important;
-        background: #e5e7eb !important;
+        background: rgba(128,128,128,0.25) !important;
         border: none !important;
         border-radius: 0 6px 6px 0 !important;
         cursor: pointer !important;
@@ -79,15 +79,14 @@
         align-items: center !important;
         justify-content: center !important;
         font-size: 10px !important;
-        color: #6b7280 !important;
+        color: currentColor !important;
         z-index: 99999 !important;
         padding: 0 !important;
         line-height: 1 !important;
-        transition: background 0.15s, color 0.15s !important;
+        transition: background 0.15s !important;
       }
       #aisb-native-left-strip:hover {
-        background: #c7d2fe !important;
-        color: #1a73e8 !important;
+        background: rgba(128,128,128,0.45) !important;
       }
     `;
 

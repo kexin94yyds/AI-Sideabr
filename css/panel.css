@@ -1279,7 +1279,7 @@ html {
 #left-sidebar-toggle {
   width: 12px;
   height: 48px;
-  background: #e5e7eb;
+  background: rgba(128,128,128,0.25);
   border: none;
   border-radius: 0 6px 6px 0;
   cursor: pointer;
@@ -1287,12 +1287,11 @@ html {
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  color: #6b7280;
-  transition: background 0.15s, color 0.15s;
+  color: currentColor;
+  transition: background 0.15s;
   padding: 0;
   line-height: 1;
 }
 #left-sidebar-toggle:hover {
-  background: #c7d2fe;
-  color: #1a73e8;
+  background: rgba(128,128,128,0.45);
 }
