@@ -80,10 +80,16 @@
         justify-content: center !important;
         font-size: 10px !important;
         color: currentColor !important;
-        z-index: 99999 !important;
+        z-index: 2147483647 !important;
         padding: 0 !important;
         line-height: 1 !important;
         transition: background 0.15s !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        clip: auto !important;
+        clip-path: none !important;
+        overflow: visible !important;
       }
       #aisb-native-left-strip:hover {
         background: rgba(128,128,128,0.45) !important;
@@ -139,7 +145,7 @@
         }
       });
 
-      document.documentElement.appendChild(strip);
+      document.body.appendChild(strip);
     };
 
     setTimeout(doInject, 800);
@@ -148,7 +154,7 @@
       if (!document.getElementById('aisb-native-left-strip')) {
         doInject();
       }
-    }, 2000);
+    }, 1000);
   }
 
   function listenForParentMessages() {
