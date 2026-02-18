@@ -69,9 +69,9 @@
         left: 0 !important;
         top: 50% !important;
         transform: translateY(-50%) !important;
-        width: 12px !important;
-        height: 48px !important;
-        background: rgba(128,128,128,0.25) !important;
+        width: 16px !important;
+        height: 56px !important;
+        background: rgba(100,100,100,0.5) !important;
         border: none !important;
         border-radius: 0 6px 6px 0 !important;
         cursor: pointer !important;
