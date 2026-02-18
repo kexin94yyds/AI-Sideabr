@@ -10,19 +10,13 @@
   const STYLE_ID = 'aisb-nblm-timeline-style';
 
   const USER_SELECTORS = [
+    'chat-message',
+    '.chat-message',
+    '[class*="chat-message"]',
     '[data-role="user"]',
     '.user-message',
     '.query-text',
     '.human-turn',
-    '.user-query-text',
-    '.chat-query',
-    '[class*="user-query"]',
-    '[class*="human-message"]',
-    '[class*="query-bubble"]',
-    'conversation-turn[data-turn-type="user"]',
-    '.conversation-turn.user',
-    '.message.user',
-    '.turn.user',
   ];
 
   function injectStyles() {
@@ -96,18 +90,6 @@
       }
     `;
     document.head.appendChild(style);
-  }
-
-  function autoDetectUserNodes(root) {
-    const allEls = root.querySelectorAll('[class]');
-    const classCounts = {};
-    for (const el of allEls) {
-      for (const cls of el.classList) {
-        classCounts[cls] = (classCounts[cls] || 0) + 1;
-      }
-    }
-    console.log('[AISB Timeline] Top classes:', Object.entries(classCounts).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([k,v])=>k+':'+v).join(', '));
-    return [];
   }
 
   function findTurns() {
