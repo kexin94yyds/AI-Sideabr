@@ -31,19 +31,26 @@
     if (!style) {
       style = document.createElement('style');
       style.id = STYLE_ID;
-      document.head.appendChild(style);
+      document.documentElement.appendChild(style);
     }
+
+    const closedWidth = 'var(--bard-sidenav-closed-width, 72px)';
+    const openClosedDiff = `max(0px, calc(${currentWidth}px - ${closedWidth}))`;
 
     style.textContent = `
       :root {
         --bard-sidenav-open-width: ${currentWidth}px !important;
+        --bard-sidenav-open-closed-width-diff: ${openClosedDiff} !important;
+        --gv-sidenav-shift: ${openClosedDiff} !important;
       }
-      
-      bard-sidenav-container[data-sidenav-state="open"],
-      aside[role="navigation"] {
-        width: ${currentWidth}px !important;
-        min-width: ${currentWidth}px !important;
-        max-width: ${currentWidth}px !important;
+
+      #app-root:has(side-navigation-content > div.collapsed) {
+        --gv-sidenav-shift: 0px !important;
+      }
+
+      bard-sidenav {
+        --bard-sidenav-open-width: ${currentWidth}px !important;
+        --bard-sidenav-open-closed-width-diff: ${openClosedDiff} !important;
       }
     `;
   }
