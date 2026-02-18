@@ -7,6 +7,7 @@
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
   const SHOW_CLASS = 'aisb-tabs-visible';
+  const NEW_BTN_ID = 'aisb-notebooklm-new-btn';
   const LEAVE_DELAY = 600;
   const ENTER_DELAY = 150;
 
@@ -48,6 +49,33 @@
         max-height: 60px !important;
         opacity: 1 !important;
         pointer-events: auto !important;
+      }
+
+      /* New notebook button injected next to tab bar */
+      #${NEW_BTN_ID} {
+        position: fixed !important;
+        top: 8px !important;
+        right: 60px !important;
+        z-index: 9999 !important;
+        display: none !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 4px 10px !important;
+        background: #1a73e8 !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 16px !important;
+        font-size: 12px !important;
+        cursor: pointer !important;
+        white-space: nowrap !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
+        transition: background 0.15s !important;
+      }
+      #${NEW_BTN_ID}:hover {
+        background: #1557b0 !important;
+      }
+      body.${SHOW_CLASS} #${NEW_BTN_ID} {
+        display: inline-flex !important;
       }
 
       /* Expand content area to full height */
@@ -123,6 +151,15 @@
     if (found) found.click();
   }
 
+  function injectNewNotebookBtn() {
+    if (document.getElementById(NEW_BTN_ID)) return;
+    const btn = document.createElement('button');
+    btn.id = NEW_BTN_ID;
+    btn.textContent = '➕ 新建笔记库';
+    btn.addEventListener('click', clickCreateNotebook);
+    document.body.appendChild(btn);
+  }
+
   function listenForParentMessages() {
     window.addEventListener('message', (e) => {
       if (e.data === 'aisb-notebooklm-show-tabs') showTabs();
@@ -137,6 +174,7 @@
 
   function init() {
     injectStyles();
+    injectNewNotebookBtn();
     listenForParentMessages();
   }
 
