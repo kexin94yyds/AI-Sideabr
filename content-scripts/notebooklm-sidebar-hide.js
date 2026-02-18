@@ -7,6 +7,11 @@
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
   const SHOW_CLASS = 'aisb-header-visible';
+  const HOVER_ZONE_PX = 56;
+  const LEAVE_DELAY = 600;
+
+  let leaveTimer = null;
+  let pinnedOpen = false;
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -61,22 +66,46 @@
   }
 
   function showHeader() {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
     document.body.classList.add(SHOW_CLASS);
   }
 
   function hideHeader() {
-    document.body.classList.remove(SHOW_CLASS);
+    if (pinnedOpen) return;
+    if (leaveTimer) clearTimeout(leaveTimer);
+    leaveTimer = setTimeout(() => {
+      document.body.classList.remove(SHOW_CLASS);
+    }, LEAVE_DELAY);
+  }
+
+  function setupHoverZone() {
+    document.addEventListener('mousemove', (e) => {
+      if (pinnedOpen) return;
+      if (e.clientY <= HOVER_ZONE_PX) {
+        showHeader();
+      } else if (document.body.classList.contains(SHOW_CLASS)) {
+        hideHeader();
+      }
+    });
   }
 
   function listenForParentMessages() {
     window.addEventListener('message', (e) => {
-      if (e.data === 'aisb-notebooklm-show-tabs') showHeader();
-      if (e.data === 'aisb-notebooklm-hide-tabs') hideHeader();
+      if (e.data === 'aisb-notebooklm-show-tabs') {
+        pinnedOpen = true;
+        showHeader();
+      }
+      if (e.data === 'aisb-notebooklm-hide-tabs') {
+        pinnedOpen = false;
+        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+        document.body.classList.remove(SHOW_CLASS);
+      }
     });
   }
 
   function init() {
     injectStyles();
+    setupHoverZone();
     listenForParentMessages();
   }
 
