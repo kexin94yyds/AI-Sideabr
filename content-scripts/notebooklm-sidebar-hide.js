@@ -62,10 +62,37 @@
         pointer-events: auto !important;
       }
 
-      /* Hide AI Sidebar injected input collapse bar for NotebookLM */
-      [data-aisb-collapse-events-bound],
-      .aisb-input-collapsed {
+      /* Hide AI Sidebar collapse placeholder for NotebookLM */
+      .aisb-collapse-placeholder {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+      }
+      /* Restore hidden children inside collapsed input container */
+      .aisb-input-collapsed > *:not(.aisb-collapse-placeholder) {
+        visibility: visible !important;
+        opacity: 1 !important;
+        width: revert !important;
+        height: revert !important;
+        margin: revert !important;
+        padding: revert !important;
+        position: revert !important;
+        pointer-events: auto !important;
+      }
+      /* Remove collapsed pill shape */
+      .aisb-input-collapsed {
+        height: revert !important;
+        min-height: revert !important;
+        max-height: revert !important;
+        border-radius: revert !important;
+        width: revert !important;
+        min-width: revert !important;
+        max-width: revert !important;
+        padding: revert !important;
+        background-color: revert !important;
+        box-shadow: revert !important;
+        border: revert !important;
+        overflow: revert !important;
       }
 
       /* Native page left toggle strip */
