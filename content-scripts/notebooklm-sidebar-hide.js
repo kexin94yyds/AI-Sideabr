@@ -119,25 +119,30 @@
 
   function injectNativeStrip() {
     if (IS_IFRAME) return;
-    if (document.getElementById('aisb-native-left-strip')) return;
 
-    const strip = document.createElement('button');
-    strip.id = 'aisb-native-left-strip';
-    strip.textContent = '›';
-    strip.title = '展开/收起标签栏';
+    const doInject = () => {
+      if (document.getElementById('aisb-native-left-strip')) return;
 
-    strip.addEventListener('click', () => {
-      pinnedOpen = !pinnedOpen;
-      strip.textContent = pinnedOpen ? '‹' : '›';
-      if (pinnedOpen) {
-        showHeader();
-      } else {
-        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-        document.body.classList.remove(SHOW_CLASS);
-      }
-    });
+      const strip = document.createElement('button');
+      strip.id = 'aisb-native-left-strip';
+      strip.textContent = '›';
+      strip.title = '展开/收起标签栏';
 
-    document.body.appendChild(strip);
+      strip.addEventListener('click', () => {
+        pinnedOpen = !pinnedOpen;
+        strip.textContent = pinnedOpen ? '‹' : '›';
+        if (pinnedOpen) {
+          showHeader();
+        } else {
+          if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+          document.body.classList.remove(SHOW_CLASS);
+        }
+      });
+
+      document.body.appendChild(strip);
+    };
+
+    setTimeout(doInject, 800);
   }
 
   function listenForParentMessages() {
