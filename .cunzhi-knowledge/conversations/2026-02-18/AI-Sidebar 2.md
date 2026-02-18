@@ -1306,3 +1306,59 @@ provider可以不过左边的不可以,ask
 ❌不要截图了
 
 ---
+## 12:10:58  @ AI-Sidebar 2
+
+### 🤖 AI
+## 关于 Gemini 左侧菜单栏
+
+在 AI Sidebar 的 iframe 里，Gemini 因为宽度太窄（约 400px），会自动隐藏 `bard-sidenav`（左侧历史/文件夹列表）。这是 Gemini 自己的响应式设计，不是我们能控制的。
+
+**你看到的"左边菜单栏"是指什么？**
+- A. Gemini 页面里的左侧历史对话列表（`bard-sidenav`）
+- B. AI Sidebar 里的某个其他 UI 元素
+
+如果是 A，在 iframe 里 Gemini 本身就不显示这个侧边栏（因为宽度不够），所以无法做 hover 自动收起。
+
+如果是 B，请截图给我看。
+
+### 👤 用户
+ 就是我们的这个后边的能不能把它给缩小一点？就是我的这个 Infra 上的，用 Infra 方的这个菜单栏把它缩小一点。
+
+我们是不是已经做了那个缩小的滑动按钮或者滑动杆了？如果没做的话再做一个呗。就是我只要把它的长度给调整了，我往左滑动，它这个展出的侧边栏就会变小；然后我往右滑动，它展出的侧边栏就会变长、变宽，对吧？
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
