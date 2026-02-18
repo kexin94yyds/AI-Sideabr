@@ -101,10 +101,37 @@
     }, LEAVE_DELAY);
   }
 
+  function clickTab(tabIndex) {
+    const tabs = document.querySelectorAll('[role="tab"]');
+    if (tabs[tabIndex]) {
+      tabs[tabIndex].click();
+    }
+  }
+
+  function clickCreateNotebook() {
+    const btn = document.querySelector(
+      'button[aria-label*="Create"], button[aria-label*="新建"], ' +
+      'button[data-mat-icon-name*="add"], a[href*="/notebook/new"], ' +
+      '.new-notebook-button, [data-test-id="new-notebook"]'
+    );
+    if (btn) {
+      btn.click();
+      return;
+    }
+    const allBtns = Array.from(document.querySelectorAll('button'));
+    const found = allBtns.find(b => /create|新建|new notebook/i.test(b.textContent));
+    if (found) found.click();
+  }
+
   function listenForParentMessages() {
     window.addEventListener('message', (e) => {
       if (e.data === 'aisb-notebooklm-show-tabs') showTabs();
       if (e.data === 'aisb-notebooklm-hide-tabs') hideTabs();
+      if (e.data === 'aisb-notebooklm-create-notebook') clickCreateNotebook();
+      if (e.data && typeof e.data === 'object' && e.data.type === 'aisb-notebooklm-switch-tab') {
+        showTabs();
+        setTimeout(() => clickTab(e.data.tab), 200);
+      }
     });
   }
 
