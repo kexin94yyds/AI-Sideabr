@@ -110,10 +110,6 @@
       } catch (_) {}
     }
 
-    if (!turns.length) {
-      turns = autoDetectUserNodes(root);
-    }
-
     if (turns.length > 1) {
       turns.sort((a, b) => {
         const pos = a.node.compareDocumentPosition(b.node);
