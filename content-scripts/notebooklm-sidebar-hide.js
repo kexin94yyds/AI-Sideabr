@@ -24,7 +24,8 @@
          but keep the Create Notebook button visible */
       div.notebook-header-buttons-container,
       [class*="notebook-header"],
-      [class*="header-buttons-container"] {
+      [class*="header-buttons-container"],
+      .configure-settings-button-tab-view-container {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
