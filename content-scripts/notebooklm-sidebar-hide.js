@@ -20,7 +20,8 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* Hide NotebookLM top header with title and buttons */
+      /* Hide NotebookLM top header with title and buttons,
+         but keep the Create Notebook button visible */
       div.notebook-header-buttons-container,
       [class*="notebook-header"],
       [class*="header-buttons-container"] {
@@ -29,6 +30,24 @@
         height: 0 !important;
         min-height: 0 !important;
         overflow: hidden !important;
+      }
+
+      /* Re-show Create Notebook button from hidden header */
+      button[aria-label="New notebook"],
+      button[aria-label="Create new notebook"],
+      button[aria-label="新建笔记本"],
+      button[data-test-id="new-notebook-button"],
+      a[href*="/notebook/new"],
+      .new-notebook-button {
+        display: inline-flex !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 8px !important;
+        right: 60px !important;
+        z-index: 9999 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
       }
 
       /* Tab area: collapsed by default */
@@ -51,32 +70,6 @@
         pointer-events: auto !important;
       }
 
-      /* New notebook button injected next to tab bar */
-      #${NEW_BTN_ID} {
-        position: fixed !important;
-        top: 8px !important;
-        right: 60px !important;
-        z-index: 9999 !important;
-        display: none !important;
-        align-items: center !important;
-        gap: 4px !important;
-        padding: 4px 10px !important;
-        background: #1a73e8 !important;
-        color: #fff !important;
-        border: none !important;
-        border-radius: 16px !important;
-        font-size: 12px !important;
-        cursor: pointer !important;
-        white-space: nowrap !important;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
-        transition: background 0.15s !important;
-      }
-      #${NEW_BTN_ID}:hover {
-        background: #1557b0 !important;
-      }
-      body.${SHOW_CLASS} #${NEW_BTN_ID} {
-        display: inline-flex !important;
-      }
 
       /* Expand content area to full height */
       [role="tabpanel"],
@@ -151,15 +144,6 @@
     if (found) found.click();
   }
 
-  function injectNewNotebookBtn() {
-    if (document.getElementById(NEW_BTN_ID)) return;
-    const btn = document.createElement('button');
-    btn.id = NEW_BTN_ID;
-    btn.textContent = '➕ 新建笔记库';
-    btn.addEventListener('click', clickCreateNotebook);
-    document.body.appendChild(btn);
-  }
-
   function listenForParentMessages() {
     window.addEventListener('message', (e) => {
       if (e.data === 'aisb-notebooklm-show-tabs') showTabs();
@@ -174,7 +158,6 @@
 
   function init() {
     injectStyles();
-    injectNewNotebookBtn();
     listenForParentMessages();
   }
 
