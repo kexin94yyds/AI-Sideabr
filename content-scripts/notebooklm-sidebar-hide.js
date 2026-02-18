@@ -59,7 +59,7 @@
         overflow-y: auto !important;
       }
 
-      /* Keep input area at bottom - 50px height and transparent */
+      /* Keep input area at bottom - minimal height and transparent */
       div.query-box,
       [class*="query-box"],
       [class*="input-container"] {
@@ -69,9 +69,9 @@
         border: none !important;
         box-shadow: none !important;
         z-index: 100 !important;
-        height: 50px !important;
-        min-height: 50px !important;
-        max-height: 50px !important;
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
         overflow: visible !important;
         transition: background 0.3s ease !important;
       }
