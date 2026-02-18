@@ -62,6 +62,12 @@
         pointer-events: auto !important;
       }
 
+      /* Hide AI Sidebar injected input collapse bar for NotebookLM */
+      [data-aisb-collapse-events-bound],
+      .aisb-input-collapsed {
+        display: none !important;
+      }
+
       /* Native page left toggle strip */
       #aisb-native-left-strip {
         position: fixed !important;
