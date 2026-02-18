@@ -144,12 +144,11 @@
 
     setTimeout(doInject, 800);
 
-    const obs = new MutationObserver(() => {
+    setInterval(() => {
       if (!document.getElementById('aisb-native-left-strip')) {
-        setTimeout(doInject, 200);
+        doInject();
       }
-    });
-    obs.observe(document.body, { childList: true });
+    }, 2000);
   }
 
   function listenForParentMessages() {
