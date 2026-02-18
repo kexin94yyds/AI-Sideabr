@@ -2917,3 +2917,55 @@ NotebookLM 的 Chat 面板结构不同，需要先确认：
 ❌不要截图了
 
 ---
+## 19:53:55  @ AI-Sidebar 2
+
+### 🤖 AI
+## ✅ 完成（commit f2c5032）
+
+**NotebookLM 对话时间线**：
+- 右侧注入一个 14px 宽的折叠条
+- hover 展开显示对话列表（用户问题蓝色 `▶`，AI 回复灰色缩进）
+- 点击任意条目跳转到对应消息
+- MutationObserver 监听新消息自动更新
+
+**注意**：由于无法直接查看 NotebookLM Chat 的真实 DOM，选择器是基于推测的。重新加载扩展测试后，如果时间线没有显示内容，请打开 DevTools 告诉我 Chat 面板里消息节点的实际类名，我来调整选择器。
+
+### 👤 用户
+奇怪的是，它一会儿出现，一会儿又不出现。这什么原生的，看咋回事呢？我看到那几个孔，但是它又没出现，突然出现又没出现了，它好像有点奇怪吧。
+
+✔️不明白的地方反问我，先不着急编码
+发现新问题时，询问是否记录到 `~/.cunzhi-knowledge/problems.md`
+✔继续调用 zhi回答我
+✔git保存
+✔严格遵守 `~/.codeium/windsurf/memories/global_rules.md`
+✔️不明白的地方反问我，先不着急编码
+✔️发现新问题时，询问是否记录到 ~/.cunzhi-knowledge/problems.md
+✔️继续调用 zhi 回答我
+✔️git 保存
+✔️严格遵守 ~/.codeium/windsurf/memories/global_rules.md
+快捷触发词
+对话开始：读取 ~/.cunzhi-knowledge/prompts/skills/INDEX.md 获取可用 Skills
+- **ji**：沉淀/记忆（ji1=沉淀三件套，ji2=创建Memory，ji3=两者都要，ji=弹选项）
+- **cha**：代码审查（Codex）
+- **pai**：多终端并发编排（Codex）
+- **qiu**：咨询建议（Codex）
+- **copilot**：多模型执行（Claude/GPT/Gemini）
+- **sou**：网络搜索
+- **xi**：查询历史经验
+- **sync**：同步知识库
+- **yan**：并行调研
+- **plan**：codex 计划
+✔️请记住，Codex First 规则（强制）：
+- 必须调用 codex exec 的场景：涉及 ≥3 个文件的修改、跨模块重构、iOS/Swift 代码、审查、规划、调研、批量处理、文档生成。这些场景下禁止 Cascade 自己动手，必须先调用 codex exec skill。
+- 具体执行步骤：(1) 用 run_command 调用 codex exec，将用户原话 + Cascade 的理解和上下文一起传给 Codex (2) Cascade 静默等待 Codex 完成 (3) 读取 Codex 输出后审阅/补充/执行
+- Cascade 可直接执行的：单文件简单编辑、grep/read 等 IDE 内置工具操作、规则文档更新
+- 自检：动手前问自己"这个任务涉及几个文件？是否跨模块？"，如果答案是复杂的，必须走 codex exec
+✔️请记住，终端清屏规则：
+- 触发时机：在同一终端中连续执行 ≥3 次命令，或上一次命令输出超过 50 行时，下次执行前先清屏
+- 适用范围：run_command、MCP 工具调用（codex/pai/copilot 等）、iterate --bridge 降级
+- 执行方式：命令前加 clear &&（Windsurf 复用终端，无法创建新终端）
+- 不清屏的情况：命令输出需要被后续步骤引用时（如 grep 结果、编译错误），不要清屏
+✔️请记住，完成测试、构建、UI修改等操作后，用 `screencapture -x /tmp/screenshot.png` 截图，然后在 iterate 消息中用 `![截图](/tmp/screenshot.png)` 发给我查看结果
+❌不要截图了
+
+---
