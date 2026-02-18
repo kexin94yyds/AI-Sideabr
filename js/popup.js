@@ -1751,6 +1751,10 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   });
 
   // 展开时：使用 sticky 置顶（CSS 负责），不覆盖第一个图标
+
+  if (typeof window.__aisbUpdateLeftSidebar === 'function') {
+    window.__aisbUpdateLeftSidebar(currentProviderKey);
+  }
 };
 
 const initializeBar = async () => {
@@ -1797,6 +1801,102 @@ const initializeBar = async () => {
         }
       }, COLLAPSE_DELAY);
     });
+  })();
+
+  // Left sidebar: NotebookLM panel switcher
+  (() => {
+    const leftSidebar = document.getElementById('left-sidebar');
+    if (!leftSidebar) return;
+
+    let panel = null;
+    let hideTimer = null;
+    let showTimer = null;
+
+    const NOTEBOOKLM_TABS = [
+      { label: '📚 来源', tab: 0, title: 'Sources' },
+      { label: '💬 对话', tab: 1, title: 'Chat' },
+      { label: '🎙️ Studio', tab: 2, title: 'Studio' },
+      { label: '➕ 新建笔记库', tab: -1, title: 'Create Notebook' },
+    ];
+
+    function sendTabMessage(msg) {
+      const iframe = document.getElementById('iframe');
+      if (!iframe) return;
+      const frames = iframe.querySelectorAll('iframe');
+      const target = frames.length ? frames[0] : iframe;
+      try {
+        if (target.contentWindow) target.contentWindow.postMessage(msg, '*');
+      } catch (_) {}
+    }
+
+    function showPanel() {
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      showTimer = setTimeout(() => {
+        if (panel) panel.classList.add('visible');
+        sendTabMessage('aisb-notebooklm-show-tabs');
+      }, 150);
+    }
+
+    function hidePanel() {
+      if (showTimer) { clearTimeout(showTimer); showTimer = null; }
+      hideTimer = setTimeout(() => {
+        if (panel) panel.classList.remove('visible');
+        sendTabMessage('aisb-notebooklm-hide-tabs');
+      }, 600);
+    }
+
+    function buildLeftSidebar(providerKey) {
+      leftSidebar.innerHTML = '';
+      if (panel) { panel.remove(); panel = null; }
+
+      if (providerKey !== 'notebooklm') {
+        leftSidebar.classList.remove('has-items');
+        return;
+      }
+
+      leftSidebar.classList.add('has-items');
+
+      const toggle = document.createElement('button');
+      toggle.id = 'left-sidebar-toggle';
+      toggle.textContent = '›';
+      toggle.title = '展开面板';
+      leftSidebar.appendChild(toggle);
+
+      panel = document.createElement('div');
+      panel.id = 'left-sidebar-panel';
+
+      const header = document.createElement('div');
+      header.className = 'lsp-header';
+      header.textContent = 'NotebookLM';
+      panel.appendChild(header);
+
+      NOTEBOOKLM_TABS.forEach(({ label, tab, title }) => {
+        const item = document.createElement('div');
+        item.className = 'lsp-item';
+        item.textContent = label;
+        item.title = title;
+        item.addEventListener('click', () => {
+          if (tab === -1) {
+            sendTabMessage('aisb-notebooklm-create-notebook');
+          } else {
+            sendTabMessage({ type: 'aisb-notebooklm-switch-tab', tab });
+          }
+          hidePanel();
+        });
+        panel.appendChild(item);
+      });
+
+      document.body.appendChild(panel);
+
+      toggle.addEventListener('mouseenter', showPanel);
+      toggle.addEventListener('mouseleave', hidePanel);
+      panel.addEventListener('mouseenter', showPanel);
+      panel.addEventListener('mouseleave', hidePanel);
+    }
+
+    buildLeftSidebar(currentProviderKey);
+
+    window.__aisbUpdateLeftSidebar = buildLeftSidebar;
   })();
 
   // helper: request host permission for a provider URL and add DNR rule

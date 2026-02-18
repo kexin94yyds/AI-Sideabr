@@ -6,7 +6,6 @@
   window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';
-  const TOGGLE_ID = 'aisb-notebooklm-tab-toggle';
   const SHOW_CLASS = 'aisb-tabs-visible';
   const LEAVE_DELAY = 600;
   const ENTER_DELAY = 150;
@@ -42,7 +41,7 @@
         pointer-events: none !important;
       }
 
-      /* Tab area visible state */
+      /* Tab area visible when triggered from parent frame */
       body.${SHOW_CLASS} [role="tablist"],
       body.${SHOW_CLASS} .mat-mdc-tab-labels,
       body.${SHOW_CLASS} .mat-mdc-tab-label-container {
@@ -83,30 +82,6 @@
         display: block !important;
         visibility: visible !important;
       }
-
-      /* Tab toggle button: sits below AI Sidebar toolbar */
-      #${TOGGLE_ID} {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 6px !important;
-        width: 100% !important;
-        height: 24px !important;
-        background: var(--surface-container-low, rgba(255,255,255,0.04)) !important;
-        border: none !important;
-        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
-        color: var(--on-surface-variant, #aaa) !important;
-        font-size: 11px !important;
-        cursor: pointer !important;
-        user-select: none !important;
-        transition: background 0.15s !important;
-        position: relative !important;
-        z-index: 200 !important;
-      }
-      #${TOGGLE_ID}:hover {
-        background: var(--surface-container, rgba(255,255,255,0.08)) !important;
-        color: var(--on-surface, #fff) !important;
-      }
     `;
 
     document.head.appendChild(style);
@@ -116,8 +91,6 @@
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
     enterTimer = setTimeout(() => {
       document.body.classList.add(SHOW_CLASS);
-      const btn = document.getElementById(TOGGLE_ID);
-      if (btn) btn.textContent = '▲ 来源 · 对话 · Studio';
     }, ENTER_DELAY);
   }
 
@@ -125,58 +98,19 @@
     if (enterTimer) { clearTimeout(enterTimer); enterTimer = null; }
     leaveTimer = setTimeout(() => {
       document.body.classList.remove(SHOW_CLASS);
-      const btn = document.getElementById(TOGGLE_ID);
-      if (btn) btn.textContent = '▼ 来源 · 对话 · Studio';
     }, LEAVE_DELAY);
   }
 
-  function injectToggleButton() {
-    if (document.getElementById(TOGGLE_ID)) return;
-
-    const btn = document.createElement('button');
-    btn.id = TOGGLE_ID;
-    btn.textContent = '▼ 来源 · 对话 · Studio';
-    btn.title = '悬停展开标签栏';
-
-    btn.addEventListener('mouseenter', showTabs);
-    btn.addEventListener('mouseleave', hideTabs);
-
-    const tabAreas = () => document.querySelectorAll('[role="tablist"], .mat-mdc-tab-labels, .mat-mdc-tab-label-container');
-    document.addEventListener('mouseover', (e) => {
-      for (const el of tabAreas()) {
-        if (el.contains(e.target)) { showTabs(); return; }
-      }
+  function listenForParentMessages() {
+    window.addEventListener('message', (e) => {
+      if (e.data === 'aisb-notebooklm-show-tabs') showTabs();
+      if (e.data === 'aisb-notebooklm-hide-tabs') hideTabs();
     });
-    document.addEventListener('mouseout', (e) => {
-      for (const el of tabAreas()) {
-        if (el.contains(e.target) && !el.contains(e.relatedTarget)) { hideTabs(); return; }
-      }
-    });
-
-    const tryInsert = () => {
-      const body = document.querySelector('mat-tab-group, [role="tabpanel"]')?.closest('mat-tab-group')?.parentElement
-        || document.querySelector('.mat-mdc-tab-body-wrapper')?.parentElement
-        || document.body;
-
-      const tabGroup = document.querySelector('mat-tab-group');
-      if (tabGroup && tabGroup.parentElement) {
-        tabGroup.parentElement.insertBefore(btn, tabGroup);
-        return true;
-      }
-      return false;
-    };
-
-    if (!tryInsert()) {
-      const obs = new MutationObserver(() => {
-        if (tryInsert()) obs.disconnect();
-      });
-      obs.observe(document.body, { childList: true, subtree: true });
-    }
   }
 
   function init() {
     injectStyles();
-    injectToggleButton();
+    listenForParentMessages();
   }
 
   if (document.readyState === 'loading') {
