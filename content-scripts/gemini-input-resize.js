@@ -19,7 +19,12 @@
     });
   }
 
-  function updateInputHeight(height) {
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function updateInputHeight(value) {
+    const height = clamp(Number(value) || 58, 30, 100);
     currentHeight = height;
     let style = document.getElementById(STYLE_ID);
     
@@ -30,29 +35,6 @@
     }
 
     style.textContent = `
-      .content-wrapper:has(input-container),
-      .main-content:has(input-container),
-      .content-container:has(input-container),
-      [role="main"]:has(input-container),
-      main > div:has(input-container) {
-        max-width: none !important;
-        width: 100% !important;
-      }
-
-      input-container {
-        max-width: ${WIDTH} !important;
-        width: min(100%, ${WIDTH}) !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-      }
-
-      input-container .input-area-container,
-      input-area-v2,
-      input-area-v2 .input-area {
-        max-width: 100% !important;
-        width: 100% !important;
-      }
-
       input-area-v2 .input-area {
         min-height: ${height}px !important;
       }
