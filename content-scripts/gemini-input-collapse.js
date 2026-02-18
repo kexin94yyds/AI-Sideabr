@@ -182,16 +182,16 @@
     style.id = STYLE_ID;
     style.textContent = `
       input-container.${COLLAPSED_CLASS} {
-        height: 48px !important;
-        min-height: 48px !important;
-        max-height: 48px !important;
-        border-radius: 24px !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        border-radius: 20px !important;
         width: auto !important;
-        min-width: 200px !important;
-        max-width: 600px !important;
+        min-width: 120px !important;
+        max-width: min(320px, 80%) !important;
         margin-left: auto !important;
         margin-right: auto !important;
-        padding: 0 24px !important;
+        padding: 0 16px !important;
         overflow: hidden !important;
         background-color: var(--gm3-sys-color-surface-container, #f0f4f9) !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
