@@ -134,6 +134,34 @@
       strip.textContent = pinnedOpen ? '‹' : '›';
       strip.title = '展开/收起标签栏';
 
+      const updatePos = () => {
+        const h = 56;
+        strip.style.cssText = [
+          'position: fixed',
+          'left: 0',
+          `top: ${Math.round((window.innerHeight - h) / 2)}px`,
+          `width: 16px`,
+          `height: ${h}px`,
+          'background: rgba(100,100,100,0.5)',
+          'border: none',
+          'border-radius: 0 6px 6px 0',
+          'cursor: pointer',
+          'display: flex',
+          'align-items: center',
+          'justify-content: center',
+          'font-size: 11px',
+          'color: white',
+          'z-index: 2147483647',
+          'padding: 0',
+          'line-height: 1',
+          'visibility: visible',
+          'opacity: 1',
+          'pointer-events: auto',
+        ].join(' !important; ') + ' !important';
+      };
+      updatePos();
+      window.addEventListener('resize', updatePos);
+
       strip.addEventListener('click', () => {
         pinnedOpen = !pinnedOpen;
         strip.textContent = pinnedOpen ? '‹' : '›';

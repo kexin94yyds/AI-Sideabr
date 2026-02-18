@@ -96,7 +96,7 @@
   function findTurns() {
     const chatPanel = document.querySelector(
       'mat-tab-body.mat-mdc-tab-body-active, [role="tabpanel"]:not([hidden])'
-    );
+    );  
     const root = chatPanel || document;
 
     let turns = [];
@@ -126,7 +126,33 @@
     return t.length > max ? t.slice(0, max) + '…' : t;
   }
 
+  function positionBar(bar) {
+    const maxH = Math.round(window.innerHeight * 0.6);
+    bar.style.cssText = [
+      'position: fixed',
+      `right: 0`,
+      `top: ${Math.round(window.innerHeight * 0.2)}px`,
+      'width: 14px',
+      'display: flex',
+      'flex-direction: column',
+      'align-items: center',
+      'gap: 4px',
+      'z-index: 2147483646',
+      'padding: 6px 0',
+      'background: rgba(128,128,128,0.15)',
+      'border-radius: 7px 0 0 7px',
+      `max-height: ${maxH}px`,
+      'overflow: hidden',
+      'visibility: visible',
+      'opacity: 1',
+      'pointer-events: auto',
+    ].join(' !important; ') + ' !important';
+  }
+
+  let turns_cache = [];
+
   function buildBar(turns) {
+    turns_cache = turns;
     let bar = document.getElementById(BAR_ID);
     if (!bar) {
       bar = document.createElement('div');
@@ -139,7 +165,7 @@
       bar.style.display = 'none';
       return;
     }
-    bar.style.display = 'flex';
+    positionBar(bar);
 
     turns.forEach(({ node, type }, idx) => {
       const dot = document.createElement('div');
