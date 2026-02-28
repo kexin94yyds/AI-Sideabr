@@ -801,6 +801,13 @@
   }
   function findPromptElement() {
     try {
+      if (location.hostname === 'gemini.google.com') {
+        const collapsed = document.querySelector('input-container.aisb-input-collapsed');
+        if (collapsed) collapsed.classList.remove('aisb-input-collapsed');
+        const geminiInput = document.querySelector('rich-textarea [contenteditable="true"]');
+        if (geminiInput) return geminiInput;
+      }
+      
       const els = [];
       // Common inputs
       els.push(...document.querySelectorAll('textarea'));

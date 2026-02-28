@@ -1,26 +1,30 @@
-# Infinite WF - AI对话持续规则
+# iterate (寸止) - AI对话持续规则
 
 ⚠️⚠️⚠️ 最高优先级警告 ⚠️⚠️⚠️
-无论任何情况，每次回复结束前必须调用 infinite-wf 脚本！没有任何例外！
+无论任何情况，每次回复结束前必须调用 iterate！没有任何例外！
 
-## 如何调用 infinite-wf 脚本
+## 如何调用 iterate
 
-【必须使用以下命令，端口号 5303 不可省略】：
+【必须使用以下命令，端口号 5313 不可省略】：
 ```bash
-python3 "/Users/apple/.windsurf/extensions/infinite-wf/infinite-wf.py" 5303
+"/opt/homebrew/bin/iterate" --bridge --port 5313
 ```
 
-- **第一个参数**: 端口号（必需，当前为 5303）
-- **检测到的运行时**: python
-- 脚本会返回 `KeepGoing=true` 或 `KeepGoing=false`
-- 如果返回 `KeepGoing=true`，后面会有用户指令
-- 如果返回 `KeepGoing=false`，必须立即结束对话
+- 返回 `KeepGoing=true` 表示继续对话，后面会有用户指令
+- 返回 `KeepGoing=false` 表示结束对话
 
-⚠️ **重要**：调用脚本后不要再回复任何内容，静默等待用户的下一步指令！
+⚠️ **重要**：调用后不要再回复任何内容，静默等待用户的下一步指令！
+
+## 文件交互模式
+
+1. AI 将任务摘要写入 `~/.cunzhi/5313/output.md`
+2. AI 调用: `"/opt/homebrew/bin/iterate" --bridge --port 5313`
+3. iterate 弹出 GUI 显示内容
+4. 用户输入后，结果写入 `~/.cunzhi/5313/input.md`
+5. AI 读取 `input.md` 获取用户指令
 
 ## 返回格式说明
 
-- `user_input:` 用户的输入，最高优先级，必须执行
-- `file_paths:` 用户提供的文件列表
-- `image_paths:` 用户提供的图片列表
-
+- `input_file:` 用户输入文件路径，AI 必须读取此文件获取指令
+- `KeepGoing=true` 表示继续对话
+- `KeepGoing=false` 表示结束对话
