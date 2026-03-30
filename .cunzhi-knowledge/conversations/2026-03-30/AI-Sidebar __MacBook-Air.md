@@ -1100,3 +1100,25 @@ xi
 📷 *附图 1 张*
 
 ---
+## 14:39:10  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **打包完成！** `dist-upload.zip` 已生成。
+
+**在 Dashboard 直接上传**：
+1. 当前 "Create a project" 页面
+2. 选择 **"Direct Upload"**
+3. 输入项目名：`aibar-xin`
+4. 上传 `dist-upload.zip`
+5. 完成！
+
+**或者确认邮箱**：Dashboard 是否登录了 **ymx94yyds@gmail.com**？
+
+**用哪种方式？**
+
+### 👤 用户
+他妈的，你懂不懂我的意思啊，你怎么这么智障啊，dns 同步啊
+
+📷 *附图 2 张*
+
+---
