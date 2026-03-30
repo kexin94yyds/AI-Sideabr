@@ -1122,3 +1122,25 @@ xi
 📷 *附图 2 张*
 
 ---
+## 14:39:53  @ AI-Sidebar 
+
+### 🤖 AI
+看到 DNS 已配置。现在只需在 Pages 添加域名：
+
+**方法**：
+1. https://dash.cloudflare.com/pages/aibar-xin/domains
+2. 输入 `aibar.xin` → Add
+
+**或直接创建**：
+1. Pages → Create project → Direct Upload
+2. 项目名：`aibar-xin`
+3. 上传 `dist-upload.zip`
+
+**当前可用**：https://4210c63d.aibar-xin.pages.dev
+
+**需要我直接帮你上传吗？**
+
+### 👤 用户
+直接上传也行啊
+
+---
