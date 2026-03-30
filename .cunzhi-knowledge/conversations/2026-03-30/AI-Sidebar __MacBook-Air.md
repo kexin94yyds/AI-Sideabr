@@ -716,3 +716,42 @@ certbot --nginx -d aibar.xin
 根据 xi 去做
 
 ---
+## 14:00:58  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **部署脚本已生成**
+
+**文件**: `deploy.sh`
+
+**使用方法**:
+
+1. **配置服务器信息**
+```bash
+export SERVER_IP=你的阿里云IP
+export SERVER_USER=root
+```
+
+2. **运行部署脚本**
+```bash
+cd "/Users/apple/Downloads/ai全家桶---聚合ai侧边栏"
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**脚本会自动完成**：
+- ✅ 上传 dist 文件到服务器
+- ✅ 配置 Nginx
+- ✅ 启用 gzip 和缓存
+- ✅ 自动申请 HTTPS 证书（Let's Encrypt）
+
+**部署前请确保**：
+1. 服务器已安装 SSH
+2. 域名 DNS 已解析到服务器 IP
+3. 服务器防火墙开放 80/443 端口
+
+**需要我解释脚本的具体步骤吗？**
+
+### 👤 用户
+根据 xi 去做
+
+---
