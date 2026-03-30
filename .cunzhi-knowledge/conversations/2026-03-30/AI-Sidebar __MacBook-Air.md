@@ -886,3 +886,30 @@ echo "检测到你的 IP: $SERVER_IP"
 cloude flare 呢，xi
 
 ---
+## 14:21:41  @ AI-Sidebar 
+
+### 🤖 AI
+🚀 **Cloudflare Pages 部署（更简单！）**
+
+**方案 A - Wrangler CLI（推荐）**：
+```bash
+cd "/Users/apple/Downloads/ai全家桶---聚合ai侧边栏"
+npx wrangler pages deploy dist --project-name=aibar
+```
+
+**方案 B - 手动上传**：
+1. 打开 https://dash.cloudflare.com
+2. Pages → 创建项目
+3. 直接上传 dist 文件夹
+
+**方案 C - GitHub 自动部署**：
+1. 把代码推送到 GitHub
+2. Cloudflare Pages 连接 GitHub 仓库
+3. 自动部署
+
+**你想用哪种？** 我帮你执行。
+
+### 👤 用户
+直接做啊，push
+
+---
