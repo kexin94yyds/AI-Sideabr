@@ -351,3 +351,14 @@ AI-Sidebar 是 Chrome 扩展项目，主要文件：
 我们还没搞域名，只是有对应的修改啊，你没找到吗，你把我们全局的 cunzhiknowledge的访达给我打开
 
 ---
+## 09:48:01  @ AI-Sidebar 
+
+### 🤖 AI
+已打开 `~/.cunzhi-knowledge` 文件夹。
+
+接下来需要查看里面的哪个特定文件或目录？
+
+### 👤 用户
+/Users/apple/cunzhi/.cunzhi-knowledge/conversations/2026-03-24你去找找呢
+
+---
