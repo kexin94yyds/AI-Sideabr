@@ -294,3 +294,20 @@ AI-Sidebar 是 Chrome 扩展项目，主要文件：
 我的意思是官网找到没给我😂，我们的会话上没找到吗
 
 ---
+## 09:43:26  @ AI-Sidebar 
+
+### 🤖 AI
+找到了！
+
+## 🌐 Gemini Voyager 官网
+- **域名**: `voyager.nagi.fun`
+- **路径**: `/Users/apple/gemini/gemini-voyager/gemini-voyager copy/docs/`
+- **技术栈**: VitePress
+- **源码**: `docs/index.md`
+
+这是 AI 全家桶的前端网站吗？还是需要找其他项目的官网？
+
+### 👤 用户
+不是，我们的就是最近对话应该有的，关于 ai 全家桶的，你去好好找找
+
+---
