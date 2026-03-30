@@ -132,21 +132,21 @@
   pointer-events: auto;
   width: 52px;
   height: 52px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: none;
   border-radius: 50%;
-  background: #ffffff;
-  color: #374151;
+  background: #1f2937;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 #${ROOT_ID} .gvsp-gear:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
 }
 
 #${ROOT_ID} .gvsp-gear:active {
@@ -162,7 +162,6 @@
   height: 24px;
   object-fit: contain;
   display: block;
-  filter: invert(1);
 }
 
 #${ROOT_ID} .gvsp-panel {
