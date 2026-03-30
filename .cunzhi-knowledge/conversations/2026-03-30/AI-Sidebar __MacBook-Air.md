@@ -461,3 +461,23 @@ Chrome Web Store 上传时需要 128x128 的图标。
 📷 *附图 1 张*
 
 ---
+## 11:11:53  @ AI-Sidebar 
+
+### 🤖 AI
+需要找到你的落地页文件才能配置域名。
+
+目前看到的可能位置：
+1. `/Users/apple/cunzhi/frontend-landing/App.tsx`（之前提到的路径）
+2. `/Users/apple/gemini/AI-Sidebar /website/` 或 `landing/` 文件夹
+3. 其他位置
+
+**请告诉我**：
+- 落地页文件在哪里？
+- 或者需要我创建一个简单的落地页？
+
+### 👤 用户
+这个的
+
+📷 *附图 1 张*
+
+---
