@@ -856,3 +856,33 @@ certbot --nginx -d aibar.xin
 不是我怎么查给你😂
 
 ---
+## 14:21:06  @ AI-Sidebar 
+
+### 🤖 AI
+好的，继续！查看阿里云服务器 IP 步骤：
+
+**方法 1 - 阿里云控制台**：
+1. 打开 https://ecs.console.aliyun.com
+2. 找到你的服务器实例
+3. 看 **"公网 IP"** 列（如 `123.45.67.89`）
+
+**方法 2 - 如果你已登录服务器**：
+```bash
+curl ifconfig.me
+```
+
+**方法 3 - 直接部署**：
+我生成一个简单脚本，你复制到终端运行：
+```bash
+cd "/Users/apple/Downloads/ai全家桶---聚合ai侧边栏"
+export SERVER_IP=$(curl -s ifconfig.me)
+echo "检测到你的 IP: $SERVER_IP"
+./deploy.sh
+```
+
+**你想用哪种方法？**
+
+### 👤 用户
+cloude flare 呢，xi
+
+---
