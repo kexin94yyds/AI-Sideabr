@@ -89,3 +89,23 @@ ZIP 已可直接上传 Chrome Web Store。
 改那个设置的按钮
 
 ---
+## 09:18:39  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **设置按钮颜色已修改**
+
+**文件**: `content-scripts/gemini-voyager-settings-panel.js`
+
+**修改**: 蓝色渐变 → 白色
+- `background: #ffffff`
+- 添加边框 `1px solid rgba(0,0,0,0.1)`
+- 文字颜色 `#374151`
+
+刷新 Gemini 页面后生效。需要重新打包吗？
+
+### 👤 用户
+但是文字的 AI 应该是黑色的
+
+📷 *附图 1 张*
+
+---
