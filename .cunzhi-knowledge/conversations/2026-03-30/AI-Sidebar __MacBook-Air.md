@@ -18,3 +18,25 @@
 打包好给我，按照 xi
 
 ---
+## 09:15:42  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **AISidebar 打包完成**
+
+📦 文件：`dist/ai-sidebar-chrome-webstore.zip` (3.7MB, 87文件)
+
+📋 **Web Store 提交清单**：
+- [x] manifest.json (V3)
+- [x] 图标 (16/48/128px)
+- [x] 所有脚本和样式
+- [x] 隐私政策文档
+- [x] 审核测试说明
+- [ ] 商店截图 (1280x800) — 如需准备请告诉我
+- [ ] 开发者账号注册 ($5)
+
+ZIP 已可直接上传 Chrome Web Store。
+
+### 👤 用户
+帮我打开在访达上
+
+---
