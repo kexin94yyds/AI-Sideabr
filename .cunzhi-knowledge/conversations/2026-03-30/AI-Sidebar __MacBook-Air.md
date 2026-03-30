@@ -981,3 +981,23 @@ dig aibar.xin +short
 📷 *附图 1 张*
 
 ---
+## 14:29:49  @ AI-Sidebar 
+
+### 🤖 AI
+看到了！**aibar.xin** 已经在 Cloudflare DNS 里了。
+
+**下一步**：在 Cloudflare Pages 添加自定义域名
+
+1. 打开 https://dash.cloudflare.com
+2. 左侧 **Pages** → **aibar-xin**
+3. **Custom domains** 标签
+4. 输入 `aibar.xin` → 确认
+
+Cloudflare 会自动验证 DNS 并申请 HTTPS 证书。
+
+**要我截图指引吗？** 还是你自己操作？
+
+
+📷 *附图 1 张*
+
+---
