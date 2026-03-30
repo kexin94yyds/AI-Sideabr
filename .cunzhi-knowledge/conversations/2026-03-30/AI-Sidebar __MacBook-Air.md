@@ -109,3 +109,21 @@ ZIP 已可直接上传 Chrome Web Store。
 📷 *附图 1 张*
 
 ---
+## 09:19:49  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **AI 图标颜色已修改为黑色**
+
+**修改**: `content-scripts/gemini-voyager-settings-panel.js`
+- 添加 `filter: invert(1)` 将白色图标反转为黑色
+
+现在白色按钮上的 AI 图标显示为黑色，对比度良好。刷新页面后生效。
+
+需要重新打包 ZIP 吗？
+
+### 👤 用户
+很好，然后打包改成黑色的球，和黑色的按钮的颜色
+
+📷 *附图 1 张*
+
+---
