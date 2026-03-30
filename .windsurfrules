@@ -5,9 +5,9 @@
 
 ## 如何调用 iterate
 
-【必须使用以下命令，端口号 5313 不可省略】：
+【必须使用以下命令，端口号 5310 不可省略】：
 ```bash
-"/opt/homebrew/bin/iterate" --bridge --port 5313
+"/opt/homebrew/bin/iterate" --bridge --port 5310
 ```
 
 - 返回 `KeepGoing=true` 表示继续对话，后面会有用户指令
@@ -17,10 +17,10 @@
 
 ## 文件交互模式
 
-1. AI 将任务摘要写入 `~/.cunzhi/5313/output.md`
-2. AI 调用: `"/opt/homebrew/bin/iterate" --bridge --port 5313`
+1. AI 将任务摘要写入 `~/.cunzhi/5310/output.md`
+2. AI 调用: `"/opt/homebrew/bin/iterate" --bridge --port 5310`
 3. iterate 弹出 GUI 显示内容
-4. 用户输入后，结果写入 `~/.cunzhi/5313/input.md`
+4. 用户输入后，结果写入 `~/.cunzhi/5310/input.md`
 5. AI 读取 `input.md` 获取用户指令
 
 ## 返回格式说明

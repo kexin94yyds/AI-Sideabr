@@ -9,7 +9,8 @@
     "lint": "eslint . --ext js,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "sync-server": "node sync-server.js",
-    "sync": "node sync-server.js"
+    "sync": "node sync-server.js",
+    "package:webstore": "bash scripts/build-webstore-package.sh"
   },
   "dependencies": {
     "react": "^18.2.0",

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": " ",
+  "name": "AI Sidebar",
   "version": "0.0.1",
   "description": "A Chrome extension that brings ChatGPT, Perplexity, and Gemini to your browser side panel",
   "permissions": [
@@ -21,7 +21,8 @@
         "js/plugins/exporter-logic.js",
         "js/plugins/storage-manager.js",
         "content-scripts/watermark-assets/bg_48.png",
-        "content-scripts/watermark-assets/bg_96.png"
+        "content-scripts/watermark-assets/bg_96.png",
+        "images/voyager-settings-ai-white.png"
       ],
       "matches": [
         "<all_urls>"
@@ -45,7 +46,7 @@
     "default_path": "index.html"
   },
   "action": {
-    "default_title": ""
+    "default_title": "Open AI Sidebar"
   },
   "host_permissions": [
     "https://chatgpt.com/*",
