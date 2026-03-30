@@ -407,3 +407,12 @@ Chrome Web Store 上传时需要 128x128 的图标。
 @/Users/apple/cunzhi/frontend-landing/App.tsx
 
 ---
+## 10:03:10  @ AI-Sidebar 
+
+### 🤖 AI
+等待用户指令...
+
+### 👤 用户
+我们的域名取 aibar 还是 ai-sidebar 更好？
+
+---
