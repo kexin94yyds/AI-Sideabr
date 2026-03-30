@@ -168,3 +168,24 @@ ZIP 已可直接上传 Chrome Web Store。
 📷 *附图 1 张*
 
 ---
+## 09:24:16  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **打包完成 - 白色设置按钮 + 黑色图标**
+
+**最终样式**:
+- 设置按钮：`#ffffff` (白色背景)
+- AI 图标：黑色 (filter: invert(1))
+- 滑块触控杆：`#1f2937` (黑色)
+- 开关开启：`#1f2937` (黑色)
+
+**ZIP**: `dist/ai-sidebar-chrome-webstore.zip`
+
+已在访达中打开，可直接上传 Chrome Web Store。
+
+### 👤 用户
+ok，按照 sou，把所有相关的都给我，我复制粘贴进去，xi 也可以
+
+📷 *附图 1 张*
+
+---
