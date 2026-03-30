@@ -956,3 +956,28 @@ npx wrangler pages deploy dist --project-name=aibar
 dns 还没同步到 cf
 
 ---
+## 14:29:27  @ AI-Sidebar 
+
+### 🤖 AI
+了解，DNS 同步需要一点时间（通常几分钟到几小时）。
+
+**检查 DNS 是否生效**：
+```bash
+dig aibar.xin +short
+```
+
+**当前状态**：
+- ✅ Cloudflare Pages 已部署：https://81db69cb.aibar-xin.pages.dev
+- ⏳ 等待 DNS 同步到 Cloudflare
+
+**DNS 生效后**：
+1. Cloudflare Dashboard → Pages → aibar-xin → Custom domains
+2. 添加 `aibar.xin`
+3. 自动申请 HTTPS 证书
+
+**要先访问临时地址预览吗？** 还是等 DNS 同步完成？
+
+
+📷 *附图 1 张*
+
+---
