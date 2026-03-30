@@ -311,3 +311,23 @@ AI-Sidebar 是 Chrome 扩展项目，主要文件：
 不是，我们的就是最近对话应该有的，关于 ai 全家桶的，你去好好找找
 
 ---
+## 09:45:31  @ AI-Sidebar 
+
+### 🤖 AI
+根据历史记录找到的前端网站：
+
+1. `frontend-landing/` - iterate 官网
+2. `voyager.nagi.fun` - Gemini Voyager 官网
+3. `Strong-Itreate` - iterate 网站工程
+
+你说的"AI 全家桶前端网站"是指：
+- 汇总所有产品的导航网站？
+- AI-Sidebar 的展示页面？
+- 有具体域名/路径我记得的？
+
+请给更多线索我继续找。
+
+### 👤 用户
+不是这些对话，你再查查相关对话，最近几天 的
+
+---
