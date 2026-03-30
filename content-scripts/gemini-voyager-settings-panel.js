@@ -134,19 +134,19 @@
   height: 52px;
   border: none;
   border-radius: 50%;
-  background: #1f2937;
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.4);
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 #${ROOT_ID} .gvsp-gear:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 14px 34px rgba(37, 99, 235, 0.5);
 }
 
 #${ROOT_ID} .gvsp-gear:active {
@@ -278,9 +278,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #1f2937;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 120ms ease;
 }
 
@@ -293,9 +293,9 @@
   height: 18px;
   border: none;
   border-radius: 50%;
-  background: #2563eb;
+  background: #1f2937;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: transform 120ms ease;
 }
 
@@ -320,7 +320,7 @@
 }
 
 #${ROOT_ID} .gvsp-switch.on {
-  background: #2563eb;
+  background: #1f2937;
 }
 
 #${ROOT_ID} .gvsp-switch-thumb {
