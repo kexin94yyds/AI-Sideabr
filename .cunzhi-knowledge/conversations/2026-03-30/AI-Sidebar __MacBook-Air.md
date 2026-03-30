@@ -659,3 +659,24 @@ Chrome Web Store 上传时需要 128x128 的图标。
 然后连接到我们的 aibar.xin
 
 ---
+## 13:58:27  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **构建成功**
+
+**dist/** 文件夹已生成：
+- `index.html`
+- `assets/index-CYGVBbEj.css`
+- `assets/index-BH19ATof.js`
+
+**部署选项**：
+1. 🚀 **Vercel / Netlify** - 最简单，自动 HTTPS
+2. 🖥️ **自有服务器** - 需配置 Nginx
+3. 🌐 **Cloudflare Pages** - 免费 CDN
+
+**你用哪种方式？** 需要我帮你部署吗？
+
+### 👤 用户
+我们的是aliyun 的
+
+---
