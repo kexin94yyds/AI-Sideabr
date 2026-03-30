@@ -779,3 +779,36 @@ chmod +x deploy.sh
 📷 *附图 1 张*
 
 ---
+## 14:06:25  @ AI-Sidebar 
+
+### 🤖 AI
+阿里云 ECS 部署步骤：
+
+**1. 登录服务器**
+```bash
+ssh root@你的服务器IP
+apt install -y nginx
+mkdir -p /var/www/aibar.xin
+```
+
+**2. 上传文件**（本地执行）
+```bash
+cd "/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/dist"
+scp -r * root@服务器IP:/var/www/aibar.xin/
+```
+
+**3. 配置 Nginx**（服务器上执行）
+```bash
+certbot --nginx -d aibar.xin
+```
+
+**4. 阿里云控制台**
+- 安全组：开放 80/443
+- DNS：A 记录 → 服务器IP
+
+**需要一键脚本还是分步执行？**
+
+### 👤 用户
+一键吧
+
+---
