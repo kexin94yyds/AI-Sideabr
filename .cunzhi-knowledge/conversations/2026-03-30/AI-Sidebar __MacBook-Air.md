@@ -40,3 +40,14 @@ ZIP 已可直接上传 Chrome Web Store。
 帮我打开在访达上
 
 ---
+## 09:16:12  @ AI-Sidebar 
+
+### 🤖 AI
+已在访达中打开 `dist` 文件夹，你可以看到打包好的 `ai-sidebar-chrome-webstore.zip` 文件。
+
+需要其他帮助吗？
+
+### 👤 用户
+检查打包的有没有隐私的部分
+
+---
