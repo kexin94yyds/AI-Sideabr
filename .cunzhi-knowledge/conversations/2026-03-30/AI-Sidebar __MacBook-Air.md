@@ -641,3 +641,21 @@ Chrome Web Store 上传时需要 128x128 的图标。
 📷 *附图 1 张*
 
 ---
+## 13:56:44  @ AI-Sidebar 
+
+### 🤖 AI
+✅ **图标已更换**
+
+- 导航栏：`/logo.png`（AI Sidebar 图标）
+- 页脚：`/logo.png`
+
+图标文件已复制到 `public/logo.png`。
+
+刷新页面查看新图标效果。
+
+**还要调整什么？**
+
+### 👤 用户
+然后连接到我们的 aibar.xin
+
+---
