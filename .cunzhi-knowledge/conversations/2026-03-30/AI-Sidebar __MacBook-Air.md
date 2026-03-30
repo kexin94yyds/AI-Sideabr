@@ -680,3 +680,39 @@ Chrome Web Store 上传时需要 128x128 的图标。
 我们的是aliyun 的
 
 ---
+## 13:58:55  @ AI-Sidebar 
+
+### 🤖 AI
+阿里云部署步骤：
+
+**1. 上传文件**
+```bash
+cd "/Users/apple/Downloads/ai全家桶---聚合ai侧边栏"
+zip -r dist.zip dist/
+scp dist.zip root@your-server-ip:/var/www/
+```
+
+**2. Nginx 配置**
+```bash
+server {
+    listen 80;
+    server_name aibar.xin;
+    root /var/www/aibar.xin;
+    index index.html;
+}
+```
+
+**3. HTTPS**
+```bash
+certbot --nginx -d aibar.xin
+```
+
+**4. DNS 解析**
+- aibar.xin → 服务器 IP
+
+**需要完整脚本吗？**
+
+### 👤 用户
+根据 xi 去做
+
+---
