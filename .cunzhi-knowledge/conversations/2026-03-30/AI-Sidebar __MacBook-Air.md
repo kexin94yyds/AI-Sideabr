@@ -1144,3 +1144,22 @@ xi
 直接上传也行啊
 
 ---
+## 14:41:07  @ AI-Sidebar 
+
+### 🤖 AI
+命令行一直报错。直接用 **Dashboard 上传**：
+
+**操作**：
+1. https://dash.cloudflare.com/pages/new/upload
+2. 项目名：`aibar-xin`
+3. 上传：`dist-upload.zip`（在下载文件夹）
+4. Deploy
+
+**或者** Finder 里把 zip 拖到浏览器上传框。
+
+**你现在在 Dashboard 吗？** 需要截图指引？
+
+### 👤 用户
+你他妈的做的什么啊，要不然我自己做啊操
+
+---
