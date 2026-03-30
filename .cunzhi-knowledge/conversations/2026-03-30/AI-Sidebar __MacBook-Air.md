@@ -913,3 +913,25 @@ npx wrangler pages deploy dist --project-name=aibar
 直接做啊，push
 
 ---
+## 14:25:53  @ AI-Sidebar 
+
+### 🤖 AI
+🎉 **部署成功！**
+
+**网站地址**：https://aibar-landing.netlify.app
+
+但 Netlify 子域名不够正式，要绑定 **aibar.xin**：
+
+**1. Netlify 控制台**：
+- https://app.netlify.com/sites/aibar-landing
+- Domain settings → Add custom domain → 输入 `aibar.xin`
+
+**2. 阿里云 DNS**：
+- CNAME 记录：`aibar.xin` → `aibar-landing.netlify.app`
+
+**需要配置自定义域名吗？** 还是先用 Netlify 链接？
+
+### 👤 用户
+不是 cloudaflare 吗
+
+---
