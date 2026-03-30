@@ -162,6 +162,7 @@
   height: 24px;
   object-fit: contain;
   display: block;
+  filter: invert(1);
 }
 
 #${ROOT_ID} .gvsp-panel {
