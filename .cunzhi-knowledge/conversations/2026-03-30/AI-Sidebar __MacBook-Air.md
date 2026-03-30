@@ -935,3 +935,24 @@ npx wrangler pages deploy dist --project-name=aibar
 不是 cloudaflare 吗
 
 ---
+## 14:28:43  @ AI-Sidebar 
+
+### 🤖 AI
+🎉 **Cloudflare Pages 部署成功！**
+
+**临时地址**：https://81db69cb.aibar-xin.pages.dev
+
+**绑定 aibar.xin 域名**：
+1. 打开 https://dash.cloudflare.com
+2. 找到 `aibar-xin` 项目
+3. **Custom domains** → 添加 `aibar.xin`
+4. 阿里云 DNS 添加 CNAME：`aibar.xin` → `aibar-xin.pages.dev`
+
+搞定！🚀
+
+**需要配置自定义域名吗？** 还是先用临时地址？
+
+### 👤 用户
+dns 还没同步到 cf
+
+---
