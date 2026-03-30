@@ -1188,3 +1188,22 @@ xi
 不是他妈的 dns 还没配置啊
 
 ---
+## 14:41:48  @ AI-Sidebar 
+
+### 🤖 AI
+明白！**DNS 还没配置到 Cloudflare**。
+
+**方案 A - 改 NS 服务器**（推荐）：
+阿里云 → aibar.xin → DNS 修改 → 填 Cloudflare NS
+
+**方案 B - CNAME 指向**：
+- 类型：CNAME
+- 主机：`aibar.xin`  
+- 值：`4210c63d.aibar-xin.pages.dev`
+
+**用哪种？** 我截图指引。
+
+### 👤 用户
+A
+
+---
