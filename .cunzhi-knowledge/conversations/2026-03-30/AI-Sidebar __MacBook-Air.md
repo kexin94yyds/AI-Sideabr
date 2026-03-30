@@ -392,3 +392,18 @@ Chrome Web Store 上传时需要 128x128 的图标。
 📷 *附图 1 张*
 
 ---
+## 10:01:37  @ AI-Sidebar 
+
+### 🤖 AI
+你想在哪个文件添加"下载软件"按钮？
+
+我看到的可能是：
+1. **docs/index.md** - VitePress 文档首页（当前有"下载安装"和"开始旅程"按钮）
+2. **其他自定义 HTML 落地页**
+
+请告诉我具体文件路径，或者上传相关文件让我查看。
+
+### 👤 用户
+@/Users/apple/cunzhi/frontend-landing/App.tsx
+
+---
