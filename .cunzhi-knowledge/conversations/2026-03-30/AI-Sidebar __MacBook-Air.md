@@ -1041,3 +1041,19 @@ Cloudflare 会自动验证 DNS 并申请 HTTPS 证书。
 📷 *附图 1 张*
 
 ---
+## 14:33:44  @ AI-Sidebar 
+
+### 🤖 AI
+在 **aibar-xin** 项目页面：
+
+1. 点击顶部 **"Domains"** 标签（你现在应该在 Deployments 标签）
+2. 然后看到 **"Custom domains"** 区域
+3. 点击 **"Add a domain"** 按钮
+
+**或者**：
+直接访问：https://dash.cloudflare.com/pages/aibar-xin/domains
+
+### 👤 用户
+xi
+
+---
