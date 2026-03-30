@@ -1057,3 +1057,24 @@ Cloudflare 会自动验证 DNS 并申请 HTTPS 证书。
 xi
 
 ---
+## 14:34:36  @ AI-Sidebar 
+
+### 🤖 AI
+命令行方式不行。
+
+**直接用浏览器访问**：
+https://dash.cloudflare.com/pages/aibar-xin/domains
+
+**或手动操作**：
+1. https://dash.cloudflare.com
+2. 左侧 **"Pages"** → **"aibar-xin"**
+3. 顶部 **"Domains"** 标签
+4. **"Add a domain"**
+5. 输入 `aibar.xin`
+
+**点这个链接能打开吗？**
+
+### 👤 用户
+他妈的没有 aibar.xin啊，sou
+
+---
