@@ -1078,3 +1078,25 @@ https://dash.cloudflare.com/pages/aibar-xin/domains
 他妈的没有 aibar.xin啊，sou
 
 ---
+## 14:37:38  @ AI-Sidebar 
+
+### 🤖 AI
+部署成功：https://4210c63d.aibar-xin.pages.dev
+
+但 Dashboard 里找不到？可能：
+1. **登录了错误的 Cloudflare 账号**
+2. 项目名是 `aibar-xin`（带横线）
+
+**检查账号**：
+```bash
+npx wrangler whoami
+```
+
+显示哪个邮箱？和 Dashboard 登录邮箱一致吗？
+
+### 👤 用户
+xi
+
+📷 *附图 1 张*
+
+---
