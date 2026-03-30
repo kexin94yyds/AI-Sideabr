@@ -208,7 +208,8 @@
         "https://*.doubao.com/*",
         "https://*.perplexity.ai/*",
         "https://copilot.microsoft.com/*",
-        "https://grok.com/*"
+        "https://grok.com/*",
+        "https://v0.dev/*"
       ],
       "all_frames": true,
       "run_at": "document_idle",

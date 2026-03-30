@@ -72,6 +72,12 @@
       placeholderText: '给 Grok 发消息',
       shouldAutoCollapse: () => true,
     },
+    'v0.dev': {
+      inputSelector: 'textarea, [contenteditable="true"], [role="textbox"]',
+      containerSelector: 'form:has(textarea), .prompt-container, [class*="input"]',
+      placeholderText: '给 v0 发消息',
+      shouldAutoCollapse: () => true,
+    },
   };
 
   function storageGet(keys) {
