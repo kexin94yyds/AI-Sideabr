@@ -481,3 +481,21 @@ Chrome Web Store 上传时需要 128x128 的图标。
 📷 *附图 1 张*
 
 ---
+## 13:41:09  @ AI-Sidebar 
+
+### 🤖 AI
+找到文件了：`/Users/apple/cunzhi/frontend-landing/App.tsx`
+
+这是 **iterate** 的落地页。
+
+你想：
+1. **把 aibar.xin 指向这个网站**？（DNS 配置）
+2. **在这个页面上添加 AI Sidebar 下载按钮**？
+3. **为 AI Sidebar 创建新的落地页**？
+
+请告诉我具体需求。
+
+### 👤 用户
+本地测试打开我看看
+
+---
