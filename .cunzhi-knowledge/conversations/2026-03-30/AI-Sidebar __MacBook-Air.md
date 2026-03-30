@@ -362,3 +362,22 @@ AI-Sidebar 是 Chrome 扩展项目，主要文件：
 /Users/apple/cunzhi/.cunzhi-knowledge/conversations/2026-03-24你去找找呢
 
 ---
+## 09:50:41  @ AI-Sidebar 
+
+### 🤖 AI
+已在访达中打开 `images` 文件夹。
+
+**包含图标**：
+- icon16.png (16x16)
+- icon48.png (48x48)
+- icon128.png (128x128)
+- favicon.png
+
+Chrome Web Store 上传时需要 128x128 的图标。
+
+### 👤 用户
+再做一个类似的按钮，就是下载软件的，在添加 chorome 的右侧就是下载 application
+
+📷 *附图 1 张*
+
+---
