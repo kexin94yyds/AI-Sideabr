@@ -1646,7 +1646,7 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
     button.dataset.providerId = key;
     button.title = cfg.label; // 悬停提示
     button.className = key === currentProviderKey ? 'active' : '';
-    button.draggable = !collapsed;
+    button.draggable = true; // 始终启用拖拽，在事件中检查 collapsed
 
     // 添加图标
     if (cfg.icon) {
@@ -1707,7 +1707,12 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
 
     // --- 拖拽事件 ---
     button.addEventListener('dragstart', (e) => {
-      if (collapsed) return; // 折叠时不启用拖拽
+      // 检查当前是否折叠（实时检查）
+      const isCollapsed = tabsContainer.classList.contains('collapsed');
+      if (isCollapsed) {
+        e.preventDefault();
+        return;
+      }
       __dragKey = key;
       button.classList.add('dragging');
       try {
@@ -1721,7 +1726,8 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
       clearInsertClasses();
     });
     button.addEventListener('dragover', (e) => {
-      if (collapsed) return;
+      const isCollapsed = tabsContainer.classList.contains('collapsed');
+      if (isCollapsed) return;
       if (!__dragKey || __dragKey === key) return;
       e.preventDefault();
       const rect = button.getBoundingClientRect();
@@ -1734,7 +1740,8 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
       button.classList.remove('insert-before','insert-after');
     });
     button.addEventListener('drop', async (e) => {
-      if (collapsed) return;
+      const isCollapsed = tabsContainer.classList.contains('collapsed');
+      if (isCollapsed) return;
       if (!__dragKey || __dragKey === key) return;
       e.preventDefault();
       const rect = button.getBoundingClientRect();
