@@ -1777,6 +1777,11 @@ const initializeBar = async () => {
     let expandTimer = null;
     const COLLAPSE_DELAY = 600;
     const EXPAND_DELAY = 200;
+    let isDragging = false; // 拖拽中禁用自动折叠
+
+    // 监听拖拽开始/结束事件（从 renderProviderTabs 中触发）
+    tabs.addEventListener('dragstart', () => { isDragging = true; });
+    tabs.addEventListener('dragend', () => { isDragging = false; });
 
     tabs.addEventListener('mouseenter', () => {
       if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null; }
@@ -1792,6 +1797,8 @@ const initializeBar = async () => {
 
     tabs.addEventListener('mouseleave', () => {
       if (expandTimer) { clearTimeout(expandTimer); expandTimer = null; }
+      // 拖拽中不触发自动折叠
+      if (isDragging) return;
       collapseTimer = setTimeout(async () => {
         collapseTimer = null;
         if (!tabs.classList.contains('collapsed')) {
