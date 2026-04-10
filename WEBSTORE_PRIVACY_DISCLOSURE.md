@@ -39,3 +39,13 @@ Use wording like this:
 ## Reviewer note draft
 
 > We fixed the privacy issue by adding a public privacy policy URL in the dedicated Chrome Web Store field and by aligning the privacy policy, dashboard disclosures, and extension behavior. The extension primarily stores data locally in the browser. It may process authentication information, supported website content, browsing history used for user-facing features, and user-triggered content such as saved/exported conversations, selections, and screenshots. The extension does not send core user data to developer-operated remote servers. Third-party AI providers receive user input directly when the user chooses to use those services. If a localhost sync service is running on the user's device, the extension may sync history and favorites only to that local service.
+
+## Submit in this order
+
+1. Deploy the website project so the public URL `https://aibar.xin/privacy` shows the same text as the current privacy policy draft.
+2. Open the public URL in an incognito window and verify it loads without login.
+3. Upload the current package at `/Users/apple/gemini/AI-Sidebar /dist/ai-sidebar-chrome-webstore.zip`.
+4. Paste the public URL into the dedicated `Privacy policy URL` field in the Chrome Web Store dashboard.
+5. Complete the Privacy practices form using the answers in this file.
+6. Paste the reviewer note draft into the reviewer comments field.
+7. Double-check that the dashboard disclosures, the public privacy page, and the extension's actual behavior still match before clicking resubmit.
