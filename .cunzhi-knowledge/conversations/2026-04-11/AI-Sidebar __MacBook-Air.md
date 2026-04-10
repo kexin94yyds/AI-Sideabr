@@ -1658,3 +1658,55 @@ iterate-checkpoint:2026-04-10T23:29:22Z | 自动检查点 07:29:22
 iterate-checkpoint:2026-04-10T23:29:36Z | 自动检查点 07:29:36
 
 ---
+## 07:30:05  @ AI-Sidebar 
+
+### 🤖 AI
+## 📚 项目记忆已恢复
+
+**项目**：`AI Sidebar` 提审链，外加它的展示页项目 `ai全家桶---聚合ai侧边栏`
+**当前活跃链**：没有读到显式的 `conversation-state / tree map` 文件；今天这条线主要靠当天项目对话记录恢复
+**最近任务**：围绕 Chrome Web Store 被拒，修隐私政策材料、同步 `aibar.xin/privacy` 文案、查 Cloudflare/GitHub 部署链
+
+**今天这条线已经做完的事**：
+1. **确认拒绝根因**
+   - 重点不是功能本身先挂，而是 `Privacy policy URL` 这个指定字段缺失/不一致是直接风险点
+   - 同时收敛出一个原则：dashboard 披露、隐私政策、扩展真实行为必须一致
+
+2. **展示页本地已经改过**
+   - 英文版首屏对齐过
+   - `/privacy` 做成了更像 Prompter 的整层滚动
+   - 隐私页文案已同步到真实数据流
+   - 本地预览一度跑在 `http://localhost:3001/privacy`
+
+3. **提审材料已经落盘**（扩展仓库）
+   - `PRIVACY_POLICY.md`
+   - `WEBSTORE_SUBMISSION.md`
+   - `WEBSTORE_TEST_INSTRUCTIONS.md`
+   - `WEBSTORE_PRIVACY_DISCLOSURE.md`
+   - 还生成了 ZIP：`/Users/apple/gemini/AI-Sidebar /dist/ai-sidebar-chrome-webstore.zip`
+
+4. **当前卡点已经收缩到部署链**
+   - 展示页仓库 remote 是 `kexin94yyds/AI-Aplication`
+   - 但我查到 `HEAD == origin/main`
+   - 也就是 GitHub 现在没有待推送的新提交可触发 Cloudflare 自动部署
+   - 所以当前真正没搞清的是：**Cloudflare 到底是不是盯这个 repo / 这个分支**
+
+**上一次停下来的位置**：
+- 我正准备把“CF 自动同步 GitHub”这件事继续往下核
+- 但因为这会牵涉到线上部署，我没有擅自推触发 commit
+
+**当前约束**：
+- 你说了先别着急编码
+- 发现新问题先问你要不要记 `problems.md`
+- 涉及线上部署动作不擅自做
+
+所以这条线现在最准确的状态是：
+**本地文案和提审材料已经基本收口，真正未闭环的是 public URL 的部署来源和触发链路。**
+
+要继续的话，我建议直接从这个阻塞点往下拆。
+iterate-checkpoint:2026-04-10T23:29:43Z | 自动检查点 07:29:43
+
+### 👤 用户
+看看很久之前的 hui
+
+---
