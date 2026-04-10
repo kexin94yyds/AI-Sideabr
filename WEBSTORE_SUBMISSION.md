@@ -63,8 +63,9 @@ Use a note like this in the reviewer comments or appeal text:
 ## High-risk review items
 
 - Broad host access across many AI websites.
-- Cookie and identity access.
+- Cookie access and local cookie persistence for supported compatibility behavior.
 - Declarative net request permissions used for compatibility behavior.
+- `<all_urls>` support for the floating parallel panel.
 - Any feature that changes page layout or injects controls into third-party sites.
 - Optional localhost sync behavior.
 
