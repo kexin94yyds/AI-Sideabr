@@ -637,3 +637,96 @@ iterate-checkpoint:2026-04-10T22:59:44Z | 自动检查点 06:59:44
 选中的选项: 继续：定位 privacy 文案该改哪几段
 
 ---
+## 07:02:09  @ AI-Sidebar 
+
+### 🤖 AI
+找到了，`privacy` 文案主要就集中在一个小区块里：
+
+- [src/App.tsx:556](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:556) 到 [src/App.tsx:570](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:570)
+
+也就是说，**你现在最该改的是这个 `modalContent === 'privacy'` 整段**，不是零散的别处。
+
+## 必改 1
+- [src/App.tsx:561](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:561)
+- 当前文案：
+  - `AI全家桶不收集任何个人数据。所有设置和偏好均存储在您的本地浏览器中。`
+
+### 为什么必须改
+这句按我们刚才核对过的扩展真实行为，**已经不成立**。
+
+因为实际至少会处理：
+- settings / preferences
+- history / favorites
+- cookies / 登录态
+- save to library 时的聊天内容
+- 选中文本 / 截图
+
+所以这句不能再写成“**不收集任何个人数据**”这种绝对表述。
+
+## 必改 2
+- [src/App.tsx:565](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:565)
+- 当前文案：
+  - `本扩展会加载第三方 AI 服务（如 ChatGPT、Claude 等）。这些服务有各自的隐私政策，请查阅相关服务的官方文档。`
+
+### 为什么要改
+这句方向对，但**不够完整**。
+
+这里应该明确一层事实：
+- 当用户在侧边栏中使用这些第三方 AI 服务时，用户输入、聊天内容、上传内容等会**直接从用户浏览器流向这些第三方服务**。
+
+现在这句只说“有各自隐私政策”，但没把**数据流向**说明白。
+
+## 必改 3
+- [src/App.tsx:569](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:569)
+- 当前文案：
+  - `您的对话数据仅存储在本地，我们不会上传或共享您的任何信息。`
+
+### 为什么必须改
+这句也写得**太绝对**了。
+
+问题有两个：
+1. 你们不只是“对话数据本地存储”这么简单，还会处理 history / favorites / cookies / selected text / screenshots
+2. “不会上传或共享您的任何信息” 也不严谨，因为：
+   - 用户使用第三方 AI 服务时，数据本来就会发送到这些第三方服务
+   - 如果保留 AutoSync，history / favorites 还会同步到 `localhost`
+
+所以这句也不能保留原样。
+
+## 建议改法
+### 最小改动思路
+不要一行一行修补，**直接把 [src/App.tsx:556](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:556) 到 [src/App.tsx:570](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:570) 整段重写掉**。
+
+### 为什么整段重写更稳
+因为你现在的问题不是“某个词不准”，而是整个 privacy block 的口径偏向：
+- 过于绝对
+- 和实际上架行为不一致
+- 还不是英文
+
+## 我建议的最终处理方式
+你这段 privacy block 至少要改成：
+1. **英文**，或者**中英双语且英文在前**
+2. 明确写：
+   - 会处理哪些本地数据
+   - 哪些数据只在本地保存
+   - 用户使用第三方 AI 服务时数据会直接流向第三方
+   - 如果启用本地同步，history/favorites 可能发到本机 `localhost` 服务
+
+## 这一块之外，次级要看但不急着动的地方
+- [src/App.tsx:517](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:517) 到 [src/App.tsx:519](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:519) 弹窗标题还是中文
+- [src/App.tsx:486](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:486) 页脚按钮也是中文
+
+如果这个 URL 是给 Chrome Web Store 审核员看的，我建议 **privacy modal 的标题和正文一起英文化**，这样最稳。
+
+另外，这一轮我发现了一个新的明确问题：
+- **落地页里的 privacy block 当前存在 3 处与真实数据流不一致的绝对表述**
+
+**要不要我把这条记录到 `~/.cunzhi-knowledge/problems.md`？**
+
+如果你点头，我下一步直接给你：
+- 一版可直接替换这整段的 **英文文案**
+- 或一版 **中英双语文案**
+
+### 👤 用户
+改
+
+---
