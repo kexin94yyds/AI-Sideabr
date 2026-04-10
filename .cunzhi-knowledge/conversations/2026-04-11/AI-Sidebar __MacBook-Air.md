@@ -1553,3 +1553,31 @@ iterate-checkpoint:2026-04-10T23:26:39Z | 自动检查点 07:26:39
 iterate-checkpoint:2026-04-10T23:26:51Z | 自动检查点 07:26:51
 
 ---
+## 07:27:28  @ AI-Sidebar 
+
+### 🤖 AI
+我已经把“最佳实践”这条线继续收口到可提交状态了。
+
+新增完成的东西：
+- 已生成当前提审 ZIP：`/Users/apple/gemini/AI-Sidebar /dist/ai-sidebar-chrome-webstore.zip`
+- 我检查了 ZIP，关键文件都在：`manifest.json`、`js/background.js`、`content-scripts/parallel-panel.js`、`rules/bypass-headers.json`
+- 我还把“提交当天的顺序”补进了：`/Users/apple/gemini/AI-Sidebar /WEBSTORE_PRIVACY_DISCLOSURE.md`
+
+也就是说，现在你手里已经有：
+- 对齐后的隐私政策正文
+- Privacy practices 勾选草稿
+- reviewer note 草稿
+- 可上传的 ZIP
+- 提交顺序 checklist
+
+当前剩下的唯一硬阻塞其实很明确：
+- **`https://aibar.xin/privacy` 还需要真正部署上线**
+- 本地源码和本地预览已经对齐，但如果线上 URL 还没变，Chrome Web Store 看到的仍然可能是不一致版本
+
+这个“线上隐私页未部署，导致 public URL 与提交材料可能不一致”的问题，我建议视为提审阻塞项。要不要我顺手记到 `~/.cunzhi-knowledge/problems.md`？
+iterate-checkpoint:2026-04-10T23:26:55Z | 自动检查点 07:26:55
+
+### 👤 用户
+cf 上，github 应该是同步到
+
+---
