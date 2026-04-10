@@ -2218,3 +2218,34 @@ iterate-checkpoint:2026-04-10T23:42:21Z | 自动检查点 07:42:21
 iterate-checkpoint:2026-04-10T23:42:31Z | 自动检查点 07:42:31
 
 ---
+## 07:43:00  @ AI-Sidebar 
+
+### 🤖 AI
+我已经把下一步提审最容易卡住的那块也提前收口了：
+
+- 新文件：`/Users/apple/gemini/AI-Sidebar /WEBSTORE_FINAL_REVIEW_NOTE.md`
+
+里面已经整理好三样可以直接拿去用的东西：
+1. **最终 reviewer note 成稿**
+2. **每个权限字段的最终 justification 文案**
+3. **Privacy practices 最终勾选建议**
+
+也就是说，现在你手上的提审材料已经是完整的：
+- 隐私政策正文
+- 隐私披露勾选草稿
+- reviewer note 成稿
+- 可上传 ZIP
+- 官网 `/privacy` 最新源码
+- Cloudflare Pages 最新 preview
+- 已沉淀的问题记录 `P-2026-864`
+
+当前唯一没有闭环的，还是同一个阻塞点：
+- `aibar.xin` custom domain 还没切到当前 Pages 项目
+
+一旦这个域名绑正，我这边就只剩最后一轮验收，不需要再补文案。
+iterate-checkpoint:2026-04-10T23:42:34Z | 自动检查点 07:42:34
+
+### 👤 用户
+aibar.xin不是切了吗
+
+---
