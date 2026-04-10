@@ -342,3 +342,72 @@ iterate-checkpoint:2026-04-10T22:54:25Z | 自动检查点 06:54:25
 iterate-checkpoint:2026-04-10T22:54:34Z | 自动检查点 06:54:34
 
 ---
+## 06:55:30  @ AI-Sidebar 
+
+### 🤖 AI
+你这里填的就是 **`Privacy policy URL*`**，所以这栏要写的是一个**外网公开可访问的完整 HTTPS 链接**，不是说明文字，也不是本地文件路径。
+
+## 直接说结论
+这一栏应该长这样：
+- `https://你的域名/privacy`
+- 或 `https://你的域名/privacy-policy`
+- 或 `https://你的-github-pages/privacy.html`
+- 或 `https://你的-netlify-站点/privacy`
+
+## 什么能填
+### 最推荐
+如果你有自己的网站，就填：
+- `https://aibar.xin/privacy`
+- `https://aibar.xin/privacy-policy`
+
+### 没官网时，最快方案
+把你现在的 [PRIVACY_POLICY.md](/Users/apple/gemini/AI-Sidebar%20/PRIVACY_POLICY.md) 发布成一个公开网页，然后填那个网页地址。
+
+例如：
+- GitHub Pages：`https://<你的GitHub用户名>.github.io/<repo>/privacy.html`
+- Netlify：`https://<你的站点>.netlify.app/privacy`
+
+## 什么不能填
+这些大概率不合格：
+- `PRIVACY_POLICY.md`
+- 本地路径：`/Users/.../PRIVACY_POLICY.md`
+- 相对路径：`/privacy`
+- 需要登录才能看的文档
+- 你商品描述里的一个文本链接
+- 非公开页面、临时分享页、失效页
+
+## 你现在最实际的写法
+如果你已经有官网/落地页，**这一栏就直接填你的隐私政策页面 URL**，比如：
+- `https://aibar.xin/privacy`
+
+如果你还没有隐私政策页面，那这一步不是“想个 URL”，而是：
+1. 先把隐私政策发布成公开网页
+2. 再把那个完整 URL 粘进这里
+
+## 我建议的顺序
+### 方案 A：你已经有域名
+直接新建一个隐私页，然后填：
+- `https://你的域名/privacy`
+
+### 方案 B：你还没有域名
+最快是用 GitHub Pages 或 Netlify 挂一个静态页，然后填最终 HTTPS 地址。
+
+## 一个小提醒
+你不能只把 URL 填上就完事。这个页面里的内容也得和你现在的真实数据流一致，也就是要写到：
+- cookies / 登录态
+- 历史链接与收藏
+- 保存的聊天内容
+- 选中文本与截图
+- localhost 同步（如果保留）
+
+如果你愿意，我下一步可以直接给你一套**能填进这栏的 URL 方案 + 对应页面文案**。
+
+另外，我刚才没有发现新的额外问题，只是在继续收敛“这个 URL 应该怎么填”。
+iterate-checkpoint:2026-04-10T22:54:36Z | 自动检查点 06:54:36
+
+### 👤 用户
+但是这里还没有去写成英文的
+
+📷 *附图 1 张*
+
+---
