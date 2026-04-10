@@ -1401,3 +1401,43 @@ iterate-checkpoint:2026-04-10T23:23:35Z | 自动检查点 07:23:35
 iterate-checkpoint:2026-04-10T23:23:46Z | 自动检查点 07:23:46
 
 ---
+## 07:24:04  @ AI-Sidebar 
+
+### 🤖 AI
+提审材料我已经开始收口了，而且是按你仓库里的**真实行为**重写的，不是泛泛模板。
+
+这次我动了 4 份材料：
+
+- `/Users/apple/gemini/AI-Sidebar /PRIVACY_POLICY.md`
+  - 重写成和实际数据流一致的版本
+  - 明确写了：cookies、用户主动发送的选中文本/截图、保存/导出的会话内容、history/favorites、本地 `localhost:3456` 同步、第三方 AI 服务直连
+
+- `/Users/apple/gemini/AI-Sidebar /WEBSTORE_SUBMISSION.md`
+  - 更新到 `0.0.3`
+  - 补了 `Privacy policy URL` 字段该怎么填
+  - 补了 Privacy practices 的推荐勾选项
+  - 补了可直接粘贴的 resubmission note
+
+- `/Users/apple/gemini/AI-Sidebar /WEBSTORE_TEST_INSTRUCTIONS.md`
+  - 修正 reviewer 说明
+  - 去掉了之前不准确的 `identity` 说法
+  - 补了 `<all_urls>` 浮动并行面板和 `localhost` 同步的解释
+
+- `/Users/apple/gemini/AI-Sidebar /WEBSTORE_PRIVACY_DISCLOSURE.md`
+  - 这是我新建的
+  - 里面是可以直接往 Chrome Web Store 隐私表单里贴的答案草稿
+
+我这次是按 Chrome 官方这两条来对齐的：
+- 处理敏感/个人数据的扩展，至少必须在 dashboard 里提供隐私政策 URL：[User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)
+- dashboard 披露、隐私政策、扩展实际行为三者不一致，会被判违规：同页 FAQ 里也明确写了
+
+现在还剩一个**关键缺口**：
+- 你公开给商店填的那个 `https://aibar.xin/privacy`，内容也要同步成这版；否则本地文档改了，线上页面没改，还是会不一致
+
+这个“线上隐私页内容落后于实际行为”算一个新问题，要不要我顺手记到 `~/.cunzhi-knowledge/problems.md`？
+iterate-checkpoint:2026-04-10T23:23:56Z | 自动检查点 07:23:56
+
+### 👤 用户
+选中的选项: 继续同步 aibar.xin/privacy 文案
+
+---
