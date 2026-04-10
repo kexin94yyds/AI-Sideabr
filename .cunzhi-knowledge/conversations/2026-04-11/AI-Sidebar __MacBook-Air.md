@@ -2805,3 +2805,25 @@ iterate-checkpoint:2026-04-10T23:59:11Z | 自动检查点 07:59:11
 iterate-checkpoint:2026-04-10T23:59:21Z | 自动检查点 07:59:21
 
 ---
+## 07:59:38  @ AI-Sidebar 
+
+### 🤖 AI
+已完成当前卡点处理。
+
+1. 我在 `/Users/apple/Downloads/ai全家桶---聚合ai侧边栏` 先打了检查点：`646cfc9`
+2. `aibar` 的 `wrangler deploy` 第一次 dry-run 报错，缺少 `compatibility_date`
+3. 按 Cloudflare 返回值补上 `--compatibility-date 2026-04-10` 后，dry-run 通过
+4. 已正式部署到生产 Worker：`aibar`
+   - Version ID: `713700fd-228e-457c-a883-6d91a4227570`
+5. 线上验证通过：
+   - `https://aibar.xin` 现在引用的是新资源 `assets/index-yVlO_NVc.js`
+   - `https://aibar.xin/privacy` 也已经返回同一套新页面
+   - 新 JS 中能检索到 `HTML snippets`、`http://localhost:3456`、`Chrome Web Store Limited Use`
+
+结论：之前不是代码没同步，而是你发布到了 `aibar-xin.pages.dev`，生产域名 `aibar.xin` 实际挂在 Worker 服务 `aibar` 上。现在生产站已经是新版本了，Chrome Web Store 的隐私政策 URL 可以直接用 `https://aibar.xin/privacy`。
+iterate-checkpoint:2026-04-10T23:59:27Z | 自动检查点 07:59:27
+
+### 👤 用户
+选中的选项: 把这次 Cloudflare 定位沉淀到 problems.md
+
+---
