@@ -730,3 +730,63 @@ iterate-checkpoint:2026-04-10T22:59:44Z | 自动检查点 06:59:44
 改
 
 ---
+## 07:04:26  @ AI-Sidebar 
+
+### 🤖 AI
+已改，而且这次改的是**落地页项目**，不是扩展仓库。
+
+## 改动位置
+文件：
+- [src/App.tsx](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx)
+
+### 1. 让 `/privacy` 这种 URL 直开对应弹窗
+我补了路径和弹窗状态同步：
+- [src/App.tsx:70](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:70) 定义 `ModalContent`
+- [src/App.tsx:72](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:72) 定义 `MODAL_PATHS`
+- [src/App.tsx:95](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:95) 从 `window.location.pathname` 反推打开哪个弹窗
+- [src/App.tsx:106](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:106) 在弹窗切换时把 URL 改成 `/privacy` / `/terms` / `/contact` / `/developer`
+
+也就是说，**你现在访问 `aibar.xin/privacy`，源码层面终于有明确逻辑会直接打开 Privacy 弹窗了。**
+
+### 2. 把 Privacy 入口和标题改成英文
+- [src/App.tsx:516](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:516) Footer 按钮改成 `Privacy Policy`
+- [src/App.tsx:547](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:547) 弹窗标题改成 `Privacy Policy`
+- [src/App.tsx:556](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:556) Privacy 模态下关闭按钮改成 `Close`
+
+### 3. 把 privacy 正文重写成和真实数据流一致的英文版
+我把原来那三句绝对表述换掉了，改成三段：
+- `Data We Process`
+- `Third-Party Services`
+- `Storage and Security`
+
+对应位置：
+- [src/App.tsx:558](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:558) 起
+
+现在这版已经写到：
+- 本地处理 settings / history / favorites / cookies / selected text / screenshots / saved conversations
+- 用户与第三方 AI 服务交互时，数据会直接发往这些第三方服务
+- 核心扩展数据不会发到你自己的远程服务器
+- 如果启用本地同步，history/favorites 可能发到本机 `localhost` 服务
+
+## 验证
+我已经在这个项目里跑过构建：
+- `npm run build` ✅ 通过
+
+构建输出：
+- `dist/index.html`
+- `dist/assets/index-Dos-Ad3f.js`
+- `dist/assets/index-CYGVBbEj.css`
+
+## 这次顺手修掉的一个隐藏问题
+我在改的时候确认到：**原来本地源码其实没有真正把 `/privacy` 路径和弹窗状态绑定起来**，只是页面里有个 privacy 弹窗按钮。这次我已经一并补上了。
+
+**要不要我把这条“落地页缺少 `/privacy` 路由与隐私弹窗联动”记录到 `~/.cunzhi-knowledge/problems.md`？**
+
+下一步我建议二选一：
+1. 我继续帮你看这个改动怎么重新部署到 `aibar.xin`
+2. 我继续把 `terms / contact` 也顺手英文化，避免审核员点进去时一半英文一半中文
+
+### 👤 用户
+你可以先做一个英文版的网站
+
+---
