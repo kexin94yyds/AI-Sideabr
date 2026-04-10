@@ -1,6 +1,6 @@
 # Chrome Web Store Review Instructions
 
-Last updated: March 26, 2026
+Last updated: April 11, 2026
 
 ## Extension purpose
 
@@ -31,16 +31,22 @@ AI Sidebar adds a browser side panel that lets the user open supported AI websit
 ## Permissions justification
 
 - `sidePanel`: open the extension UI in Chrome side panel.
-- `tabs` and `activeTab`: inspect current tab context and open provider pages.
-- `storage`: persist user settings and provider preferences.
-- `cookies` and `identity`: detect sign-in state or complete supported authentication flows where required.
+- `tabs` and `activeTab`: inspect current tab context, support opening provider pages, and enable user-triggered actions such as send-selection and screenshot capture.
+- `storage`: persist user settings, provider preferences, history, favorites, and pending side panel payloads.
+- `cookies`: detect sign-in state on supported services and preserve supported compatibility behavior such as local Perplexity cookie backup and restore.
 - `scripting`: inject helper scripts on supported AI sites.
 - `contextMenus`: expose extension actions from the browser context menu.
-- `declarativeNetRequest` and `declarativeNetRequestWithHostAccess`: adjust request headers for compatibility on supported provider pages.
+- `declarativeNetRequest` and `declarativeNetRequestWithHostAccess`: adjust headers for compatibility on supported provider pages that need embedding or layout support.
 
 ## Supported host access
 
 Host permissions are limited to supported AI/productivity websites declared in the manifest. The extension does not inject into arbitrary websites except where a feature explicitly requires cross-site support already listed in the manifest.
+
+The `<all_urls>` content script is used only for the user-invoked floating parallel AI panel feature. It injects the panel shell into the current page when the feature is used and does not send browsing data to developer-operated remote servers.
+
+## Optional localhost sync behavior
+
+If a local sync service is running on the user's own device at `http://localhost:3456`, the extension may sync history and favorites to that local service. If the local service is not running, the core extension still works and sync requests are skipped.
 
 ## Notes for reviewer
 
