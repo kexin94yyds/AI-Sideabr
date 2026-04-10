@@ -589,3 +589,51 @@ iterate-checkpoint:2026-04-10T22:59:34Z | 自动检查点 06:59:34
 iterate-checkpoint:2026-04-10T22:59:44Z | 自动检查点 06:59:44
 
 ---
+## 07:01:12  @ AI-Sidebar 
+
+### 🤖 AI
+找到了，`xi` 和代码都对上了。
+
+## 这不是当前扩展仓库里的页面
+你截图里的 **aibar.xin 前端展示页** 不在当前这个扩展项目 [AI-Sidebar](/Users/apple/gemini/AI-Sidebar%20) 里，实际在：
+
+- **项目目录**：[ai全家桶---聚合ai侧边栏](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏)
+
+历史记录里也有这条：
+- 2026-03-24 的对话明确写了路径：`/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/`
+
+## 关键文件就在这里
+核心前端页面是：
+- [src/App.tsx](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx)
+
+我已经核对到，它和你截图里的页面特征完全一致：
+- 导航栏 `AI Sidebar`、`核心功能`、`AI支持`、`常见问题`
+- 三个按钮：`添加到 Chrome` / `下载应用` / `GitHub`
+- 底部按钮：`隐私政策` / `服务条款` / `联系我们`
+- 弹窗内容状态：`privacy | terms | contact | developer`
+
+## 你刚才那个隐私政策弹窗代码也在这里
+具体就在：
+- [src/App.tsx:73](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:73) `modalContent`
+- [src/App.tsx:486](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:486) 底部 `隐私政策` 按钮
+- [src/App.tsx:517](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:517) 弹窗标题切换
+- [src/App.tsx:556](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/src/App.tsx:556) `privacy` 正文内容
+
+## 部署痕迹也在这个项目里
+这个目录本身就带：
+- [netlify.toml](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/netlify.toml)
+- [dist](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/dist)
+- [deploy.sh](/Users/apple/Downloads/ai全家桶---聚合ai侧边栏/deploy.sh)
+
+所以，**你现在要改 `https://aibar.xin/privacy` 这页，不是去扩展仓库改，而是去这个落地页项目改 `src/App.tsx`。**
+
+如果你要，我下一步可以继续两种：
+1. 直接帮你定位 `privacy` 弹窗应该改哪一段文案
+2. 继续根据事实上架要求，列一版这个页面里哪些中文/错误表述必须改
+
+另外，这一轮没有新发现额外问题，只是把页面源码位置精确定位出来了。
+
+### 👤 用户
+选中的选项: 继续：定位 privacy 文案该改哪几段
+
+---
