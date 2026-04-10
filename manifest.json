@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Sidebar",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Chrome extension that brings your favorite AI web assistants directly to your browser's side panel",
   "permissions": [
     "sidePanel",
@@ -11,7 +11,6 @@
     "activeTab",
     "storage",
     "cookies",
-    "identity",
     "scripting",
     "contextMenus"
   ],
