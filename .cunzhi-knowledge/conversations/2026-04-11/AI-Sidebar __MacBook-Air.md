@@ -3937,3 +3937,30 @@ iterate-checkpoint:2026-04-11T00:20:50Z | 自动检查点 08:20:50
 iterate-checkpoint:2026-04-11T00:20:59Z | 自动检查点 08:20:59
 
 ---
+## 08:21:42  @ AI-Sidebar 
+
+### 🤖 AI
+这张图看起来是对的。
+
+我确认到的点：
+- `Authentication information` 勾了
+- `Personal communications` 勾了
+- `Web history` 勾了
+- `User activity` 勾了
+- `Website content` 勾了
+- 3 个 certify 都勾了
+- `Privacy policy URL` 已经是 `https://aibar.xin/privacy`
+
+所以这页本身现在没看到明显错误。
+下一步就做这个顺序：
+
+1. 点 `Save draft`
+2. 看有没有新的红字校验
+3. 如果没有，再看 `Submit for review` 会不会亮
+
+如果 `Save draft` 之后 `Submit for review` 还是灰的，八成是上面还有某个必填项没保存成功，或者别的分页还有红字。那时你再给我一张完整截图，我继续定位。
+iterate-checkpoint:2026-04-11T00:21:04Z | 自动检查点 08:21:04
+
+📷 *附图 1 张*
+
+---
