@@ -3227,3 +3227,28 @@ iterate-checkpoint:2026-04-11T00:05:10Z | 自动检查点 08:05:10
 iterate-checkpoint:2026-04-11T00:06:07Z | 自动检查点 08:06:07
 
 ---
+## 08:06:58  @ AI-Sidebar 
+
+### 🤖 AI
+按当前代码状态，Data usage 这里建议你勾这 5 个：
+
+- `Authentication information`
+- `Personal communications`
+- `Web history`
+- `User activity`
+- `Website content`
+
+先不要勾：
+
+- `Personally identifiable information`
+- `Health information`
+- `Financial and payment information`
+- `Location`
+
+关键分歧只在 `User activity`。如果你保留现在这段临时输入 relay，就勾上；如果后面把它删掉，再回来把这一项拿掉。
+iterate-checkpoint:2026-04-11T00:06:11Z | 自动检查点 08:06:11
+
+### 👤 用户
+这些东西有些认证的是不是第三方比如 ai 自带的，个人的交流我们是本地的啊
+
+---
