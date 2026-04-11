@@ -3796,3 +3796,38 @@ Yes, I am using Remote codex
 iterate-checkpoint:2026-04-11T00:18:46Z | 自动检查点 08:18:46
 
 ---
+## 08:19:16  @ AI-Sidebar 
+
+### 🤖 AI
+我按“这次能不能提”来检查，结论是：
+
+**这几项现在可以直接用：**
+- `Single purpose`
+- `sidePanel`
+- `declarativeNetRequest`
+- `declarativeNetRequestWithHostAccess`
+- `Host permission`
+
+**这几项可以先不改，当前不会是主要雷点：**
+- `tabs`
+- `activeTab`
+- `storage`
+- `contextMenus`
+
+**如果你还愿意再稳一点，才去动：**
+- `cookies`
+- `scripting`
+
+**现在最要确认的 4 件事：**
+1. `Privacy URL` 确实是 `https://aibar.xin/privacy`
+2. `Data usage` 是那 5 项
+3. `Remote code` 选的是 **No**
+4. `Remote code justification` 也贴进去
+
+所以就你现在贴出来这版看，主干已经对了，不需要再大改一轮。
+下一步重点不是重写更多字段，而是把 `Remote code` 和 `Data usage` 最后核准。
+iterate-checkpoint:2026-04-11T00:18:54Z | 自动检查点 08:18:54
+
+📷 *附图 1 张*
+
+---
