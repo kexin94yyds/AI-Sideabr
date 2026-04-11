@@ -3502,3 +3502,80 @@ iterate-checkpoint:2026-04-11T00:12:21Z | 自动检查点 08:12:21
 iterate-checkpoint:2026-04-11T00:12:30Z | 自动检查点 08:12:30
 
 ---
+## 08:14:15  @ AI-Sidebar 
+
+### 🤖 AI
+直接复制，按字段一个一个贴：
+
+`Single purpose description`
+```text
+Open supported AI websites in Chrome's side panel and provide closely related page helpers and user-triggered actions, such as sending selected text, capturing screenshots, exporting conversations, and opening the floating parallel AI panel.
+```
+
+`sidePanel justification`
+```text
+Required to display the extension UI in Chrome's side panel so users can access supported AI websites without leaving their current page.
+```
+
+`declarativeNetRequest justification`
+```text
+Used to adjust response headers on supported provider pages for embedding and compatibility in the side panel or related page helpers. It is not used for unrelated background traffic.
+```
+
+`declarativeNetRequestWithHostAccess justification`
+```text
+Used together with declarativeNetRequest on supported hosts so compatibility rules apply only where the side panel or related helper features require them.
+```
+
+`tabs justification`
+```text
+Used to read current tab context, open supported provider pages, and coordinate user-triggered actions between the active tab and the side panel.
+```
+
+`activeTab justification`
+```text
+Used only for user-triggered actions on the current page, such as sending selected text or a screenshot into the side panel.
+```
+
+`storage justification`
+```text
+Used to store settings, preferences, history, favorites, pending side panel payloads, and other locally saved extension state.
+```
+
+`cookies justification`
+```text
+Used to detect sign-in state on supported services and preserve supported compatibility behavior such as local backup and restore of Perplexity session cookies inside browser storage.
+```
+
+`scripting justification`
+```text
+Used to inject helper scripts on supported AI pages and, when the user explicitly opens the floating parallel panel, on the current page.
+```
+
+`contextMenus justification`
+```text
+Used to add the "Send to AI Sidebar" action to the browser context menu for selected text.
+```
+
+`Host permission justification`
+```text
+Most host permissions are limited to supported AI and productivity websites where the extension provides side panel access or page-level helper features. The extension also requests optional runtime host permission for the current origin only when the user explicitly opens the floating parallel panel or approves another user-invoked cross-site action.
+```
+
+`Are you using remote code?`
+```text
+No, I am not using Remote code
+```
+
+`Remote code justification`
+```text
+All extension logic is packaged inside the submitted extension. The extension may open third-party websites in iframes or tabs as web content, but it does not load or execute external JavaScript or Wasm inside privileged extension contexts.
+```
+iterate-checkpoint:2026-04-11T00:12:35Z | 自动检查点 08:12:35
+
+### 👤 用户
+不过你看看这里，有必要改这么多吗
+
+📷 *附图 1 张*
+
+---
