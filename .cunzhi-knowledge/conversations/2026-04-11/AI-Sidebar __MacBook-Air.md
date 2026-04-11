@@ -2971,3 +2971,146 @@ iterate-checkpoint:2026-04-11T00:02:45Z | 自动检查点 08:02:45
 iterate-checkpoint:2026-04-11T00:02:55Z | 自动检查点 08:02:55
 
 ---
+## 08:03:28  @ AI-Sidebar 
+
+### 🤖 AI
+这轮我继续检查了 Chrome Web Store 提交材料，并直接修了一个真实不一致。
+
+### 我发现的问题
+当前 reviewer 文案把 host access 说得比实际 manifest 更窄：
+- `manifest.json` 里有 `optional_host_permissions`：`http://*/*`、`https://*/*`、`http://localhost:*/*`
+- 还有一个注册在 `<all_urls>` 上的 `content-scripts/parallel-panel.js`
+- 但原来的 reviewer/test 文案容易让审核员理解成“只在受支持 AI 域名上工作”
+
+这不是功能 bug，但会增加提审时被认为“披露不完整/解释过窄”的风险。
+
+### 我已做的修正
+我已经更新了 3 份提审文档，把这块解释补齐：
+- `WEBSTORE_TEST_INSTRUCTIONS.md`
+- `WEBSTORE_FINAL_REVIEW_NOTE.md`
+- `WEBSTORE_SUBMISSION.md`
+
+修正后的口径是：
+- 大多数 host permissions 确实只用于受支持 AI/生产力站点
+- 另外存在 runtime optional host permissions，用于用户主动打开 floating parallel panel 或触发跨站动作时申请当前 origin
+- `<all_urls>` 的脚本是轻量 loader，真正的浮动面板 UI 只在用户操作后渲染
+
+### 现在的判断
+- 隐私政策 URL 线上问题已经解决
+- 提审文案和 manifest 的一致性也比刚才更好了
+- 但仍有一个**剩余审核风险**：manifest 本身的权限范围依然偏宽，尤其是 `optional_host_permissions` 和 `<all_urls>`，这会继续触发人工审核，只是现在解释更完整了
+
+如果你要继续压低提审风险，下一步就不是改文案了，而是评估是否要在代码/manifest 层收缩这两个权限面。
+iterate-checkpoint:2026-04-11T00:02:57Z | 自动检查点 08:02:57
+
+### 👤 用户
+Privacy
+To facilitate the compliance of your extension with the Chrome Web Store Developer Program Policies, you are required to provide the information listed below. The information provided in this form will be shared with the Chrome Web Store team. Please ensure that the information provided is accurate, as it will improve the review time of your extension and decrease the risk of this version being rejected.
+
+Single purpose
+An extension must have a single purpose that is narrow and easy-to-understand. Learn more
+
+Single purpose description
+This extension provides a unified side panel interface for accessing multiple web-based AI chat services directly from the browser. It enables users to interact with AI assistants without leaving their current webpage, featuring intelligent input auto-collapse, chat history export, and enhanced UI interactions across supported AI platforms.
+342/1,000342 of 1000 characters entered
+Permission justification
+A permission is either one of a list of known strings, such as "activeTab", or a match pattern giving access to one or more hosts.
+Remove any permission that is not needed to fulfill the single purpose of your extension. Requesting an unnecessary permission will result in this version being rejected.
+
+Due to the Host Permission, your extension may require an in-depth review which will delay publishing.
+
+sidePanel justification
+Required to display the AI sidebar interface in the browser's side panel, allowing users to access AI chat services alongside their current webpage without navigating away.
+
+173/1,000173 of 1000 characters entered
+declarativeNetRequest justification
+Used to modify response headers and bypass CORS restrictions when communicating with AI service APIs from the side panel, enabling seamless integration with various AI platforms.
+
+179/1,000179 of 1000 characters entered
+declarativeNetRequestWithHostAccess justification
+Used to modify response headers and bypass CORS restrictions when communicating with AI service APIs from the side panel.
+121/1,000121 of 1000 characters entered
+tabs justification
+Used to synchronize URL state between the active browser tab and the side panel, and to manage tab interactions for AI features.
+128/1,000128 of 1000 characters entered
+activeTab justification
+Required to access the current tab’s information when user initiates AI interactions from the context menu or keyboard shortcuts.
+129/1,000129 of 1000 characters entered
+storage justification
+Stores user preferences, extension settings, and cached data locally to maintain state across browser sessions.
+111/1,000111 of 1000 characters entered
+cookies justification
+Accesses authentication cookies for AI services (ChatGPT, Gemini, Claude, etc.) to maintain user login sessions.
+112/1,000112 of 1000 characters entered
+scripting justification
+Injects content scripts to enhance AI website interfaces with features like input auto-collapse and UI improvements.
+116/1,000116 of 1000 characters entered
+contextMenus justification
+Adds "Send to AI Sidebar" option to the right-click context menu for selected text.
+83/1,00083 of 1000 characters entered
+Host permission justification
+Required to inject content scripts on AI service websites (chatgpt.com, gemini.google.com, claude.ai, kimi.moonshot.cn, etc.) for UI enhancements and to enable API communication with these services.
+198/1,000198 of 1000 characters entered
+A host permission is any match pattern specified in the "permissions" and "content_scripts" fields of the extension manifest
+Are you using remote code?
+
+No, I am not using Remote code
+
+Yes, I am using Remote code
+Justification
+This extension does not execute any remote code. All code is bundled within the extension package. The extension only loads third-party AI websites in the side panel iframe, which is standard browser behavior.
+
+
+211/1,000211 of 1000 characters entered
+Remote code is any JS or Wasm that is not included in the extension's package. This includes references to external files in <script> tags, modules pointing to external files, and strings evaluated through eval()
+Data usage
+The content of this form will be displayed publicly on the item detail page. By publishing your item, you are certifying that these disclosures reflect the most up-to-date content of your privacy policy.
+
+What user data do you plan to collect from users now or in the future? (See FAQ for more information)
+
+Personally identifiable information
+For example: name, address, email address, age, or identification number
+
+Health information
+For example: heart rate data, medical history, symptoms, diagnoses, or procedures
+
+Financial and payment information
+For example: transactions, credit card numbers, credit ratings, financial statements, or payment history
+
+Authentication information
+For example: passwords, credentials, security question, or personal identification number (PIN)
+
+Personal communications
+For example: emails, texts, or chat messages
+
+Location
+For example: region, IP address, GPS coordinates, or information about things near the user’s device
+
+Web history
+The list of web pages a user has visited, as well as associated data such as page title and time of visit
+
+User activity
+For example: network monitoring, clicks, mouse position, scroll, or keystroke logging
+
+Website content
+For example: text, images, sounds, videos, or hyperlinks
+I certify that the following disclosures are true:
+
+I do not sell or transfer user data to third parties, outside of the approved use cases
+
+I do not use or transfer user data for purposes that are unrelated to my item's single purpose
+
+I do not use or transfer user data to determine creditworthiness or for lending purposes
+You must certify all three disclosures to comply with our Developer Program Policies
+Privacy policy
+An extension must have a privacy policy if it collects user data. Learn more
+
+Privacy policy URL*
+https://aibar.xin/privacy
+
+
+我们先从这里改起来
+
+📷 *附图 1 张*
+
+---
