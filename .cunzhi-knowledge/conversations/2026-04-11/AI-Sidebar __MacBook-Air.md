@@ -3672,3 +3672,120 @@ iterate-checkpoint:2026-04-11T00:15:37Z | 自动检查点 08:15:37
 iterate-checkpoint:2026-04-11T00:15:46Z | 自动检查点 08:15:46
 
 ---
+## 08:18:39  @ AI-Sidebar 
+
+### 🤖 AI
+就这 7 个，按顺序复制：
+
+`Privacy URL`
+```text
+https://aibar.xin/privacy
+```
+
+`Data usage`
+```text
+Check:
+- Authentication information
+- Personal communications
+- Web history
+- User activity
+- Website content
+
+Do not check:
+- Personally identifiable information
+- Health information
+- Financial and payment information
+- Location
+
+Keep all 3 certification checkboxes checked.
+```
+
+`Single purpose`
+```text
+Open supported AI websites in Chrome's side panel and provide closely related page helpers and user-triggered actions, such as sending selected text, capturing screenshots, exporting conversations, and opening the floating parallel AI panel.
+```
+
+`DNR`
+```text
+Used to adjust response headers on supported provider pages for embedding and compatibility in the side panel or related page helpers. It is not used for unrelated background traffic.
+```
+
+`DNR with host access`
+```text
+Used together with declarativeNetRequest on supported hosts so compatibility rules apply only where the side panel or related helper features require them.
+```
+
+`Host permission`
+```text
+Most host permissions are limited to supported AI and productivity websites where the extension provides side panel access or page-level helper features. The extension also requests optional runtime host permission for the current origin only when the user explicitly opens the floating parallel panel or approves another user-invoked cross-site action.
+```
+
+`Remote code`
+```text
+No, I am not using Remote code
+```
+
+`Remote code justification`
+```text
+All extension logic is packaged inside the submitted extension. The extension may open third-party websites in iframes or tabs as web content, but it does not load or execute external JavaScript or Wasm inside privileged extension contexts.
+```
+iterate-checkpoint:2026-04-11T00:15:51Z | 自动检查点 08:15:51
+
+### 👤 用户
+Single purpose
+An extension must have a single purpose that is narrow and easy-to-understand. Learn more
+
+Single purpose description
+Open supported AI websites in Chrome's side panel and provide closely related page helpers and user-triggered actions, such as sending selected text, capturing screenshots, exporting conversations, and opening the floating parallel AI panel.
+
+242/1,000242 of 1000 characters entered
+Permission justification
+A permission is either one of a list of known strings, such as "activeTab", or a match pattern giving access to one or more hosts.
+Remove any permission that is not needed to fulfill the single purpose of your extension. Requesting an unnecessary permission will result in this version being rejected.
+
+Due to the Host Permission, your extension may require an in-depth review which will delay publishing.
+
+sidePanel justification
+Required to display the extension UI in Chrome's side panel so users can access supported AI websites without leaving their current page.
+
+138/1,000138 of 1000 characters entered
+declarativeNetRequest justification
+Used to adjust response headers on supported provider pages for embedding and compatibility in the side panel or related page helpers. It is not used for unrelated background traffic.
+
+184/1,000184 of 1000 characters entered
+declarativeNetRequestWithHostAccess justification
+Used together with declarativeNetRequest on supported hosts so compatibility rules apply only where the side panel or related helper features require them.
+
+156/1,000156 of 1000 characters entered
+tabs justification
+Used to synchronize URL state between the active browser tab and the side panel, and to manage tab interactions for AI features.
+128/1,000128 of 1000 characters entered
+activeTab justification
+Required to access the current tab’s information when user initiates AI interactions from the context menu or keyboard shortcuts.
+129/1,000129 of 1000 characters entered
+storage justification
+Stores user preferences, extension settings, and cached data locally to maintain state across browser sessions.
+111/1,000111 of 1000 characters entered
+cookies justification
+Accesses authentication cookies for AI services (ChatGPT, Gemini, Claude, etc.) to maintain user login sessions.
+112/1,000112 of 1000 characters entered
+scripting justification
+Injects content scripts to enhance AI website interfaces with features like input auto-collapse and UI improvements.
+116/1,000116 of 1000 characters entered
+contextMenus justification
+Adds "Send to AI Sidebar" option to the right-click context menu for selected text.
+83/1,00083 of 1000 characters entered
+Host permission justification
+Most host permissions are limited to supported AI and productivity websites where the extension provides side panel access or page-level helper features. The extension also requests optional runtime host permission for the current origin only when the user explicitly opens the floating parallel panel or approves another user-invoked cross-site action.
+
+354/1,000354 of 1000 characters entered
+A host permission is any match pattern specified in the "permissions" and "content_scripts" fields of the extension manifest
+Are you using remote code?
+
+No, I am not using Remote code
+
+Yes, I am using Remote codex
+
+检查游戏
+
+---
