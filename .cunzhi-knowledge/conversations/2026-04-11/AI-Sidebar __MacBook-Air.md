@@ -3184,3 +3184,39 @@ iterate-checkpoint:2026-04-11T00:04:57Z | 自动检查点 08:04:57
 iterate-checkpoint:2026-04-11T00:05:06Z | 自动检查点 08:05:06
 
 ---
+## 08:05:59  @ AI-Sidebar 
+
+### 🤖 AI
+我已经按你贴出来的 Dashboard 表单，把可直接粘贴的版本写进文档了：
+
+- `WEBSTORE_PRIVACY_DISCLOSURE.md`
+  - 新增了 `Single purpose description`
+  - 新增了每个权限字段的 paste-ready justification
+  - 新增了 `Remote code` 的标准回答
+  - 重写了 `How the data is used`
+- `WEBSTORE_SUBMISSION.md`
+  - 把 `User activity` 加进了当前代码状态下的推荐披露
+
+### 这轮最重要的新发现
+按当前代码，Data usage 最稳妥的选择不该只勾 4 项，而应该把 `User activity` 也勾上。
+
+原因是：
+- `js/background.js` 里 `installTypingRelay` 会在用户触发后临时监听 `keydown` 和 `paste`
+- 然后通过 `js/popup.js` 把这些输入转发到侧边栏
+
+这意味着它已经碰到了表单里 `User activity` 示例中的 `keystroke logging` 边界。虽然它是用户触发、临时的，不是后台常驻监控，但对提审披露来说，当前 safest path 是：**勾上 `User activity`**。
+
+### 现在有两个方向
+1. **最快 resubmit 路线**：保持当前代码，Dashboard 里把 `User activity` 勾上，并使用我刚写好的新文案
+2. **更干净的披露路线**：先移除/关闭 typing relay，再回到表单，这样才有机会不勾 `User activity`
+
+### 当前建议
+如果你现在的目标是尽快过审，我建议先走第 1 条；如果你很在意公开披露里出现 `User activity`，那第 2 条才是更稳的产品方向。
+iterate-checkpoint:2026-04-11T00:05:10Z | 自动检查点 08:05:10
+
+### 👤 用户
+哪些
+
+📷 *附图 1 张*
+
+---
