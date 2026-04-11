@@ -3336,3 +3336,49 @@ iterate-checkpoint:2026-04-11T00:09:21Z | 自动检查点 08:09:21
 iterate-checkpoint:2026-04-11T00:09:31Z | 自动检查点 08:09:31
 
 ---
+## 08:10:08  @ AI-Sidebar 
+
+### 🤖 AI
+我查了官方 FAQ，这个字段的意思基本可以定下来了。
+
+它问的不是：
+- “哪些数据是你自己的账号体系收的”
+- “哪些数据发到了你自己的服务器”
+
+它更接近在问：
+- “你的扩展现在，或者你计划以后，会接触、读取、保存、转发、同步、导出、或者以功能方式处理哪些类别的用户数据”
+
+官方给的例子很直接：
+- 有登录功能，哪怕用的是第三方认证，也算相关数据处理
+- 截图、抓网页内容、读 cookies、处理网站内容，都在它关心的范围里
+来源：Chrome Web Store User Data FAQ
+https://developer.chrome.com/docs/webstore/program-policies/user-data-faq
+
+官方还单独列了敏感/相关类别，包括：
+- `Authentication information`
+- `Website content and resources`
+- `Web browsing activity`
+- `Personal communications`
+- `User-generated content`
+
+所以我的结论是，这个问题应当理解成：
+
+1. 先按“扩展是否处理过这类数据”来勾类别
+2. 再用下面那些 `I do not sell/transfer...` 的认证项去说明“没有卖、没有无关传输、没有拿去放广告”
+3. 再用隐私政策和 reviewer note 解释“主要本地处理”以及“第三方 AI 直连”
+
+结合你这个扩展，当前映射就是：
+
+- 第三方 AI 登录态 / cookies -> `Authentication information`
+- 选中文本 / HTML / 截图 / 页面内容 -> `Website content`
+- 历史记录 / 收藏 / 当前页上下文 -> `Web history`
+- 保存/导出的聊天内容 -> `Personal communications`
+- 如果保留 typing relay -> `User activity`
+
+这里我在做一个基于官方 FAQ 和你代码行为的推断：`本地处理` 通常不等于 `不算 collect/handle`。真正区分“本地”还是“远程”的，是后面的用途和传输声明，不是前面这个数据类别问题本身。
+iterate-checkpoint:2026-04-11T00:09:32Z | 自动检查点 08:09:32
+
+### 👤 用户
+那我们按照实际怎么去勾选，直接说
+
+---
