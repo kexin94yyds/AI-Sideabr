@@ -3896,3 +3896,30 @@ iterate-checkpoint:2026-04-11T00:20:17Z | 自动检查点 08:20:17
 iterate-checkpoint:2026-04-11T00:20:27Z | 自动检查点 08:20:27
 
 ---
+## 08:20:43  @ AI-Sidebar 
+
+### 🤖 AI
+对，这里我收回上一条里“要填 Remote code justification”的说法。
+
+按你这张图看：
+
+- `No, I am not using remote code` 选对了
+- 下面那个 `Justification` 框在这个模式下就是灰的，**不用填，留空就行**
+- 你现在这一段不用再动
+
+所以这里的正确动作是：
+
+1. 保持 `No, I am not using remote code`
+2. 不切到 `Yes`
+3. `Justification` 留空
+
+现在你这页真正还要确认的，还是：
+- `Privacy policy URL` 是否已填 `https://aibar.xin/privacy`
+- `Data usage` 那 5 项是否都已勾上
+
+这两个比 remote code 重要。
+iterate-checkpoint:2026-04-11T00:20:29Z | 自动检查点 08:20:29
+
+📷 *附图 1 张*
+
+---
