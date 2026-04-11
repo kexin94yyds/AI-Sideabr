@@ -3273,3 +3273,31 @@ iterate-checkpoint:2026-04-11T00:07:15Z | 自动检查点 08:07:15
 iterate-checkpoint:2026-04-11T00:07:24Z | 自动检查点 08:07:24
 
 ---
+## 08:08:46  @ AI-Sidebar 
+
+### 🤖 AI
+对，你抓到的是关键区别。
+
+这两个框之所以我还建议勾，不是因为“这些数据属于我们”，而是因为“扩展有没有接触和处理它”。
+
+- `Authentication information`：
+  来源确实是第三方 AI 网站自己的登录态，不是你自己的账号体系。
+  但扩展会直接读、备份、恢复 Perplexity 的 cookies，`js/background.js` 里 `backupPerplexityCookies / restorePerplexityCookies` 这一段就是证据。
+
+- `Personal communications`：
+  聊天内容确实主要是用户和第三方 AI 的对话，而且你现在主要是本地存。
+  但扩展有保存 / 导出 / 入库这类能力，会把会话内容放进本地队列和历史流里，所以它仍然算“处理了聊天消息”，只是处理位置主要在本地，而不是你自己的服务器。
+
+更稳的理解是：
+
+1. 勾选框回答“扩展是否处理过这类数据”
+2. 后面的合规承诺再回答“有没有卖、有没有无关传输、是不是发到你自己的服务器”
+
+所以，“第三方的”和“本地的”会影响你后面怎么解释，但通常不够把这两个框直接拿掉。要真把这两个框摘掉，就得先把对应能力从代码里收掉，而不是只改表单文案。
+iterate-checkpoint:2026-04-11T00:07:28Z | 自动检查点 08:07:28
+
+### 👤 用户
+What user data do you plan to collect from users now or in the future? (See FAQ for more information)
+理解一下，顺便去 sou
+
+---
