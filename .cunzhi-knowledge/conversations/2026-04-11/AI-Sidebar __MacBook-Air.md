@@ -3389,3 +3389,36 @@ iterate-checkpoint:2026-04-11T00:09:32Z | 自动检查点 08:09:32
 iterate-checkpoint:2026-04-11T00:10:15Z | 自动检查点 08:10:15
 
 ---
+## 08:11:17  @ AI-Sidebar 
+
+### 🤖 AI
+按你**现在这版代码的实际行为**，这个 `What user data do you plan to collect from users now or in the future?` 直接这样勾：
+
+勾选：
+- `Authentication information`
+- `Personal communications`
+- `Web history`
+- `User activity`
+- `Website content`
+
+不要勾：
+- `Personally identifiable information`
+- `Health information`
+- `Financial and payment information`
+- `Location`
+
+下面 3 个 certify：
+- `I do not sell or transfer user data...` -> 勾
+- `I do not use or transfer user data for purposes unrelated...` -> 勾
+- `I do not use or transfer user data to determine creditworthiness...` -> 勾
+
+这是按**当前真实代码**给的，不是按“最省项”的理想填法。
+只要 `typing relay` 还在，`User activity` 就别拿掉。
+iterate-checkpoint:2026-04-11T00:10:18Z | 自动检查点 08:10:18
+
+### 👤 用户
+然后还需要改什么
+
+📷 *附图 1 张*
+
+---
