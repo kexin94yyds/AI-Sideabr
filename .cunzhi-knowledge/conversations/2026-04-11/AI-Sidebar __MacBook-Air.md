@@ -2862,3 +2862,21 @@ iterate-checkpoint:2026-04-11T00:00:16Z | 自动检查点 08:00:16
 iterate-checkpoint:2026-04-11T00:00:26Z | 自动检查点 08:00:26
 
 ---
+## 08:00:36  @ AI-Sidebar 
+
+### 🤖 AI
+已按你的选择完成沉淀，而且是更新原有问题单，不是重复开一条。
+
+- 更新位置：`~/.cunzhi-knowledge/experience/problems.md`
+- 更新对象：`P-2026-864`
+- 新增内容：Worker `aibar` 才是生产入口、`aibar-xin` 只是 Pages preview、正式修复命令、线上验证结果
+- 知识库提交：`e04ff3817`
+- 已推送到 GitHub：`main -> main`
+
+这次沉淀把之前的判断从“Pages 域名没挂对”修正成了“生产域名实际走 Worker，不走当前 Pages 项目”，后面再查类似问题时不会继续在错误方向里绕。
+iterate-checkpoint:2026-04-11T00:00:28Z | 自动检查点 08:00:28
+
+### 👤 用户
+选中的选项: 继续检查 Chrome Web Store 提交材料
+
+---
