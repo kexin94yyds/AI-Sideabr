@@ -3600,3 +3600,61 @@ iterate-checkpoint:2026-04-11T00:14:33Z | 自动检查点 08:14:33
 iterate-checkpoint:2026-04-11T00:14:43Z | 自动检查点 08:14:43
 
 ---
+## 08:15:31  @ AI-Sidebar 
+
+### 🤖 AI
+没必要全改成一遍。
+
+按你这次的情况，我把它分成两档：
+
+**必须改 / 我建议这次就改**
+1. `Privacy policy URL`
+   - 必须填 `https://aibar.xin/privacy`
+2. `Data usage` 勾选
+   - 按现在真实代码勾那 5 项
+3. `Single purpose description`
+   - 现在这段太散，建议改
+4. `declarativeNetRequest justification`
+5. `declarativeNetRequestWithHostAccess justification`
+6. `Host permission justification`
+7. `Remote code justification`
+
+**可以先不动 / 不是这次最关键**
+- `sidePanel justification`
+- `tabs justification`
+- `activeTab justification`
+- `storage justification`
+- `contextMenus justification`
+
+**介于中间，时间够就改**
+- `cookies justification`
+- `scripting justification`
+
+最短结论就是：
+
+**不是所有都得改。**
+如果你想最小改动重提，我建议你这次只集中改 7 个地方：
+- Privacy URL
+- Data usage
+- Single purpose
+- DNR
+- DNR with host access
+- Host permission
+- Remote code
+
+剩下那些本来就没有特别离谱，可以先留着。
+iterate-checkpoint:2026-04-11T00:14:44Z | 自动检查点 08:14:44
+
+### 👤 用户
+Privacy URL
+Data usage
+Single purpose
+DNR
+DNR with host access
+Host permission
+Remote codex
+这些给我，我复制就行
+
+📷 *附图 1 张*
+
+---
