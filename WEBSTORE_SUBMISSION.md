@@ -37,6 +37,7 @@ Use these answers as the baseline for the Chrome Web Store Privacy practices for
   - `Website content`
   - `Web history`
   - `Personal communications` for saved or exported conversation content
+  - `User activity` if you keep the current temporary input relay behavior
 - Purpose of use: provide the side panel, detect sign-in state, inject user-facing helpers on supported pages, save history and favorites, support user-triggered send-selection or screenshot actions, and save or export conversation content at the user's request.
 - Sold to third parties: `No`
 - Used or transferred for creditworthiness or lending purposes: `No`
