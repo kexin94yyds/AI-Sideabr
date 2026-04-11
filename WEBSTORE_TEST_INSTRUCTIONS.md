@@ -40,9 +40,11 @@ AI Sidebar adds a browser side panel that lets the user open supported AI websit
 
 ## Supported host access
 
-Host permissions are limited to supported AI/productivity websites declared in the manifest. The extension does not inject into arbitrary websites except where a feature explicitly requires cross-site support already listed in the manifest.
+Most host permissions are limited to supported AI/productivity websites declared in the manifest for side panel access and page helpers on those services.
 
-The `<all_urls>` content script is used only for the user-invoked floating parallel AI panel feature. It injects the panel shell into the current page when the feature is used and does not send browsing data to developer-operated remote servers.
+Separately, the extension declares optional runtime host permissions for `http://*/*`, `https://*/*`, and `http://localhost:*/*` so the user can open the floating parallel AI panel on the current page or approve another cross-site action at runtime. The extension requests the current origin only when the user explicitly invokes that feature.
+
+The `<all_urls>` content script is a lightweight loader for the floating parallel AI panel feature. It is present on general pages so the feature can be opened from the current tab, but it renders the floating panel UI only after a user action and does not send browsing data to developer-operated remote servers.
 
 ## Optional localhost sync behavior
 

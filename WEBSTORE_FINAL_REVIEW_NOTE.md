@@ -58,7 +58,9 @@ Used to add the "Send to AI Sidebar" action to the browser context menu for sele
 
 ### Host permissions
 
-Host permissions are limited to supported AI and productivity websites where the extension provides side panel access or page-level helper features. The extension does not use these hosts for unrelated data collection.
+Most host permissions are limited to supported AI and productivity websites where the extension provides side panel access or page-level helper features. The extension does not use these hosts for unrelated data collection.
+
+The extension also declares optional runtime host permissions for `http://*/*`, `https://*/*`, and `http://localhost:*/*`. These are used only when the user explicitly opens the floating parallel AI panel on the current site or approves another cross-site action that requires temporary access to that origin. The extension requests the specific origin at runtime and does not use optional host permissions for unrelated background collection.
 
 ## Final privacy practice choices
 

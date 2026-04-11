@@ -63,6 +63,7 @@ Use a note like this in the reviewer comments or appeal text:
 ## High-risk review items
 
 - Broad host access across many AI websites.
+- Optional runtime host permissions for `http://*/*` and `https://*/*` used by the floating parallel panel and other user-invoked cross-site actions.
 - Cookie access and local cookie persistence for supported compatibility behavior.
 - Declarative net request permissions used for compatibility behavior.
 - `<all_urls>` support for the floating parallel panel.
