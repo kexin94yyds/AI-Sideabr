@@ -3436,3 +3436,48 @@ iterate-checkpoint:2026-04-11T00:11:24Z | 自动检查点 08:11:24
 iterate-checkpoint:2026-04-11T00:11:33Z | 自动检查点 08:11:33
 
 ---
+## 08:12:04  @ AI-Sidebar 
+
+### 🤖 AI
+还需要改的，我直接按优先级说：
+
+1. `Privacy` 页里的 **Data usage 勾选**
+   - 按我刚才那 5 个去勾
+
+2. `Single purpose description`
+   - 你现在这段写得太散，像把很多功能都并列成产品
+   - 要缩成“侧边栏访问 AI 网站 + 紧密相关辅助功能”这一条主线
+
+3. 所有 **permission justification**
+   - 尤其是这两个要重写：
+     - `declarativeNetRequest`
+     - `declarativeNetRequestWithHostAccess`
+   - 现在“bypass CORS / communicate with APIs”这类说法不稳，容易越描越黑
+
+4. `Host permission justification`
+   - 必须把两层说清楚：
+     - 大多数 host 是支持的 AI 站点
+     - 另外有 runtime optional host permission，用于用户主动打开 floating parallel panel
+
+5. `Remote code`
+   - 选 `No`
+   - 说明要改成“第三方网站是网页内容，不是扩展远程代码；扩展逻辑全部打包在本地”
+
+6. reviewer comments
+   - 用我们已经整理过的新版 reviewer note，不要再用旧的泛化说法
+
+7. 最后再核一次：
+   - `Privacy policy URL` 字段里确实是 `https://aibar.xin/privacy`
+   - 公开页面内容和 Dashboard 勾选一致
+
+最短结论：
+**除了勾选项，还必须改 4 块文案：Single purpose、permission justifications、host permission、remote code。**
+这些我已经整理进 `WEBSTORE_PRIVACY_DISCLOSURE.md` 了。
+iterate-checkpoint:2026-04-11T00:11:40Z | 自动检查点 08:11:40
+
+### 👤 用户
+你直接给我我一个一个复制就行
+
+📷 *附图 2 张*
+
+---
