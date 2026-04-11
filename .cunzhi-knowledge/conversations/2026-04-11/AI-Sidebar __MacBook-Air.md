@@ -3852,3 +3852,33 @@ iterate-checkpoint:2026-04-11T00:19:32Z | 自动检查点 08:19:32
 iterate-checkpoint:2026-04-11T00:19:41Z | 自动检查点 08:19:41
 
 ---
+## 08:20:10  @ AI-Sidebar 
+
+### 🤖 AI
+现在这张图里，整体是对的。
+
+我看到的状态是：
+- `No, I am not using remote code` 已经选对了
+- `Data usage` 那 5 项也已经勾对了
+- 3 个 certify 也勾了
+- 现在明显还缺的，就是 **Remote code justification** 这一框还是空的
+
+直接粘这个：
+
+```text
+All extension logic is packaged inside the submitted extension. The extension may open third-party websites in iframes or tabs as web content, but it does not load or execute external JavaScript or Wasm inside privileged extension contexts.
+```
+
+填完之后再看两件事：
+1. `Privacy policy URL` 下面是不是已经有 `https://aibar.xin/privacy`
+2. `Save draft` 一次，确认没有新的红字校验
+
+就你这张图看，当前不是大方向有问题，而是差最后几处必填收口。
+iterate-checkpoint:2026-04-11T00:19:44Z | 自动检查点 08:19:44
+
+### 👤 用户
+要点 yes 才能复制进去啊
+
+📷 *附图 1 张*
+
+---
