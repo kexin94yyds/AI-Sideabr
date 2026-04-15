@@ -9,7 +9,7 @@
 ### 三个保存位置
 
 1. **本地工作目录** - 你编辑的文件
-   - 路径：`/Users/apple/AI-sidebar 更新/AI-Sidebar`
+   - 路径：当前仓库根目录（例如 `/path/to/AI-Sidebar`）
 
 2. **本地 Git 仓库** - Git 版本历史
    - 路径：`.git` 文件夹
@@ -40,8 +40,8 @@
 1. **启动同步服务器**
 
 ```bash
-cd "/Users/apple/AI-sidebar 更新/AI-Sidebar"
-node sync-server.js
+cd /path/to/AI-Sidebar
+node sync-server.cjs
 ```
 
 服务器会在 `http://localhost:3456` 监听。
@@ -98,8 +98,8 @@ cat sync/favorites.json
 4. **将下载的文件移动到 `sync/` 目录**
 
 ```bash
-mv ~/Downloads/history.json "/Users/apple/AI-sidebar 更新/AI-Sidebar/sync/"
-mv ~/Downloads/favorites.json "/Users/apple/AI-sidebar 更新/AI-Sidebar/sync/"
+mv ~/Downloads/history.json ./sync/
+mv ~/Downloads/favorites.json ./sync/
 ```
 
 ### 方式 3：使用 AutoSync API
@@ -185,7 +185,7 @@ curl -X POST http://localhost:3456/sync/favorites \
    ```bash
    lsof -i :3456
    ```
-2. 如果被占用，修改 `sync-server.js` 中的 `PORT` 变量
+2. 如果被占用，修改 `sync-server.cjs` 中的 `PORT` 变量
 
 ### 问题：扩展无法连接到同步服务器
 
@@ -229,7 +229,7 @@ curl -X POST http://localhost:3456/sync/favorites \
    const fs = require('fs');
    const path = require('path');
    
-   const syncDir = '/Users/apple/AI-sidebar 更新/AI-Sidebar/sync';
+   const syncDir = path.join(process.cwd(), 'sync');
    const history = JSON.parse(fs.readFileSync(path.join(syncDir, 'history.json')));
    const favorites = JSON.parse(fs.readFileSync(path.join(syncDir, 'favorites.json')));
    ```
@@ -262,7 +262,7 @@ setInterval(async () => {
 
 ## 文件清单
 
-- `sync-server.js` - Node.js 同步服务器
+- `sync-server.cjs` - Node.js 同步服务器
 - `js/auto-sync.js` - 扩展自动同步模块
 - `js/sync-to-file.js` - 手动导出脚本
 - `sync/history.json` - 历史记录数据
@@ -282,7 +282,7 @@ setInterval(async () => {
 
 ```bash
 # 启动同步服务器（带日志）
-node sync-server.js
+node sync-server.cjs
 
 # 在另一个终端监听文件变化
 watch -n 1 'cat sync/history.json | jq "length"'
@@ -296,4 +296,3 @@ watch -n 1 'cat sync/history.json | jq "length"'
 - [Chrome Extension Storage API](https://developer.chrome.com/docs/extensions/reference/storage/)
 - [IndexedDB API](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
 - [Git 基础](https://git-scm.com/book/zh/v2)
-

@@ -1,9 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = '/Users/apple/gemini/AI-Sidebar 2';
-const VOYAGER = '/Users/apple/gemini/gemini-voyager';
+const ROOT = path.resolve(__dirname, '..');
+const VOYAGER = process.env.GEMINI_VOYAGER_ROOT;
 const TARGET = path.join(ROOT, 'content-scripts/gemini-timeline.js');
+
+if (!VOYAGER) {
+  console.error('Missing GEMINI_VOYAGER_ROOT. Example: GEMINI_VOYAGER_ROOT=/path/to/gemini-voyager node scripts/rebuild-gemini-timeline.cjs');
+  process.exit(1);
+}
 
 // 检查 esbuild 是否存在
 let esbuild;

@@ -1,7 +1,0 @@
-启动spring
-cd docs/my03
-mvn tomcat7:run
-
-启动electron
-npm run dev:electron
-

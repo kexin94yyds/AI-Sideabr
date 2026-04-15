@@ -1,7 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const VOYAGER = '/Users/apple/gemini/gemini-voyager';
+const VOYAGER = process.env.GEMINI_VOYAGER_ROOT;
+
+if (!VOYAGER) {
+  console.error('Missing GEMINI_VOYAGER_ROOT. Example: GEMINI_VOYAGER_ROOT=/path/to/gemini-voyager node scripts/patch-dual-timeline.cjs');
+  process.exit(1);
+}
 
 console.log('Patching Gemini Voyager for dual-sided timeline...');
 

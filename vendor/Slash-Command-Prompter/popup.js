@@ -57,16 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
       el.addEventListener('mouseenter', () => updateSelection(i));
     });
   }
-  
-  // 处理捐赠链接点击
-  const donateLink = document.querySelector('.donate-container a');
-  if (donateLink) {
-    donateLink.addEventListener('click', function(e) {
-      e.preventDefault();
-      chrome.tabs.create({ url: 'donate.html' });
-    });
-  }
-  
   // 导入对话框相关元素和变量
   let importDialog = null;
   let importTextarea = null;

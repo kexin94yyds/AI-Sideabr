@@ -18,18 +18,13 @@ The Slash Command Prompter is a browser extension designed to enhance productivi
 - **Export Prompts**: Users can export all prompts to a text file for backup or sharing
 - **Import Prompts**: Prompts can be imported from a text file, allowing for easy setup across different devices
 
-### 4. Donation Feature
-- **Support Developer**: Users can support the developer by donating via WeChat or Alipay
-- **QR Code Integration**: A dedicated page with QR codes is available for donations
-
-### 5. User Interface
+### 4. User Interface
 - **Responsive Design**: The interface is designed to be intuitive and easy to navigate
 - **Customization**: Users can manage prompts and settings according to their preferences
 
 ## Technical Details
 - **Manifest Version**: 3
 - **Permissions**: Requires access to storage, active tabs, and scripting to function effectively
-- **Web Accessible Resources**: Includes HTML pages and images necessary for the donation feature
 
 ## Usage Scenarios
 - **Content Creation**: Quickly insert frequently used text snippets into documents or emails
@@ -61,5 +56,4 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 ### 其他优化
 - 修复提示词上移仅在当前模式内有效的bug。
 - 优化斜杠菜单触发逻辑，避免误触发。
-
 

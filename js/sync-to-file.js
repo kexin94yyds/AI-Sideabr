@@ -60,7 +60,7 @@
     setTimeout(() => downloadJson('favorites.json', favoritesJson), 500);
 
     console.log('✨ 数据导出完成！请将下载的文件放到 sync/ 目录');
-    console.log(`   📁 目标路径: /Users/apple/AI-sidebar 更新/AI-Sidebar/sync/`);
+    console.log('   📁 目标路径: <repo>/sync/');
     
     // 返回数据供查看
     return {
@@ -77,4 +77,3 @@
     throw error;
   }
 })();
-

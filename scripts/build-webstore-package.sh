@@ -28,9 +28,6 @@ copy_path "rules"
 copy_path "history"
 
 find "$PKG_DIR" -name '.DS_Store' -delete
-rm -f \
-  "$PKG_DIR/images/image copy.png" \
-  "$PKG_DIR/images/时间管道.JPG"
 
 rm -f "$ZIP_PATH"
 python3 - "$PKG_DIR" "$ZIP_PATH" <<'PY'

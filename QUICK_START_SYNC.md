@@ -13,13 +13,13 @@ npm run sync
 或
 
 ```bash
-node sync-server.js
+node sync-server.cjs
 ```
 
 你会看到：
 ```
 🚀 同步服务器已启动: http://localhost:3456
-📁 同步目录: /Users/apple/AI-sidebar 更新/AI-Sidebar/sync
+📁 同步目录: <repo>/sync
 
 可用端点:
   - GET  /ping            - 健康检查
@@ -100,7 +100,7 @@ lsof -i :3456
 # 如果有进程占用，可以杀掉它
 kill -9 <PID>
 
-# 或者修改 sync-server.js 中的 PORT 变量
+# 或者修改 sync-server.cjs 中的 PORT 变量
 ```
 
 ### 问题：扩展无法连接到服务器
@@ -140,7 +140,7 @@ kill -9 <PID>
 const fs = require('fs');
 const path = require('path');
 
-const syncDir = '/Users/apple/AI-sidebar 更新/AI-Sidebar/sync';
+const syncDir = path.join(process.cwd(), 'sync');
 
 // 读取数据
 const history = JSON.parse(fs.readFileSync(path.join(syncDir, 'history.json'), 'utf8'));
@@ -166,7 +166,7 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-sync_dir = '/Users/apple/AI-sidebar 更新/AI-Sidebar/sync'
+sync_dir = os.path.join(os.getcwd(), 'sync')
 
 # 读取数据
 with open(os.path.join(sync_dir, 'history.json'), 'r') as f:
@@ -195,4 +195,3 @@ observer.start()
 ## 📚 更多信息
 
 详细文档请参考 [SYNC_GUIDE.md](./SYNC_GUIDE.md)
-

@@ -1,11 +1,15 @@
 // Supabase 客户端配置
 // 注意：这是浏览器版本，不使用 ES6 模块
 
-// 你的 Supabase 项目配置（可在扩展设置里覆盖）
-let SUPABASE_URL = 'https://dpmrdhjltbhbhguuwxwy.supabase.co';
-let SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwbXJkaGpsdGJoYmhndXV3eHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MTE0ODgsImV4cCI6MjA3MjQ4NzQ4OH0.P8LgzNlDVXc3criWEQ3RPwKKeMb3OG8KsCtTYpiUA-w';
+// 默认不内置任何项目配置，按需由用户在本地填入
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
 // 创建 Supabase 客户端
 let supabase = null;
+
+function hasSupabaseConfig() {
+    return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
 
 async function loadSupabaseConfig() {
     try {
@@ -27,6 +31,10 @@ async function loadSupabaseConfig() {
 async function initSupabaseClient() {
     try {
         await loadSupabaseConfig();
+        if (!hasSupabaseConfig()) {
+            console.log('ℹ️ 未配置 Supabase，跳过初始化');
+            return false;
+        }
         // 检查 Supabase 是否已加载
         if (typeof window.supabase !== 'undefined') {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

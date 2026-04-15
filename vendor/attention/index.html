@@ -34,8 +34,6 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="annual_table_styles.css">
     <!-- Chart.js 改为按需加载，避免阻塞首屏 -->
-    <!-- 引入二维码库（defer，避免阻塞） -->
-    <script src="qrcode.min.js" defer></script>
     <style>
         html, body {
             margin: 0;
@@ -62,265 +60,6 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
-        }
-        
-        /* ========== 支付功能样式 ========== */
-        .premium-buy-btn {
-            background-color: #3079E3; /* 蓝色主色 */
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(48, 121, 227, 0.2);
-        }
-        
-        .premium-buy-btn:hover {
-            background-color: #4A8AF4;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(48, 121, 227, 0.3);
-        }
-        
-        .premium-locked {
-            position: relative;
-            pointer-events: none;
-            opacity: 0.6;
-        }
-        
-        .premium-locked::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(2px);
-            z-index: 10;
-        }
-        
-        .premium-lock-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #1C1C1E;
-            border: 1px solid #444;
-            color: white;
-            padding: 30px 40px;
-            border-radius: 16px;
-            text-align: center;
-            z-index: 11;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            pointer-events: auto;
-        }
-        
-        .premium-lock-message .lock-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-        
-        .premium-lock-message h3 {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: #f0f0f0;
-        }
-        
-        .premium-lock-message p {
-            font-size: 14px;
-            color: #aaa;
-            margin-bottom: 20px;
-        }
-        
-        /* 支付模态框 */
-        .payment-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .payment-modal.active {
-            display: flex;
-        }
-        
-        .payment-modal-content {
-            background: #1C1C1E; /* 深色背景 */
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 400px;
-            width: 90%;
-            position: relative;
-            animation: paymentSlideIn 0.3s ease;
-            border: 1px solid #333; /* 边框颜色 */
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
-        }
-        
-        @keyframes paymentSlideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        .payment-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .payment-modal-header h3 {
-            font-size: 22px;
-            color: #f0f0f0;
-            margin: 0;
-        }
-        
-        .payment-close-btn {
-            background: none;
-            border: none;
-            font-size: 32px;
-            cursor: pointer;
-            color: #999;
-            transition: color 0.3s ease;
-            line-height: 1;
-            padding: 0;
-        }
-        
-        .payment-close-btn:hover {
-            color: white;
-        }
-        
-        .payment-modal-body {
-            text-align: center;
-        }
-        
-        .payment-modal-body p {
-            color: #ccc;
-            margin-bottom: 20px;
-            font-size: 15px;
-        }
-        
-        .payment-qrcode-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 25px 0;
-            min-height: 180px;
-            background: white;
-            padding: 16px;
-            border-radius: 12px;
-        }
-        
-        .payment-order-info {
-            background: #2C2C2E; /* 更深的背景 */
-            padding: 15px;
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 1px solid #444;
-        }
-        
-        .payment-order-info p {
-            margin: 8px 0;
-            color: #ccc;
-            font-size: 14px;
-        }
-        
-        .payment-order-info strong {
-            color: white;
-        }
-        
-        .payment-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(237, 137, 54, 0.1);
-            border-radius: 8px;
-            color: #ed8936;
-            font-weight: 600;
-        }
-        
-        .payment-spinner {
-            border: 3px solid rgba(237, 137, 54, 0.3);
-            border-top: 3px solid #ed8936;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* 试用提示动画 */
-        @keyframes slideInRight {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-        
-        /* 成功模态框 */
-        .payment-success-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            animation: successPop 0.5s ease;
-        }
-        
-        @keyframes successPop {
-            0% { transform: scale(0); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-        
-        .payment-success-modal h3 {
-            font-size: 28px;
-            color: #48bb78;
-            margin-bottom: 10px;
-        }
-        
-        .payment-unlock-badge {
-            display: inline-block;
-            background: #48bb78;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 10px;
         }
         
         /* ========== 视图切换样式 ========== */
@@ -666,12 +405,6 @@
 
         <!-- 新增统计部分 -->
         <section class="statistics">
-            <div class="premium-lock-message" style="display: none;">
-                <div class="lock-icon">🔒</div>
-                <h3>解锁完整版以使用此功能</h3>
-                <p>一次购买，永久使用所有高级功能</p>
-                <button id="premium-buy-btn" class="premium-buy-btn">立即购买 ¥99.00</button>
-            </div>
             <h2>时间统计</h2>
             <div class="stats-view-controls">
                 <div class="stats-view-title">统计视图：</div>
@@ -785,46 +518,6 @@
         </div>
     </div>
 
-    <!-- 支付模态框 -->
-    <div id="payment-modal" class="payment-modal">
-        <div class="payment-modal-content">
-            <div class="payment-modal-header">
-                <h3>💳 微信支付</h3>
-                <button class="payment-close-btn" id="payment-close-btn">&times;</button>
-            </div>
-            <div class="payment-modal-body">
-                <p>请使用微信扫描二维码完成支付</p>
-                <div class="payment-qrcode-container">
-                    <div id="payment-qrcode"></div>
-                </div>
-                <div class="payment-order-info">
-                    <p><strong>订单号:</strong> <span id="payment-order-no">-</span></p>
-                    <p><strong>支付金额:</strong> ¥99.00</p>
-                    <p><strong>产品:</strong> Attention Span Tracker 完整版</p>
-                </div>
-                <div class="payment-status">
-                    <div class="payment-spinner"></div>
-                    <span>等待支付中...</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 支付成功模态框 -->
-    <div id="payment-success-modal" class="payment-modal">
-        <div class="payment-modal-content">
-            <div class="payment-modal-body">
-                <div class="payment-success-icon">🎉</div>
-                <h3>支付成功！</h3>
-                <p>恭喜您已成功解锁所有高级功能</p>
-                <div class="payment-unlock-badge">✨ 已解锁完整版</div>
-                <button class="btn primary-btn" id="payment-success-close-btn" style="margin-top: 30px; width: 100%;">
-                    开始使用
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- 导入数据模态框 -->
     <div id="import-modal" class="modal hidden">
         <div class="modal-content">
@@ -869,8 +562,6 @@
     <script src="export_import.js" defer></script>
     <script src="combined.js" defer></script>
     <script src="multi-stopwatch-fixed.js" defer></script>
-    <!-- 支付功能（可选离线，无 Supabase 也可使用基础功能） -->
-    <script src="payment.js" defer></script>
 
     <!-- PWA Service Worker 注册（已外部化至 boot.js，仅在 http(s) 下生效） -->
     

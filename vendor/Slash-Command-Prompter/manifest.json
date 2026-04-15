@@ -22,11 +22,5 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["donate.html", "images/wechat-qr.png", "images/alipay-qr.png"],
-      "matches": ["<all_urls>"]
-    }
   ]
 } 
