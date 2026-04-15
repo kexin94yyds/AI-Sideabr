@@ -323,6 +323,18 @@ async function ensureHostPermissionFor(url) {
   }
 }
 
+async function ensureCapturePermission() {
+  try {
+    const hasAllUrls = await chrome.permissions.contains({ origins: ['<all_urls>'] });
+    if (hasAllUrls) return true;
+    const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
+    return !!granted;
+  } catch (e) {
+    console.warn('ensureCapturePermission failed', e);
+    return false;
+  }
+}
+
 async function readSelectionFromTab(tabId) {
   try {
     const results = await chrome.scripting.executeScript({
@@ -401,6 +413,7 @@ async function handleSendSelection() {
   // 尝试直接读取（依赖 activeTab 临时授权），失败时给出回退提示
   let text = '', html = '';
   try {
+    await ensureHostPermissionFor(tab.url);
     const res = await readSelectionFromTab(tab.id);
     text = res.text || '';
     html = res.html || '';
@@ -431,9 +444,23 @@ async function handleSendSelection() {
 
 async function handleCaptureScreenshot() {
   try {
-    const dataUrl = await chrome.tabs.captureVisibleTab(undefined, { format: 'png' });
-    if (!dataUrl) return;
     const tab = await getActiveTab();
+    const windowId = tab?.windowId;
+    let dataUrl = '';
+    try {
+      dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
+    } catch (e) {
+      const msg = String(e || '');
+      const needsPermission = msg.includes("Either the '<all_urls>' or 'activeTab' permission is required");
+      if (!needsPermission) throw e;
+
+      const granted = await ensureCapturePermission();
+      if (!granted) {
+        throw new Error('用户未授予截屏所需的页面访问权限');
+      }
+      dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
+    }
+    if (!dataUrl) return;
     const payload = {
       type: 'aisb.receive-screenshot',
       dataUrl,
