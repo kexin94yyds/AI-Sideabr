@@ -114,12 +114,6 @@ npm run package:webstore
 
 核心扩展能力以本地处理为主。可选同步功能只会把数据发往用户自己机器上的本地服务。隐私政策见 [PRIVACY_POLICY.md](./PRIVACY_POLICY.md)。
 
-## Contributing
-
-欢迎提 Issue 和 PR。提交前建议至少做两件事：
-- 确认没有把本地数据、构建缓存或私有配置一起提交
-- 跑一遍与改动相关的最小验证
-
 ## License
 
 [MIT](./LICENSE)

@@ -41,9 +41,6 @@ The Slash Command Prompter is a browser extension designed to enhance productivi
 - Developed using native JavaScript
 - Supports modern browsers
 
-## Contributing
-Contributions are welcome! Please feel free to submit issues and pull requests.
-
 ## 2.0 版本新增功能
 
 ### 多模式管理
@@ -56,4 +53,3 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 ### 其他优化
 - 修复提示词上移仅在当前模式内有效的bug。
 - 优化斜杠菜单触发逻辑，避免误触发。
-
