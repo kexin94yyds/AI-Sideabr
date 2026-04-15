@@ -323,18 +323,6 @@ async function ensureHostPermissionFor(url) {
   }
 }
 
-async function ensureCapturePermission() {
-  try {
-    const hasAllUrls = await chrome.permissions.contains({ origins: ['<all_urls>'] });
-    if (hasAllUrls) return true;
-    const granted = await chrome.permissions.request({ origins: ['<all_urls>'] });
-    return !!granted;
-  } catch (e) {
-    console.warn('ensureCapturePermission failed', e);
-    return false;
-  }
-}
-
 async function readSelectionFromTab(tabId) {
   try {
     const results = await chrome.scripting.executeScript({
@@ -442,24 +430,11 @@ async function handleSendSelection() {
   try { await installTypingRelay(tab.id); } catch (_) {}
 }
 
-async function handleCaptureScreenshot() {
+async function handleCaptureScreenshot(preferredTab = null) {
   try {
-    const tab = await getActiveTab();
+    const tab = preferredTab || await getActiveTab();
     const windowId = tab?.windowId;
-    let dataUrl = '';
-    try {
-      dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
-    } catch (e) {
-      const msg = String(e || '');
-      const needsPermission = msg.includes("Either the '<all_urls>' or 'activeTab' permission is required");
-      if (!needsPermission) throw e;
-
-      const granted = await ensureCapturePermission();
-      if (!granted) {
-        throw new Error('用户未授予截屏所需的页面访问权限');
-      }
-      dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
-    }
+    const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
     if (!dataUrl) return;
     const payload = {
       type: 'aisb.receive-screenshot',
@@ -472,7 +447,12 @@ async function handleCaptureScreenshot() {
     await deliverToSidePanel(payload, 'aisbPendingScreenshot');
     await openSidePanelForCurrentWindow();
   } catch (e) {
-    await deliverToSidePanel({ type: 'aisb.notify', level: 'error', text: '截屏失败：' + String(e) }, 'aisbPendingNotify');
+    const msg = String(e || '');
+    const needsPermission = msg.includes("Either the '<all_urls>' or 'activeTab' permission is required");
+    const text = needsPermission
+      ? '截屏失败：请先点回左侧网页后再用快捷键，或使用右键菜单“发送当前页面截图到侧边栏”。'
+      : '截屏失败：' + msg;
+    await deliverToSidePanel({ type: 'aisb.notify', level: 'error', text }, 'aisbPendingNotify');
     await openSidePanelForCurrentWindow();
   }
 }
@@ -642,12 +622,21 @@ function setupContextMenus() {
           title: '发送选中文本到侧边栏',
           contexts: ['selection']
         });
+        chrome.contextMenus.create({
+          id: 'aisb-capture-screenshot',
+          title: '发送当前页面截图到侧边栏',
+          contexts: ['page', 'frame']
+        });
       } catch (_) {}
     });
   } catch (_) {}
   try {
     chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       try {
+        if (info.menuItemId === 'aisb-capture-screenshot') {
+          await handleCaptureScreenshot(tab || null);
+          return;
+        }
         if (info.menuItemId !== 'aisb-send-selection') return;
         const text = String(info.selectionText || '').trim();
         if (!text) {

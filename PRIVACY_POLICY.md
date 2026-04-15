@@ -57,7 +57,7 @@ AI Sidebar requests the following permissions for its disclosed functionality:
 - `scripting` to inject user-facing helper scripts on supported pages.
 - `contextMenus` to expose extension actions from the browser context menu.
 - `declarativeNetRequest` and `declarativeNetRequestWithHostAccess` to modify headers needed for compatibility on supported sites embedded or opened through the extension.
-- Host permissions on supported AI and productivity domains, plus optional host permissions used only when the user chooses cross-site features such as the floating parallel panel, sending selected text from arbitrary pages, or capturing screenshots into the side panel.
+- Host permissions on supported AI and productivity domains, plus optional host permissions used only when the user chooses cross-site features such as the floating parallel panel or sending selected text from arbitrary pages.
 
 ## User Controls
 
