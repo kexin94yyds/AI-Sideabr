@@ -32,23 +32,44 @@
     const resolveGeminiHref = () => {
       try {
         if (location.origin !== 'https://gemini.google.com') return null;
-        const anchor = deepFind(document, (el) => {
+        const isGeminiConversationHref = (href) => {
+          try {
+            if (!href) return false;
+            const abs = href.startsWith('http') ? href : new URL(href, location.origin).href;
+            return /^https:\/\/gemini\.google\.com\/app\/(?:conversation\/)?[^/?#]+/.test(abs);
+          } catch (_) {
+            return false;
+          }
+        };
+
+        // Prefer the iframe's real URL when Gemini has already navigated to a concrete chat.
+        if (isGeminiConversationHref(location.href)) {
+          dbg('gemini.resolveHref.location', location.href);
+          return location.href;
+        }
+
+        const selectedAnchor = deepFind(document, (el) => {
           if (!(el && el.tagName === 'A')) return false;
           const h = el.getAttribute('href') || '';
-          if (!h) return false;
-          const abs = h.startsWith('http') ? h : new URL(h, location.origin).href;
-          return /^https:\/\/gemini\.google\.com\/app\//.test(abs) && abs !== 'https://gemini.google.com/app';
+          if (!isGeminiConversationHref(h)) return false;
+          return Boolean(
+            el.closest('[aria-selected="true"], [aria-current="page"], [data-active="true"], [data-selected="true"], [class*="active"], [class*="selected"]')
+          );
         });
-        if (anchor) {
-          const h = anchor.getAttribute('href');
+        if (selectedAnchor) {
+          const h = selectedAnchor.getAttribute('href');
           const abs = h && h.startsWith('http') ? h : (h ? new URL(h, location.origin).href : '');
-          dbg('gemini.resolveHref.anchor', abs);
+          dbg('gemini.resolveHref.selectedAnchor', abs);
           return abs || null;
         }
+
         const share = deepFind(document, (n)=> n && (n.getAttribute && (n.getAttribute('data-clipboard-text') || n.getAttribute('data-share-url'))));
         if (share) {
           const v = share.getAttribute('data-clipboard-text') || share.getAttribute('data-share-url');
-          if (v && /^https:\/\/gemini\.google\.com\/app\//.test(v)) return v;
+          if (isGeminiConversationHref(v)) {
+            dbg('gemini.resolveHref.share', v);
+            return v;
+          }
         }
       } catch (_) {}
       return null;
