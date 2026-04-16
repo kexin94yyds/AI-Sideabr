@@ -2,11 +2,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const VOYAGER = process.env.GEMINI_VOYAGER_ROOT;
+const VOYAGER = process.env.AISB_GEMINI_SOURCE_ROOT;
 const TARGET = path.join(ROOT, 'content-scripts/gemini-timeline.js');
 
 if (!VOYAGER) {
-  console.error('Missing GEMINI_VOYAGER_ROOT. Example: GEMINI_VOYAGER_ROOT=/path/to/gemini-voyager node scripts/rebuild-gemini-timeline.cjs');
+  console.error('Missing AISB_GEMINI_SOURCE_ROOT. Example: AISB_GEMINI_SOURCE_ROOT=/path/to/aisb-gemini node scripts/rebuild-gemini-timeline.cjs');
   process.exit(1);
 }
 

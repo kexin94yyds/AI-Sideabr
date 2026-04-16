@@ -14,7 +14,7 @@
   const STORAGE_KEY = 'gvFolderData';
   const SETTINGS_KEY = 'gvFolderSettings';
   const LEGACY_STORAGE_KEYS = ['aisbGeminiFolderData'];
-  const EXPORT_FORMAT = 'gemini-voyager.folders.v1';
+  const EXPORT_FORMAT = 'aisb-gemini.folders.v1';
   const PANEL_ID = 'aisb-gemini-folder-panel';
   const STYLE_ID = 'aisb-gemini-folder-style';
   const DRAG_MIME = 'application/x-aisb-gemini-folder';

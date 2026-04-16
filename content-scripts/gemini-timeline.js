@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // ../gemini-voyager/src/core/types/common.ts
+  // ../aisb-gemini/src/core/types/common.ts
   var StorageKeys = {
     // Folder system
     FOLDER_DATA: "gvFolderData",
@@ -37,7 +37,7 @@
     GV_FOLDER_TREE_INDENT: "gvFolderTreeIndent"
   };
 
-  // ../gemini-voyager/src/core/services/KeyboardShortcutService.ts
+  // ../aisb-gemini/src/core/services/KeyboardShortcutService.ts
   var DEFAULT_SHORTCUTS = {
     previous: {
       action: "timeline:previous",
@@ -314,7 +314,7 @@
   var api = typeof browser !== "undefined" && browser ? browser : typeof chrome !== "undefined" ? chrome : {};
   var webextension_polyfill_default = api;
 
-  // ../gemini-voyager/src/utils/language.ts
+  // ../aisb-gemini/src/utils/language.ts
   function normalizeLanguage(lang) {
     if (!lang)
       return "en";
@@ -340,10 +340,10 @@
     return "en";
   }
 
-  // ../gemini-voyager/src/locales/ar/messages.json
+  // ../aisb-gemini/src/locales/ar/messages.json
   var messages_default = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -395,7 +395,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -1588,10 +1588,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/en/messages.json
+  // ../aisb-gemini/src/locales/en/messages.json
   var messages_default2 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -1643,7 +1643,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -2836,10 +2836,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/es/messages.json
+  // ../aisb-gemini/src/locales/es/messages.json
   var messages_default3 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -2891,7 +2891,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -4084,10 +4084,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/fr/messages.json
+  // ../aisb-gemini/src/locales/fr/messages.json
   var messages_default4 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -4139,7 +4139,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -5332,10 +5332,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/ja/messages.json
+  // ../aisb-gemini/src/locales/ja/messages.json
   var messages_default5 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -5387,7 +5387,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -6580,10 +6580,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/ko/messages.json
+  // ../aisb-gemini/src/locales/ko/messages.json
   var messages_default6 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -6635,7 +6635,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -7828,10 +7828,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/pt/messages.json
+  // ../aisb-gemini/src/locales/pt/messages.json
   var messages_default7 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -7883,7 +7883,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -9076,10 +9076,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/ru/messages.json
+  // ../aisb-gemini/src/locales/ru/messages.json
   var messages_default8 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Extension name"
     },
     extDescription: {
@@ -9131,7 +9131,7 @@
       description: "Language label"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "Prompt Manager title"
     },
     pm_add: {
@@ -10324,10 +10324,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/zh/messages.json
+  // ../aisb-gemini/src/locales/zh/messages.json
   var messages_default9 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "\u6269\u5C55\u7A0B\u5E8F\u540D\u79F0"
     },
     extDescription: {
@@ -10379,7 +10379,7 @@
       description: "\u8BED\u8A00\u6807\u7B7E"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "\u9762\u677F\u6807\u9898"
     },
     pm_add: {
@@ -11572,10 +11572,10 @@
     }
   };
 
-  // ../gemini-voyager/src/locales/zh_TW/messages.json
+  // ../aisb-gemini/src/locales/zh_TW/messages.json
   var messages_default10 = {
     extName: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "\u64F4\u5145\u529F\u80FD\u540D\u7A31"
     },
     extDescription: {
@@ -11627,7 +11627,7 @@
       description: "\u8A9E\u8A00\u6A19\u7C64"
     },
     pm_title: {
-      message: "Gemini Voyager",
+      message: "AI Sidebar",
       description: "\u9762\u677F\u6A19\u984C"
     },
     pm_add: {
@@ -12820,7 +12820,7 @@
     }
   };
 
-  // ../gemini-voyager/src/utils/translations.ts
+  // ../aisb-gemini/src/utils/translations.ts
   var rawMessagesByLanguage = {
     en: messages_default2,
     zh: messages_default9,
@@ -12853,7 +12853,7 @@
     ko: extractTranslations(rawMessagesByLanguage.ko)
   };
 
-  // ../gemini-voyager/src/utils/i18n.ts
+  // ../aisb-gemini/src/utils/i18n.ts
   var readStorageValue = async (area) => {
     try {
       const storageArea = webextension_polyfill_default.storage?.[area];
@@ -12918,7 +12918,7 @@
     });
   }
 
-  // ../gemini-voyager/src/pages/content/timeline/EventBus.ts
+  // ../aisb-gemini/src/pages/content/timeline/EventBus.ts
   var EventBus = class _EventBus {
     static instance;
     listeners = /* @__PURE__ */ new Map();
@@ -12992,7 +12992,7 @@
   };
   var eventBus = EventBus.getInstance();
 
-  // ../gemini-voyager/src/pages/content/timeline/StarredMessagesService.ts
+  // ../aisb-gemini/src/pages/content/timeline/StarredMessagesService.ts
   var StarredMessagesService = class {
     /**
      * Send message to background script and wait for response
@@ -13131,7 +13131,7 @@
     }
   };
 
-  // ../gemini-voyager/src/pages/content/timeline/TimelinePreviewPanel.ts
+  // ../aisb-gemini/src/pages/content/timeline/TimelinePreviewPanel.ts
   var SEARCH_DEBOUNCE_MS = 200;
   var LIST_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
   var TimelinePreviewPanel = class {
@@ -13478,7 +13478,7 @@
     }
   };
 
-  // ../gemini-voyager/src/pages/content/timeline/manager.ts
+  // ../aisb-gemini/src/pages/content/timeline/manager.ts
   function hashString(input) {
     let h = 2166136261 >>> 0;
     for (let i = 0; i < input.length; i++) {
@@ -16283,7 +16283,7 @@
     }
   };
 
-  // ../gemini-voyager/src/pages/content/timeline/index.ts
+  // ../aisb-gemini/src/pages/content/timeline/index.ts
   function isGeminiConversationRoute(pathname = location.pathname) {
     return /^\/(?:u\/\d+\/)?(app|gem)(\/|$)/.test(pathname);
   }
@@ -16421,7 +16421,7 @@
       try {
         observer.disconnect();
       } catch (e) {
-        console.error("[Gemini Voyager] Failed to disconnect observer during cleanup:", e);
+        console.error("[AI Sidebar] Failed to disconnect observer during cleanup:", e);
       }
     });
     activeObservers = [];
@@ -16433,7 +16433,7 @@
       try {
         handler();
       } catch (e) {
-        console.error("[Gemini Voyager] Failed to run cleanup handler:", e);
+        console.error("[AI Sidebar] Failed to run cleanup handler:", e);
       }
     });
     cleanupHandlers = [];
@@ -16468,7 +16468,7 @@
     }
   }
 
-  // ../gemini-voyager/aisb-timeline-entry.ts
+  // ../aisb-gemini/aisb-timeline-entry.ts
   var TIMELINE_STYLE_ID = "aisb-gemini-timeline-style";
   var TIMELINE_CSS = "/* Gemini-like timeline styling with CSS variables and theme awareness */\n:root {\n  --timeline-dot-color: #94a3b8;\n  --timeline-dot-active-color: #3b82f6;\n  --timeline-star-color: #f59e0b;\n  --timeline-tooltip-bg: #ffffff;\n  --timeline-tooltip-text: #0f172a;\n  --timeline-tooltip-border: #e2e8f0;\n  --timeline-tooltip-radius: 12px;\n  --timeline-tooltip-shadow: 0 8px 28px rgba(2, 8, 23, 0.16), 0 2px 6px rgba(2, 8, 23, 0.08);\n  --timeline-tooltip-lh: 18px;\n  --timeline-tooltip-pad-y: 10px;\n  --timeline-tooltip-pad-x: 12px;\n  --timeline-tooltip-border-w: 1px;\n  --timeline-tooltip-arrow-size: 8px;\n  --timeline-tooltip-arrow-outside: 4px;\n  --timeline-tooltip-anim-in: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);\n  --timeline-tooltip-anim-out: 100ms linear;\n  --timeline-bar-bg: rgba(248, 250, 252, 0.85);\n  --timeline-dot-size: 12px;\n  --timeline-active-ring: 3px;\n  --timeline-track-padding: 16px;\n  --timeline-tooltip-max: 288px;\n  --timeline-min-gap: 24px;\n  --timeline-hit-size: 30px;\n  --timeline-tooltip-gap-visual: 8px;\n  --timeline-tooltip-gap-box: 4px;\n  --timeline-hold-ms: 550ms;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --timeline-dot-color: #475569;\n    --timeline-dot-active-color: #60a5fa;\n    --timeline-star-color: #f59e0b;\n    --timeline-tooltip-bg: #0b1220;\n    --timeline-tooltip-text: #e2e8f0;\n    --timeline-tooltip-border: #1f2937;\n    --timeline-bar-bg: rgba(2, 6, 23, 0.72);\n  }\n}\n\n/* Gemini theme support - Overrides system preferences on Gemini site */\n.theme-host.dark-theme {\n  --timeline-dot-color: #475569;\n  --timeline-dot-active-color: #60a5fa;\n  --timeline-star-color: #f59e0b;\n  --timeline-tooltip-bg: #0b1220;\n  --timeline-tooltip-text: #e2e8f0;\n  --timeline-tooltip-border: #1f2937;\n  --timeline-bar-bg: rgba(2, 6, 23, 0.72);\n}\n\n.theme-host.light-theme {\n  --timeline-dot-color: #94a3b8;\n  --timeline-dot-active-color: #3b82f6;\n  --timeline-star-color: #f59e0b;\n  --timeline-tooltip-bg: #ffffff;\n  --timeline-tooltip-text: #0f172a;\n  --timeline-tooltip-border: #e2e8f0;\n  --timeline-bar-bg: rgba(248, 250, 252, 0.85);\n}\n\n/* Gemini theme hosts */\n.theme-host.dark-theme .gemini-timeline-bar:not(.timeline-no-container) {\n  background-color: rgba(2, 6, 23, 0.72);\n  backdrop-filter: blur(4px);\n  -webkit-backdrop-filter: blur(4px);\n}\n\n.theme-host.light-theme .gemini-timeline-bar:not(.timeline-no-container) {\n  background-color: rgba(248, 250, 252, 0.85);\n  backdrop-filter: blur(4px);\n  -webkit-backdrop-filter: blur(4px);\n}\n\n.gemini-timeline-bar {\n  position: fixed;\n  top: 60px;\n  right: 15px;\n  width: 24px;\n  height: calc(100vh - 100px);\n  z-index: 2147483646;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  border-radius: 10px;\n  background-color: var(--timeline-bar-bg);\n  backdrop-filter: blur(4px);\n  -webkit-backdrop-filter: blur(4px);\n  transition: background-color 0.3s ease;\n  overflow: visible;\n  contain: layout;\n}\n.gemini-timeline-bar.timeline-right {\n  right: 15px;\n  left: auto;\n}\n\n.gemini-timeline-bar.timeline-left {\n  left: 15px;\n  right: auto;\n}\n\n\n.timeline-track {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  overflow-y: auto;\n  overflow-x: visible;\n  background: transparent;\n  padding-left: 2px;\n  padding-right: 2px;\n}\n\n.timeline-track-content {\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n\n.timeline-dot {\n  position: absolute;\n  left: 50%;\n  top: calc(\n    var(--timeline-track-padding) + (100% - 2 * var(--timeline-track-padding)) * var(--n, 0)\n  );\n  transform: translate(-50%, -50%);\n  width: var(--timeline-hit-size);\n  height: var(--timeline-hit-size);\n  background: transparent;\n  border: none;\n  cursor: pointer;\n  padding: 0;\n}\n\n.timeline-dot::after {\n  content: '';\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  width: var(--timeline-dot-size);\n  height: var(--timeline-dot-size);\n  transform: translate(-50%, -50%);\n  border-radius: 50%;\n  background-color: var(--timeline-dot-color);\n  transition:\n    transform 0.15s ease,\n    box-shadow 0.15s ease;\n}\n\n/* true punch-through: remove filled dot and draw only inner stroke to make host page visible */\nhtml.dark .timeline-track,\n[data-theme='dark'] .timeline-track,\n[data-color-scheme='dark'] .timeline-track {\n  background: transparent;\n}\n\nhtml.dark .timeline-dot:not(.active):not(.starred)::after,\n[data-theme='dark'] .timeline-dot:not(.active):not(.starred)::after,\n[data-color-scheme='dark'] .timeline-dot:not(.active):not(.starred)::after {\n  background: #000;\n  box-shadow: none;\n}\n\n.timeline-dot:hover::after {\n  transform: translate(-50%, -50%) scale(1.15);\n}\n\n.timeline-dot:focus-visible::after {\n  box-shadow: 0 0 6px var(--timeline-dot-active-color);\n}\n\n.timeline-dot.active::after {\n  box-shadow:\n    0 0 0 var(--timeline-active-ring) var(--timeline-dot-active-color),\n    0 0 10px rgba(59, 130, 246, 0.45);\n}\n\n.timeline-dot.starred::after {\n  background-color: var(--timeline-star-color);\n}\n\n/* ===== Timeline Marker Levels (shape-based: circle, triangle, square) ===== */\n.timeline-dot[data-level='1']::after {\n  width: var(--timeline-dot-size);\n  height: var(--timeline-dot-size);\n  border-radius: 50%;\n  clip-path: none;\n}\n\n.timeline-dot[data-level='2']::after {\n  width: var(--timeline-dot-size);\n  height: var(--timeline-dot-size);\n  border-radius: 50%;\n  clip-path: none;\n}\n\n.timeline-dot[data-level='3']::after {\n  width: var(--timeline-dot-size);\n  height: var(--timeline-dot-size);\n  border-radius: 50%;\n  clip-path: none;\n}\n\n/* ===== Timeline Context Menu ===== */\n.timeline-context-menu {\n  position: fixed;\n  background-color: var(--timeline-tooltip-bg);\n  border: 1px solid var(--timeline-tooltip-border);\n  border-radius: 8px;\n  box-shadow: var(--timeline-tooltip-shadow);\n  padding: 4px 0;\n  z-index: 2147483647;\n  min-width: 160px;\n  animation: timeline-menu-in 0.12s ease-out;\n}\n\n@keyframes timeline-menu-in {\n  from {\n    opacity: 0;\n    transform: scale(0.95);\n  }\n\n  to {\n    opacity: 1;\n    transform: scale(1);\n  }\n}\n\n.timeline-context-menu-title {\n  padding: 8px 12px 4px 12px;\n  font-size: 11px;\n  font-weight: 600;\n  color: var(--timeline-tooltip-text);\n  opacity: 0.6;\n  text-transform: uppercase;\n  letter-spacing: 0.5px;\n  border-bottom: 1px solid var(--timeline-tooltip-border);\n  margin-bottom: 4px;\n}\n\n.timeline-context-menu-item {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  width: 100%;\n  padding: 8px 12px;\n  border: none;\n  background: transparent;\n  color: var(--timeline-tooltip-text);\n  font-size: 13px;\n  cursor: pointer;\n  text-align: left;\n  transition: background-color 0.1s ease;\n}\n\n.timeline-context-menu-item:hover {\n  background-color: var(--timeline-dot-active-color);\n}\n\n.timeline-context-menu-item.active {\n  background-color: var(--timeline-dot-active-color);\n  font-weight: 500;\n}\n\n.timeline-context-menu-item .level-indicator {\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.timeline-context-menu-item .level-dot {\n  width: 10px;\n  height: 10px;\n  background-color: var(--timeline-dot-color);\n}\n\n/* Level 1: Circle */\n.timeline-context-menu-item[data-level='1'] .level-dot {\n  border-radius: 50%;\n  clip-path: none;\n}\n\n/* Level 2: Square */\n.timeline-context-menu-item[data-level='2'] .level-dot {\n  border-radius: 0;\n  clip-path: none;\n}\n\n/* Level 3: Triangle */\n.timeline-context-menu-item[data-level='3'] .level-dot {\n  border-radius: 0;\n  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);\n}\n\n.timeline-context-menu-item .check-icon {\n  margin-left: auto;\n  color: var(--timeline-dot-active-color);\n  font-size: 14px;\n}\n\n/* Context menu separator */\n.timeline-context-menu-separator {\n  height: 1px;\n  background-color: var(--timeline-tooltip-border);\n  margin: 4px 0;\n}\n\n/* Collapse menu item */\n.timeline-context-menu-item.collapse-item {\n  margin-top: 2px;\n}\n\n.timeline-context-menu-item .collapse-icon {\n  font-size: 12px;\n  color: var(--timeline-dot-color);\n  transition: transform 0.2s ease;\n}\n\n/* Collapsed dot style - visual indicator */\n.timeline-dot.collapsed::before {\n  content: '';\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  width: calc(var(--timeline-dot-size) + 10px);\n  height: calc(var(--timeline-dot-size) + 10px);\n  transform: translate(-50%, -50%);\n  border-radius: 50%;\n  border: 2px dashed var(--timeline-dot-active-color);\n  opacity: 0.5;\n  pointer-events: none;\n}\n\n.timeline-dot.holding::before {\n  content: '';\n  position: absolute;\n  left: 50%;\n  top: 50%;\n  width: calc(var(--timeline-dot-size) + 8px);\n  height: calc(var(--timeline-dot-size) + 8px);\n  transform: translate(-50%, -50%);\n  border-radius: 50%;\n  box-shadow: 0 0 0 2px var(--timeline-dot-active-color) inset;\n  opacity: 0.15;\n  animation: timeline-hold-fade var(--timeline-hold-ms) linear forwards;\n  pointer-events: none;\n}\n\n@keyframes timeline-hold-fade {\n  from {\n    opacity: 0.15;\n  }\n\n  to {\n    opacity: 0.85;\n  }\n}\n\n.timeline-tooltip {\n  position: fixed;\n  max-width: var(--timeline-tooltip-max);\n  background-color: var(--timeline-tooltip-bg);\n  color: var(--timeline-tooltip-text);\n  padding: var(--timeline-tooltip-pad-y) var(--timeline-tooltip-pad-x);\n  border-radius: var(--timeline-tooltip-radius);\n  border: var(--timeline-tooltip-border-w) solid var(--timeline-tooltip-border);\n  font-size: 13px;\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\n  line-height: var(--timeline-tooltip-lh);\n  max-height: calc(\n    3 * var(--timeline-tooltip-lh) + 2 * var(--timeline-tooltip-pad-y) + 2 *\n      var(--timeline-tooltip-border-w)\n  );\n  box-shadow: var(--timeline-tooltip-shadow);\n  pointer-events: none;\n  z-index: 2147483647;\n  display: -webkit-box;\n  -webkit-line-clamp: 3;\n  line-clamp: 3;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n  word-break: break-word;\n  opacity: 0;\n  will-change: opacity, transform;\n  transition: opacity var(--timeline-tooltip-anim-in);\n}\n\n.timeline-tooltip.visible {\n  opacity: 1;\n  animation: timeline-tooltip-in var(--timeline-tooltip-anim-in);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .timeline-tooltip,\n  .timeline-tooltip.visible {\n    transition: opacity 120ms linear;\n    transform: none !important;\n  }\n}\n\n.timeline-tooltip[data-placement='left'] {\n  transform-origin: right center;\n}\n\n.timeline-tooltip[data-placement='right'] {\n  transform-origin: left center;\n}\n\n@keyframes timeline-tooltip-in {\n  from {\n    transform: scale(0.96);\n  }\n\n  to {\n    transform: scale(1);\n  }\n}\n\n.timeline-tooltip::after {\n  content: '';\n  position: absolute;\n  width: var(--timeline-tooltip-arrow-size);\n  height: var(--timeline-tooltip-arrow-size);\n  background: var(--timeline-tooltip-bg);\n  border: var(--timeline-tooltip-border-w) solid var(--timeline-tooltip-border);\n  transform: rotate(45deg);\n}\n\n.timeline-tooltip[data-placement='left']::after {\n  right: calc(-1 * var(--timeline-tooltip-arrow-outside));\n  top: 50%;\n  transform: translateY(-50%) rotate(45deg);\n  border-left: none;\n  border-bottom: none;\n}\n\n.timeline-tooltip[data-placement='right']::after {\n  left: calc(-1 * var(--timeline-tooltip-arrow-outside));\n  top: 50%;\n  transform: translateY(-50%) rotate(45deg);\n  border-right: none;\n  border-top: none;\n}\n\n.timeline-track::-webkit-scrollbar {\n  width: 0;\n  height: 0;\n}\n\n.timeline-track {\n  scrollbar-width: none;\n}\n\n.timeline-left-slider {\n  position: fixed;\n  top: 0;\n  width: 12px;\n  height: 160px;\n  opacity: 0;\n  transition: opacity 180ms ease;\n  z-index: 2147483646;\n  pointer-events: none;\n}\n\n.timeline-left-slider.visible {\n  opacity: 1;\n  pointer-events: auto;\n}\n\n.timeline-left-slider::before {\n  content: '';\n  position: absolute;\n  left: 5px;\n  top: 0;\n  bottom: 0;\n  width: 2px;\n  background: rgba(0, 0, 0, 0.08);\n  border-radius: 9999px;\n}\n\nhtml.dark .timeline-left-slider::before {\n  background: rgba(255, 255, 255, 0.1);\n}\n\n.timeline-left-handle {\n  position: absolute;\n  left: 2px;\n  width: 8px;\n  height: 22px;\n  background: rgba(16, 163, 127, 0.28);\n  border-radius: 9999px;\n  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);\n  pointer-events: auto;\n  cursor: grab;\n  transition: background-color 120ms ease;\n}\n\n.timeline-left-handle:hover {\n  background: rgba(16, 163, 127, 0.45);\n}\n\n.timeline-left-handle:active {\n  cursor: grabbing;\n}\n\n.timeline-runner-ring {\n  will-change: top, opacity;\n}\n\n.gemini-timeline-bar.timeline-no-container {\n  background-color: transparent !important;\n  backdrop-filter: none !important;\n  -webkit-backdrop-filter: none !important;\n  box-shadow: none;\n  contain: none;\n}\n\n/* \u2500\u2500 Timeline Preview Panel \u2500\u2500 */\n\n.timeline-preview-toggle {\n  position: fixed;\n  width: 24px;\n  height: 24px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--timeline-bar-bg);\n  border: 1px solid var(--timeline-tooltip-border);\n  cursor: pointer;\n  padding: 0;\n  color: var(--timeline-dot-color);\n  border-radius: 6px;\n  transition:\n    color 0.15s ease,\n    background-color 0.15s ease,\n    opacity 0.15s ease;\n  z-index: 2147483646;\n  opacity: 0;\n}\n.gemini-timeline-bar:hover ~ .timeline-preview-toggle,\n.timeline-preview-toggle:hover,\n.timeline-preview-toggle.active {\n  opacity: 1;\n}\n.timeline-preview-toggle:hover {\n  color: var(--timeline-dot-active-color);\n  background-color: var(--timeline-tooltip-bg);\n}\n.timeline-preview-toggle.active {\n  color: var(--timeline-dot-active-color);\n  background-color: var(--timeline-tooltip-bg);\n}\n\n.timeline-preview-panel {\n  position: fixed;\n  width: 320px;\n  background-color: var(--timeline-tooltip-bg);\n  border: 1px solid var(--timeline-tooltip-border);\n  border-radius: var(--timeline-tooltip-radius);\n  box-shadow: var(--timeline-tooltip-shadow);\n  z-index: 2147483645;\n  display: flex;\n  flex-direction: column;\n  opacity: 0;\n  transform: scale(0.96) translateX(8px);\n  transition:\n    opacity var(--timeline-tooltip-anim-in),\n    transform var(--timeline-tooltip-anim-in);\n  pointer-events: none;\n  overflow: hidden;\n}\n.timeline-preview-panel.visible {\n  opacity: 1;\n  transform: scale(1) translateX(0);\n  pointer-events: auto;\n}\n\n.timeline-preview-search {\n  padding: 8px 10px;\n  border-bottom: 1px solid var(--timeline-tooltip-border);\n  flex-shrink: 0;\n}\n.timeline-preview-search input {\n  width: 100%;\n  box-sizing: border-box;\n  border: 1px solid var(--timeline-tooltip-border);\n  border-radius: 6px;\n  padding: 5px 8px;\n  font-size: 13px;\n  line-height: 1.4;\n  background: transparent;\n  color: var(--timeline-tooltip-text);\n  outline: none;\n  transition: border-color 0.15s ease;\n}\n.timeline-preview-search input::placeholder {\n  color: var(--timeline-dot-color);\n  opacity: 0.7;\n}\n.timeline-preview-search input:focus {\n  border-color: var(--timeline-dot-active-color);\n}\n\n.timeline-preview-list {\n  flex: 1;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: 4px 0;\n  max-height: calc(100% - 42px);\n}\n\n.timeline-preview-item {\n  padding: 6px 10px 6px 6px;\n  cursor: pointer;\n  color: var(--timeline-tooltip-text);\n  font-size: 13px;\n  line-height: 1.4;\n  border-left: 3px solid transparent;\n  display: flex;\n  align-items: baseline;\n  gap: 0px;\n  transition: background-color 0.1s ease;\n}\n.timeline-preview-item:hover {\n  background-color: rgba(59, 130, 246, 0.08);\n}\n.timeline-preview-item.active {\n  border-left-color: var(--timeline-dot-active-color);\n  background-color: rgba(59, 130, 246, 0.1);\n}\n.timeline-preview-item.starred .timeline-preview-index::after {\n  content: ' \\2605';\n  color: var(--timeline-star-color);\n  font-size: 11px;\n}\n\n.timeline-preview-index {\n  flex-shrink: 0;\n  font-size: 11px;\n  color: var(--timeline-dot-color);\n  min-width: 14px;\n  text-align: left;\n}\n\n.timeline-preview-text {\n  flex: 1;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.timeline-preview-empty {\n  padding: 16px 12px;\n  text-align: center;\n  color: var(--timeline-dot-color);\n  font-size: 13px;\n}\n\n/* Search highlights \u2014 preview panel */\n.timeline-preview-highlight {\n  background-color: rgba(59, 130, 246, 0.2);\n  color: inherit;\n  border-radius: 2px;\n  padding: 0;\n  pointer-events: none;\n}\n\n/* Search highlights \u2014 SPA conversation page */\nmark.timeline-search-highlight {\n  background-color: oklch(0.7227 0.192 149.5793 / 0.25);\n  color: inherit;\n  border-radius: 2px;\n  padding: 0;\n}\n\n/* Dark theme adjustments for preview panel */\n.theme-host.dark-theme .timeline-preview-panel {\n  background-color: rgba(11, 18, 32, 0.95);\n  backdrop-filter: blur(8px);\n  -webkit-backdrop-filter: blur(8px);\n}\n.theme-host.dark-theme .timeline-preview-item:hover {\n  background-color: rgba(96, 165, 250, 0.08);\n}\n.theme-host.dark-theme .timeline-preview-item.active {\n  background-color: rgba(96, 165, 250, 0.12);\n}\n.theme-host.dark-theme .timeline-preview-highlight {\n  background-color: rgba(96, 165, 250, 0.25);\n}\n.theme-host.dark-theme mark.timeline-search-highlight {\n  background-color: oklch(0.7729 0.1535 163.2231 / 0.3);\n}\n\n.theme-host.light-theme .timeline-preview-panel {\n  background-color: rgba(255, 255, 255, 0.95);\n  backdrop-filter: blur(8px);\n  -webkit-backdrop-filter: blur(8px);\n}\n\n";
   var ensureTimelineStyles = () => {

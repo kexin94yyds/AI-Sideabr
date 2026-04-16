@@ -13,7 +13,7 @@
 
   const STYLE_ID = 'aisb-gemini-export-style';
   const TRIGGER_ID = 'aisb-gemini-export-trigger';
-  const EXPORT_FORMAT = 'gemini-voyager.export.v1';
+  const EXPORT_FORMAT = 'aisb-gemini.export.v1';
 
   const state = {
     mounted: false,
@@ -1251,7 +1251,7 @@
 
       const selected = conversations.filter((item) => checkedIds.includes(item.conversationId));
       const payload = {
-        format: 'gemini-voyager.batch-export.v1',
+        format: 'aisb-gemini.batch-export.v1',
         exportedAt: new Date().toISOString(),
         accountId: core.getCurrentAccountId(),
         sourceUrl: location.href,

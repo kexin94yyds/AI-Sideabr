@@ -296,7 +296,7 @@
     }
 
     const payload = {
-      format: 'gemini-voyager.deep-research.report.v1',
+      format: 'aisb-gemini.deep-research.report.v1',
       exportedAt: new Date().toISOString(),
       title: getConversationTitle(),
       url: location.href,

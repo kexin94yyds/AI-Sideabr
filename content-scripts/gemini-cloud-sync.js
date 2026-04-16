@@ -236,7 +236,7 @@
     const tools = core.module.get('tools');
 
     const payload = {
-      format: 'gemini-voyager.cloud-sync.v1',
+      format: 'aisb-gemini.cloud-sync.v1',
       exportedAt: new Date().toISOString(),
       sourceUrl: location.href,
       accountId: core.getCurrentAccountId(),
