@@ -9,14 +9,14 @@
 ### 三个保存位置
 
 1. **本地工作目录** - 你编辑的文件
-   - 路径：当前仓库根目录（例如 `/path/to/AI-Sidebar`）
+   - 路径：当前仓库根目录（例如 `/path/to/AI-Sideabr`）
 
 2. **本地 Git 仓库** - Git 版本历史
    - 路径：`.git` 文件夹
    - 提交后数据保存在这里
 
 3. **GitHub 远程仓库** - 远程备份
-   - 地址：`https://github.com/kexin94yyds/AI-Sidebar.git`
+   - 地址：`https://github.com/kexin94yyds/AI-Sideabr.git`
    - Push 后数据同步到这里
 
 ### 数据存储位置
@@ -40,7 +40,7 @@
 1. **启动同步服务器**
 
 ```bash
-cd /path/to/AI-Sidebar
+cd /path/to/AI-Sideabr
 node scripts/sync-server.cjs
 ```
 

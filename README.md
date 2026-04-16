@@ -39,7 +39,7 @@ AI Sidebar 是一个基于 Chrome Side Panel 的浏览器扩展。它把 ChatGPT
 ## Repository Layout
 
 ```text
-AI-Sidebar/
+AI-Sideabr/
 ├── manifest.json
 ├── index.html
 ├── css/
@@ -66,8 +66,8 @@ AI-Sidebar/
 ### 1. Install
 
 ```bash
-git clone https://github.com/kexin94yyds/ai-sideabr.git
-cd ai-sideabr
+git clone https://github.com/kexin94yyds/AI-Sideabr.git
+cd AI-Sideabr
 npm install
 ```
 
