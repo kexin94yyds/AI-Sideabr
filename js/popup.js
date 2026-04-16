@@ -288,12 +288,25 @@ const setProvider = async (key) => {
   });
 };
 
+// Normalize provider URLs so renamed domains can be migrated from old stored values.
+const normalizeProviderUrl = (providerKey, url) => {
+  if (!url || typeof url !== 'string') return null;
+  if (providerKey !== 'tobooks') return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'tobooks.netlify.app') {
+      return 'https://tobooks.xin/';
+    }
+  } catch (_) {}
+  return url;
+};
+
 // Save and restore current URL for each provider
 const saveProviderUrl = async (providerKey, url) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
     const urls = data?.providerUrls || {};
-    urls[providerKey] = url;
+    urls[providerKey] = normalizeProviderUrl(providerKey, url);
     await chrome.storage?.local.set({ providerUrls: urls });
   } catch (_) {}
 };
@@ -301,7 +314,14 @@ const saveProviderUrl = async (providerKey, url) => {
 const getProviderUrl = async (providerKey) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
-    return data?.providerUrls?.[providerKey] || null;
+    const saved = data?.providerUrls?.[providerKey] || null;
+    const normalized = normalizeProviderUrl(providerKey, saved);
+    if (saved && normalized && saved !== normalized) {
+      const urls = data?.providerUrls || {};
+      urls[providerKey] = normalized;
+      await chrome.storage?.local.set({ providerUrls: urls });
+    }
+    return normalized;
   } catch (_) {
     return null;
   }
