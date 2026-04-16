@@ -450,7 +450,7 @@ async function handleCaptureScreenshot(preferredTab = null) {
     const msg = String(e || '');
     const needsPermission = msg.includes("Either the '<all_urls>' or 'activeTab' permission is required");
     const text = needsPermission
-      ? '截屏失败：请先点回左侧网页后再用快捷键，或使用右键菜单“发送当前页面截图到侧边栏”。'
+      ? '截屏失败：请先重载扩展，并接受“读取和更改所有网站数据”的新权限后再试。'
       : '截屏失败：' + msg;
     await deliverToSidePanel({ type: 'aisb.notify', level: 'error', text }, 'aisbPendingNotify');
     await openSidePanelForCurrentWindow();
