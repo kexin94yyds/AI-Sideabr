@@ -1,0 +1,186 @@
+/* 并行聊天面板样式 - 支持多窗口 */
+
+.parallel-ai-panel {
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  width: 420px;
+  height: 520px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  z-index: 999999;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.parallel-ai-panel.visible {
+  display: flex;
+}
+
+/* 面板头部 */
+.parallel-ai-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #f9fafb;
+  color: #374151;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.parallel-ai-panel .panel-title {
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.3px;
+}
+
+.parallel-ai-panel .panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.parallel-ai-panel .panel-btn {
+  background: #e5e7eb;
+  border: none;
+  color: #374151;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.parallel-ai-panel .panel-btn:hover {
+  background: #d1d5db;
+}
+
+.parallel-ai-panel .panel-btn.sync {
+  background: rgba(52, 211, 153, 0.3);
+  border-color: rgba(52, 211, 153, 0.5);
+}
+
+.parallel-ai-panel .panel-btn.sync:hover {
+  background: rgba(52, 211, 153, 0.5);
+}
+
+.parallel-ai-panel .panel-select {
+  background: white;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+  outline: none;
+  max-width: 120px;
+}
+
+.parallel-ai-panel .panel-select:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.parallel-ai-panel .panel-btn.add {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 4px 10px;
+}
+
+.parallel-ai-panel .panel-btn.add:hover {
+  background: #d1d5db;
+  transform: scale(1.05);
+}
+
+.parallel-ai-panel .panel-btn.close {
+  background: #e5e7eb;
+  padding: 5px 8px;
+  border: none;
+}
+
+.parallel-ai-panel .panel-btn.close:hover {
+  background: #fecaca;
+  color: #dc2626;
+}
+
+/* iframe 容器 */
+.parallel-ai-panel .panel-content {
+  flex: 1;
+  position: relative;
+  background: #f8f9fa;
+}
+
+.parallel-ai-panel .panel-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* 加载状态 */
+.parallel-ai-panel .loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.parallel-ai-panel .loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e8f0fe;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: parallel-spin 1s linear infinite;
+}
+
+@keyframes parallel-spin {
+  to { transform: rotate(360deg); }
+}
+
+.parallel-ai-panel .loading-text {
+  font-size: 13px;
+  color: #5f6368;
+}
+
+/* 拖拽手柄 */
+.parallel-ai-panel .drag-handle {
+  cursor: move;
+  user-select: none;
+}
+
+/* 调整大小手柄 */
+.parallel-ai-panel .resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  background: linear-gradient(135deg, transparent 50%, #ccc 50%);
+  border-radius: 0 0 12px 0;
+}
+
+/* 状态栏 */
+.parallel-ai-panel .panel-status {
+  padding: 8px 16px;
+  background: #f1f3f4;
+  font-size: 11px;
+  color: #5f6368;
+  border-top: 1px solid #e8eaed;
+}

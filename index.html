@@ -1,0 +1,93 @@
+<!-- sidebar.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>aibar|ai 全家桶</title>
+    <link rel="icon" type="image/png" href="images/favicon.png" />
+    <link rel="stylesheet" href="css/panel.css" />
+  </head>
+  <body>
+    <!-- 左侧竖向快捷栏（NotebookLM 面板切换等） -->
+    <nav id="left-sidebar">
+      <!-- 动态生成 -->
+    </nav>
+
+    <!-- 主内容区 -->
+    <main id="main-content">
+      <!-- Chat History View (Initially Hidden) -->
+      <div id="chat-history-view" style="display: none;">
+        <div class="view-header">
+          <h2>Chat History</h2>
+          <div class="view-actions">
+            <input type="text" id="history-search" placeholder="Search history...">
+            <button id="close-history-view">✕</button>
+          </div>
+        </div>
+        <div id="history-list-container">
+          <!-- History items will be rendered here -->
+        </div>
+      </div>
+
+      <div class="hover-zone"></div>
+      <div class="toolbar">
+        <button id="starBtn" type="button" title="Star/Unstar current page">☆</button>
+        <button id="openInTab" type="button" title="Open current page in a new tab">Open in Tab</button>
+        <button id="favoritesBtn" type="button" title="View favorites">Favorites</button>
+        <button id="searchBtn" type="button" title="Search in page">🔍 Search</button>
+        <button id="exportBtn" type="button" title="Export current chat">📤 Export</button>
+        <button id="historyBtn" type="button" title="View saved links">History</button>
+        <button id="settingsBtn" type="button" title="Open parallel AI window">🪟 并行</button>
+      </div>
+      <!-- History dropdown -->
+      <div id="historyPanel" class="history-panel" style="display:none;"></div>
+      <!-- Exporter dropdown -->
+      <div id="exporterPanel" class="exporter-panel" style="display:none;">
+        <div class="ep-header">
+          <span>EXPORTER</span>
+          <button id="ep-close" class="ep-close-btn">✕</button>
+        </div>
+        <div class="ep-section">
+          <div class="ep-section-title">QUICK EXPORT</div>
+          <button id="ep-export-markdown">EXPORT MARKDOWN</button>
+          <button id="ep-export-json">EXPORT JSON</button>
+        </div>
+        <div class="ep-divider"></div>
+        <div class="ep-section">
+          <div class="ep-section-title">SAVE TO LIBRARY</div>
+          <button id="ep-save-to-library">💾 SAVE TO HISTORY</button>
+        </div>
+        <div id="ep-status" class="ep-status"></div>
+      </div>
+      <!-- Favorites dropdown -->
+      <div id="favoritesPanel" class="favorites-panel" style="display:none;"></div>
+      <!-- Settings modal -->
+      <div id="settingsModal" class="settings-modal" style="display:none;"></div>
+      <!-- Search bar -->
+      <div id="searchBar" class="search-bar" style="display:none;">
+        <div class="search-input-wrapper">
+          <input type="text" id="searchInput" placeholder="搜索聊天内容..." />
+          <div class="search-controls">
+            <button id="searchPrev" title="上一个">↑</button>
+            <button id="searchNext" title="下一个">↓</button>
+            <span id="searchCount" class="search-count"></span>
+            <button id="searchClose" title="关闭搜索 (Shift+Cmd+F)">✕</button>
+          </div>
+        </div>
+      </div>
+      <div id="iframe"></div>
+    </main>
+
+    <!-- 右侧垂直导航栏 -->
+    <nav id="provider-tabs">
+      <!-- Provider tabs will be dynamically generated here -->
+    </nav>
+
+    <script src="js/utils.js"></script>
+    <script src="js/history-db.js"></script>
+    <script src="js/plugins/storage-manager.js"></script>
+    <script src="js/auto-sync.js"></script>
+    <script src="js/popup.js"></script>
+  </body>
+</html>

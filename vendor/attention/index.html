@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Attention—Span—Tracker</title>
+    
+    <!-- 强制清除缓存 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- PWA Meta标签 -->
+    <meta name="description" content="多活动独立计时器应用，支持并行计时和详细统计">
+    <meta name="theme-color" content="#0A0A0A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Attention—Span—Tracker">
+    
+    <!-- PWA Manifest -->
+    <!-- manifest removed in extension context -->
+    
+    <!-- 图标 -->
+    <link rel="icon" type="image/jpeg" href="assets/时间管道.JPG">
+    <link rel="apple-touch-icon" href="assets/时间管道.JPG">
+    <link rel="icon" type="image/jpeg" sizes="32x32" href="assets/时间管道.JPG">
+    <link rel="icon" type="image/jpeg" sizes="16x16" href="assets/时间管道.JPG">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@300;400;500;600&family=Exo+2:wght@200;300;400;500;600&family=Titillium+Web:wght@200;300;400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="annual_table_styles.css">
+    <!-- Chart.js 改为按需加载，避免阻塞首屏 -->
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+            background-color: #0A0A0A;
+        }
+        
+        body {
+            position: relative;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            background-color: #0A0A0A;
+        }
+        
+        section {
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* ========== 视图切换样式 ========== */
+        .view-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            background-color: #0A0A0A;
+        }
+        
+        .view.hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .view.visible {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        /* 主视图样式调整 */
+        #main-view {
+            overflow-y: auto;
+            height: 100vh;
+        }
+        
+        /* 计时器详情视图样式 */
+        #timer-detail-view {
+            display: flex;
+            flex-direction: column;
+            background-color: #0A0A0A;
+            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .timer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #333;
+            background: #0A0A0A;
+        }
+        
+        .timer-activity-title {
+            font-family: 'Orbitron', 'Rajdhani', 'Exo 2', 'Titillium Web', 'Source Sans Pro', sans-serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: #FFFFFF;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+        
+        .timer-header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .timer-back-btn, .timer-switch-btn {
+            background: #333;
+            border: none;
+            color: #FFFFFF;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .timer-back-btn:hover, .timer-switch-btn:hover {
+            background: #555;
+        }
+        
+        .timer-main-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            min-height: 300px;
+        }
+        
+        .timer-time-display {
+            font-size: 4rem;
+            font-weight: 300;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            color: #FFFFFF;
+            text-align: center;
+            margin-bottom: 40px;
+            letter-spacing: 0.1em;
+        }
+        
+        .timer-button-area {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+            /* 与主页按钮区域保持一致 */
+            align-items: center;
+        }
+        
+        .timer-control-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            height: 50px;
+        }
+        
+        .timer-control-btn.primary {
+            background-color: #4CAF50;
+            color: #FFFFFF;
+        }
+        
+        .timer-control-btn.primary:hover {
+            background-color: #45a049;
+        }
+        
+        .timer-control-btn.secondary {
+            background-color: #666;
+            color: #FFFFFF;
+        }
+        
+        .timer-control-btn.secondary:hover {
+            background-color: #777;
+        }
+        
+        .timer-control-btn.danger {
+            background-color: #f44336;
+            color: #FFFFFF;
+        }
+        
+        .timer-control-btn.danger:hover {
+            background-color: #da190b;
+        }
+        
+        .timer-lap-container {
+            flex: 1;
+            background-color: #111;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            overflow-y: auto;
+            margin: 0 20px 20px 20px;
+            min-height: 200px;
+        }
+        
+        .timer-lap-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px 15px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #999;
+        }
+        
+        .timer-lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            border-bottom: 1px solid #222;
+            align-items: center;
+        }
+        
+        .timer-lap-item:last-child {
+            border-bottom: none;
+        }
+        
+        .timer-lap-number {
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .status-indicator.status-running {
+            background-color: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.status-paused {
+            background-color: #FF9800;
+        }
+        
+        .status-indicator.status-stopped {
+            background-color: #666;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* 计时器详情页面按钮放大样式 - 完全继承主页按钮样式 */
+        .timer-btn-large {
+            /* 放大尺寸 */
+            padding: 20px 40px;
+            font-size: 18px;
+            min-width: 150px;
+            min-height: 60px;
+            /* 增强视觉效果 */
+            border-radius: 16px;
+            font-weight: 600;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .timer-time-display {
+                font-size: 3rem;
+            }
+            
+            .timer-button-area {
+                gap: 15px;
+            }
+            
+            .timer-control-btn {
+                min-width: 100px;
+                height: 45px;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .timer-button-area {
+                gap: 10px;
+            }
+            
+            .timer-control-btn {
+                min-width: 90px;
+                font-size: 14px;
+                padding: 12px 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .timer-button-area {
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .timer-control-btn {
+                width: 180px;
+                height: 48px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="view-container">
+        <!-- 主视图 -->
+        <div id="main-view" class="view visible">
+            <div class="container">
+                <header>
+            <!-- 左侧：用户头像下拉菜单 -->
+            <div class="user-dropdown">
+                <div class="user-avatar-container" id="user-avatar-container" style="display: none;">
+                    <img id="user-avatar" class="user-avatar" src="" alt="用户头像">
+                    <span id="user-name" class="user-name"></span>
+                    <div class="dropdown-arrow">▼</div>
+                </div>
+                <div class="dropdown-menu" id="user-dropdown-menu">
+                    <div class="dropdown-item" id="import-btn">
+                        <span>导入数据</span>
+                    </div>
+                    <div class="dropdown-item" id="export-btn">
+                        <span>导出数据</span>
+                    </div>
+                    <div class="dropdown-item" id="logout-btn">
+                        <span>登出</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 中间：应用标题 -->
+            <h1>Attention—Span—Tracker</h1>
+            
+            <!-- 右侧：预留空间，让标题居中显示 -->
+            <div class="header-controls" style="display: none;">
+                <!-- 同步状态和时间显示已隐藏，但逻辑保留 -->
+                <div id="sync-status" class="sync-status" style="display: none;">🔄 同步中...</div>
+                <div id="current-time" class="current-time" style="display: none;"></div>
+            </div>
+        </header>
+
+        <section class="activity-input">
+            <input type="text" id="activity-name" placeholder="开始一个新的专注时光吧！输入你想要记录的活动...">
+            <button id="start-btn" class="btn primary-btn">开始记录</button>
+        </section>
+
+        <!-- 新增：多活动管理区域 -->
+        <section class="multi-stopwatch-section">
+            <h2>活动计时器</h2>
+            <div id="activity-timers" class="activity-timers">
+                <div id="no-timers" class="no-timers">暂无活动计时器</div>
+            </div>
+        </section>
+
+        <section class="current-activity" id="current-activity-section">
+            <h2>当前活动</h2>
+            <div id="no-activity" class="no-activity">当前没有正在进行的活动</div>
+            <div id="activity-details" class="activity-details hidden">
+                <div class="activity-name" id="current-activity-name"></div>
+                <div class="activity-time">
+                    <div>开始时间: <span id="start-time"></span></div>
+                    <div>已持续: <span id="duration"></span></div>
+                </div>
+                <button id="end-btn" class="btn secondary-btn">结束活动</button>
+            </div>
+        </section>
+
+        <!-- 新增统计部分 -->
+        <section class="statistics">
+            <h2>时间统计</h2>
+            <div class="stats-view-controls">
+                <div class="stats-view-title">统计视图：</div>
+                <div class="stats-view-options">
+                    <button id="daily-distribution-btn" class="stats-view-btn active">当日活动分布</button>
+                    <button id="activity-daily-btn" class="stats-view-btn">活动每日统计</button>
+                    <button id="activity-total-btn" class="stats-view-btn">活动累计统计</button>
+                    <button id="annual-table-btn" class="stats-view-btn">年度统计表</button>
+                </div>
+                <div id="activity-selector" class="hidden">
+                    <label>选择活动：</label>
+                    <select id="activity-select"></select>
+                </div>
+                <div id="annual-table-controls" class="annual-table-controls hidden">
+                    <div class="control-group">
+                        <label for="annual-year-select">选择年份：</label>
+                        <select id="annual-year-select"></select>
+                    </div>
+                    <div class="control-group">
+                        <label for="annual-activity-select">选择活动：</label>
+                        <select id="annual-activity-select">
+                            <option value="all">所有活动</option>
+                            <!-- 动态填充活动选项 -->
+                        </select>
+                    </div>
+                    <button id="show-annual-table-btn" class="btn primary-btn">显示统计表</button>
+                </div>
+            </div>
+            <div class="date-selector">
+                <label for="stats-date">选择日期：</label>
+                <input type="date" id="stats-date">
+                <button id="show-stats-btn" class="btn primary-btn">显示统计</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="time-chart"></canvas>
+            </div>
+            <div id="annual-table-container" class="annual-table-container hidden">
+                <table id="annual-table" class="annual-table">
+                    <thead>
+                        <tr>
+                            <th class="day-header">日期</th>
+                            <th>1月</th>
+                            <th>2月</th>
+                            <th>3月</th>
+                            <th>4月</th>
+                            <th>5月</th>
+                            <th>6月</th>
+                            <th>7月</th>
+                            <th>8月</th>
+                            <th>9月</th>
+                            <th>10月</th>
+                            <th>11月</th>
+                            <th>12月</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 动态生成31行（1-31日） -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="no-stats" class="no-stats">所选日期没有活动记录</div>
+            <div id="stats-summary" class="stats-summary"></div>
+        </section>
+
+        <section class="timeline">
+            <h2>活动记录</h2>
+            <div id="activity-list" class="activity-list">
+                <div id="no-records" class="no-records">暂无活动记录</div>
+                </div>
+            </section>
+            </div>
+        </div>
+        
+        <!-- 计时器详情视图 -->
+        <div id="timer-detail-view" class="view hidden">
+            <!-- 标题栏 -->
+            <div class="timer-header">
+                <div class="timer-activity-title" id="timer-activity-title">
+                    活动名称
+                    <span class="status-indicator" id="timer-status-indicator"></span>
+                </div>
+                <div class="timer-header-controls">
+                    <select class="timer-switch-btn" id="timer-activity-switcher">
+                        <option value="">切换活动</option>
+                    </select>
+                    <button class="timer-back-btn" id="timer-back-btn">返回</button>
+                </div>
+            </div>
+            
+            <!-- 主显示区 -->
+            <div class="timer-main-display">
+                <div class="timer-time-display" id="timer-time-display">00:00:00.00</div>
+                
+                <!-- 按钮区域 -->
+                <div class="timer-button-area" id="timer-button-area">
+                    <!-- 按钮将动态生成 -->
+                </div>
+            </div>
+            
+            <!-- Lap 列表 -->
+            <div class="timer-lap-container">
+                <div class="timer-lap-header">
+                    <span>Lap No.</span>
+                    <span>Split</span>
+                    <span>Total</span>
+                </div>
+                <div id="timer-lap-list">
+                    <!-- Lap 记录将在这里动态添加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入数据模态框 -->
+    <div id="import-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>导入数据</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>请选择要导入的数据文件（JSON格式）：</p>
+                <input type="file" id="import-file" accept=".json">
+                
+                <div class="import-options">
+                    <p>导入模式：</p>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="import-mode" value="replace" checked>
+                            替换当前数据
+                        </label>
+                        <label>
+                            <input type="radio" name="import-mode" value="merge">
+                            合并到当前数据
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="import-message" id="import-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-import" class="btn utility-btn">取消</button>
+                <button id="confirm-import" class="btn primary-btn">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local Supabase SDK & client (for extension login) -->
+    <script src="../supabase.js" defer></script>
+    <script src="supabaseClient.js" defer></script>
+    
+    <!-- 身份验证检查（外部脚本，避免 MV3 内联 CSP） -->
+    <script src="boot.js" defer></script>
+    
+    <script src="export_import.js" defer></script>
+    <script src="combined.js" defer></script>
+    <script src="multi-stopwatch-fixed.js" defer></script>
+
+    <!-- PWA Service Worker 注册（已外部化至 boot.js，仅在 http(s) 下生效） -->
+    
+
+</body>
+</html>
