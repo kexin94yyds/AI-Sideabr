@@ -6,6 +6,7 @@
   <p><strong>AI Sidebar turns any AI website into a faster, more organized workspace.</strong></p>
   <p>Keep the original page in view while searching, saving favorites, exporting content, revisiting history, and switching between tools in one sidebar.</p>
   <p>AI Sidebar 将任意 AI 网站升级为更高效、更有条理的工作空间，让你在保留原页面的同时，通过侧边栏完成搜索、收藏、导出、历史查看与工具切换。</p>
+  <p><a href="https://aibar.xin/">Official Website</a> · <a href="https://github.com/kexin94yyds/AI-Sideabr">GitHub Repository</a></p>
 </div>
 
 ![AI Sidebar Dual-Pane Workspace](images/readme-dual-pane.png)
