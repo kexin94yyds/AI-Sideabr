@@ -8,7 +8,7 @@
   <p>AI Sidebar 将任意 AI 网站升级为更高效、更有条理的工作空间，让你在保留原页面的同时，通过侧边栏完成搜索、收藏、导出、历史查看与工具切换。</p>
 </div>
 
-![AI Sidebar Screenshot](images/screenshot.png)
+![AI Sidebar Dual-Pane Workspace](images/readme-dual-pane.png)
 
 ## Overview
 
