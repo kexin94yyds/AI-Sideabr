@@ -374,6 +374,24 @@ async function openSidePanelForCurrentWindow() {
   }
 }
 
+function getRestrictedPageReason(url) {
+  const value = String(url || '').trim();
+  if (!value) return '';
+  if (value.startsWith('chrome://') || value.startsWith('edge://') || value.startsWith('about:')) {
+    return '浏览器内部页面';
+  }
+  if (value.startsWith('chrome-extension://')) {
+    return '扩展页面';
+  }
+  try {
+    const parsed = new URL(value);
+    if (parsed.hostname === 'chromewebstore.google.com') {
+      return 'Chrome 应用商店页面';
+    }
+  } catch (_) {}
+  return '';
+}
+
 async function deliverToSidePanel(message, fallbackKey) {
   try {
     // Send directly; if no listener, keep a pending payload in storage
@@ -433,6 +451,13 @@ async function handleSendSelection() {
 async function handleCaptureScreenshot(preferredTab = null) {
   try {
     const tab = preferredTab || await getActiveTab();
+    const restrictedReason = getRestrictedPageReason(tab?.url || '');
+    if (restrictedReason) {
+      const text = `截屏失败：当前是${restrictedReason}，Chrome 会额外限制截图权限。请切回普通网页后再试。`;
+      await deliverToSidePanel({ type: 'aisb.notify', level: 'error', text }, 'aisbPendingNotify');
+      await openSidePanelForCurrentWindow();
+      return;
+    }
     const windowId = tab?.windowId;
     const dataUrl = await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
     if (!dataUrl) return;
@@ -448,9 +473,12 @@ async function handleCaptureScreenshot(preferredTab = null) {
     await openSidePanelForCurrentWindow();
   } catch (e) {
     const msg = String(e || '');
-    const needsPermission = msg.includes("Either the '<all_urls>' or 'activeTab' permission is required");
+    const needsPermission =
+      msg.includes("Either the '<all_urls>' or 'activeTab' permission is required") ||
+      /activeTab.*not in effect/i.test(msg) ||
+      /has not been (in )?invoked/i.test(msg);
     const text = needsPermission
-      ? '截屏失败：请先重载扩展，并接受“读取和更改所有网站数据”的新权限后再试。'
+      ? '截屏失败：当前页面没有可用的截图授权。普通网页请先重载扩展并接受新权限；若是应用商店、浏览器页或扩展页，这类页面可能仍受 Chrome 限制。'
       : '截屏失败：' + msg;
     await deliverToSidePanel({ type: 'aisb.notify', level: 'error', text }, 'aisbPendingNotify');
     await openSidePanelForCurrentWindow();
@@ -488,9 +516,7 @@ async function handleOpenParallelLeft() {
     if (!tab || !tab.id) return;
     
     // Check if URL is restricted
-    const url = tab.url || '';
-    if (url.startsWith('chrome://') || url.startsWith('edge://') || 
-        url.startsWith('about:') || url.startsWith('chrome-extension://')) {
+    if (getRestrictedPageReason(tab.url || '')) {
       console.warn('[AI Sidebar] Cannot open parallel panel on restricted page');
       return;
     }
