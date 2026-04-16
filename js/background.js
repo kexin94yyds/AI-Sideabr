@@ -32,7 +32,7 @@ const DNR_CONFIG = {
     "https://mubu.com/*",
     "https://*.mubu.com/*",
     "https://excalidraw.com/*",
-    "https://tobooks.netlify.app/*"
+    "https://tobooks.xin/*"
   ]
 };
 

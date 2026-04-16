@@ -127,9 +127,9 @@ const PROVIDERS = {
   },
   tobooks: {
     label: 'ToBooks',
-    icon: 'images/favicon.png',
-    baseUrl: 'https://tobooks.netlify.app/tobooks-main/',
-    iframeUrl: 'https://tobooks.netlify.app/tobooks-main/',
+    icon: 'images/providers/tobooks.png',
+    baseUrl: 'https://tobooks.xin/',
+    iframeUrl: 'https://tobooks.xin/',
     authCheck: null
   },
   mubu: {
