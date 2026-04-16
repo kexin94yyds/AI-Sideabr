@@ -532,12 +532,12 @@
   function buildUI() {
     const root = document.createElement('div');
     root.id = ROOT_ID;
-    const gearIconUrl = chrome.runtime.getURL('images/voyager-settings-ai-white.png');
+    const gearIconUrl = chrome.runtime.getURL('images/sidebar-settings-ai-white.png');
 
     const gear = document.createElement('button');
     gear.type = 'button';
     gear.className = 'gvsp-gear';
-    gear.setAttribute('aria-label', 'Open Voyager settings');
+    gear.setAttribute('aria-label', 'Open AI Sidebar settings');
     gear.setAttribute('aria-expanded', 'false');
     gear.innerHTML = `<img src="${gearIconUrl}" alt="" aria-hidden="true">`;
 

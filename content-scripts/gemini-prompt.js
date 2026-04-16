@@ -823,7 +823,7 @@
 
   function exportPrompts() {
     const payload = {
-      format: 'gemini-voyager.prompts.v1',
+      format: 'aisb-gemini.prompts.v1',
       exportedAt: new Date().toISOString(),
       count: state.items.length,
       items: state.items,
@@ -1135,7 +1135,7 @@
         renderList();
       },
       exportData: () => ({
-        format: 'gemini-voyager.prompts.v1',
+        format: 'aisb-gemini.prompts.v1',
         exportedAt: new Date().toISOString(),
         items: state.items.slice(),
       }),

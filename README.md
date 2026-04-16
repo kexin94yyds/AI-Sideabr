@@ -66,7 +66,7 @@ AI-Sidebar/
 ### 1. Install
 
 ```bash
-git clone https://github.com/kexin94yyds/AI-Sidebar.git
+git clone https://github.com/kexin94yyds/ai-sideabr.git
 cd AI-Sidebar
 npm install
 ```

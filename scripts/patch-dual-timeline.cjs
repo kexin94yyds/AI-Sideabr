@@ -1,14 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const VOYAGER = process.env.GEMINI_VOYAGER_ROOT;
+const VOYAGER = process.env.AISB_GEMINI_SOURCE_ROOT;
 
 if (!VOYAGER) {
-  console.error('Missing GEMINI_VOYAGER_ROOT. Example: GEMINI_VOYAGER_ROOT=/path/to/gemini-voyager node scripts/patch-dual-timeline.cjs');
+  console.error('Missing AISB_GEMINI_SOURCE_ROOT. Example: AISB_GEMINI_SOURCE_ROOT=/path/to/aisb-gemini node scripts/patch-dual-timeline.cjs');
   process.exit(1);
 }
 
-console.log('Patching Gemini Voyager for dual-sided timeline...');
+console.log('Patching AI Sidebar for dual-sided timeline...');
 
 // 1. Patch timeline.ts - add TurnRole and role field
 const timelineTypesPath = path.join(VOYAGER, 'src/core/types/timeline.ts');

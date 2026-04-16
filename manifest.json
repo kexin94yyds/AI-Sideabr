@@ -21,7 +21,7 @@
         "js/plugins/storage-manager.js",
         "content-scripts/watermark-assets/bg_48.png",
         "content-scripts/watermark-assets/bg_96.png",
-        "images/voyager-settings-ai-white.png"
+        "images/sidebar-settings-ai-white.png"
       ],
       "matches": [
         "<all_urls>"
@@ -184,7 +184,7 @@
         "content-scripts/gemini-timeline.js",
         "content-scripts/gemini-input-collapse.js",
         "content-scripts/gemini-snow-effect.js",
-        "content-scripts/gemini-voyager-settings-panel.js"
+        "content-scripts/aisb-gemini-settings-panel.js"
       ]
     },
     {
