@@ -50,7 +50,7 @@ AI-Sidebar/
 ├── rules/
 ├── vendor/
 ├── sync/
-├── sync-server.cjs
+├── docs/
 └── scripts/
 ```
 
@@ -87,9 +87,9 @@ npm run sync
 默认会启动本地同步服务，监听 `http://localhost:3456`。
 
 更多说明：
-- [QUICK_START_SYNC.md](./QUICK_START_SYNC.md)
-- [SYNC_GUIDE.md](./SYNC_GUIDE.md)
-- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+- [QUICK_START_SYNC.md](./docs/QUICK_START_SYNC.md)
+- [SYNC_GUIDE.md](./docs/SYNC_GUIDE.md)
+- [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)
 
 ## Build
 

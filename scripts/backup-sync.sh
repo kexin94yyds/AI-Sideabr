@@ -6,11 +6,11 @@
 #
 # 使用方法：
 #   cd "<repo>"
-#   chmod +x backup-sync.sh   # 只需第一次
-#   ./backup-sync.sh
+#   chmod +x scripts/backup-sync.sh   # 只需第一次
+#   ./scripts/backup-sync.sh
 #
 # 可选：
-#   APP_DIR="/path/to/your/app-repo" ./backup-sync.sh
+#   APP_DIR="/path/to/your/app-repo" ./scripts/backup-sync.sh
 
 set -e
 

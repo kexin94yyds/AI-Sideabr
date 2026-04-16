@@ -13,7 +13,7 @@ npm run sync
 或
 
 ```bash
-node sync-server.cjs
+node scripts/sync-server.cjs
 ```
 
 你会看到：
@@ -100,7 +100,7 @@ lsof -i :3456
 # 如果有进程占用，可以杀掉它
 kill -9 <PID>
 
-# 或者修改 sync-server.cjs 中的 PORT 变量
+# 或者修改 scripts/sync-server.cjs 中的 PORT 变量
 ```
 
 ### 问题：扩展无法连接到服务器

@@ -41,7 +41,7 @@
 
 ```bash
 cd /path/to/AI-Sidebar
-node sync-server.cjs
+node scripts/sync-server.cjs
 ```
 
 服务器会在 `http://localhost:3456` 监听。
@@ -185,7 +185,7 @@ curl -X POST http://localhost:3456/sync/favorites \
    ```bash
    lsof -i :3456
    ```
-2. 如果被占用，修改 `sync-server.cjs` 中的 `PORT` 变量
+2. 如果被占用，修改 `scripts/sync-server.cjs` 中的 `PORT` 变量
 
 ### 问题：扩展无法连接到同步服务器
 
@@ -262,7 +262,7 @@ setInterval(async () => {
 
 ## 文件清单
 
-- `sync-server.cjs` - Node.js 同步服务器
+- `scripts/sync-server.cjs` - Node.js 同步服务器
 - `js/auto-sync.js` - 扩展自动同步模块
 - `js/sync-to-file.js` - 手动导出脚本
 - `sync/history.json` - 历史记录数据
@@ -282,7 +282,7 @@ setInterval(async () => {
 
 ```bash
 # 启动同步服务器（带日志）
-node sync-server.cjs
+node scripts/sync-server.cjs
 
 # 在另一个终端监听文件变化
 watch -n 1 'cat sync/history.json | jq "length"'
