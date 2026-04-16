@@ -3,8 +3,12 @@
 
 <div align="center">
   <img src="images/icon128.png" alt="AI Sidebar Logo" width="128">
-  <p>把多个 AI Web App 放进浏览器侧边栏，减少标签页切换。</p>
+  <p><strong>AI Sidebar turns any AI website into a faster, more organized workspace.</strong></p>
+  <p>Keep the original page in view while searching, saving favorites, exporting content, revisiting history, and switching between tools in one sidebar.</p>
+  <p>AI Sidebar 将任意 AI 网站升级为更高效、更有条理的工作空间，让你在保留原页面的同时，通过侧边栏完成搜索、收藏、导出、历史查看与工具切换。</p>
 </div>
+
+![AI Sidebar Screenshot](images/screenshot.png)
 
 ## Overview
 
