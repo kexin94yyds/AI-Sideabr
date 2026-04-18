@@ -10,6 +10,7 @@
     "tabs",
     "activeTab",
     "storage",
+    "nativeMessaging",
     "cookies",
     "scripting",
     "contextMenus"

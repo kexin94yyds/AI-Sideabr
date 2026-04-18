@@ -8,6 +8,8 @@
     "build": "tsc",
     "lint": "eslint . --ext js,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "native-host": "node scripts/native-mirror-host.cjs",
+    "native-host:install": "node scripts/install-native-host.cjs",
     "sync-server": "node scripts/sync-server.cjs",
     "sync": "node scripts/sync-server.cjs",
     "package:webstore": "bash scripts/build-webstore-package.sh"

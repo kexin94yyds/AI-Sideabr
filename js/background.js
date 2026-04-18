@@ -36,6 +36,8 @@ const DNR_CONFIG = {
   ]
 };
 
+const NATIVE_HOST_NAME = 'com.aisidebar.bridge';
+
 // 生成DNR规则的工厂函数
 function createDnrRules() {
   return DNR_CONFIG.domains.map((domain, index) => ({
@@ -168,6 +170,23 @@ chrome.cookies.onChanged.addListener((change) => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
+      if (msg && msg.type === 'AI_SIDEBAR_NATIVE_HOST_PING') {
+        const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, { type: 'ping' });
+        sendResponse({ ok: true, result });
+        return;
+      }
+      if (msg && msg.type === 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE') {
+        const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, {
+          type: 'syncConversation',
+          project: msg.project,
+          conversation: msg.conversation
+        });
+        if (!result || result.success === false) {
+          throw new Error(result?.error || 'Native host failed');
+        }
+        sendResponse({ ok: true, result });
+        return;
+      }
       if (msg && msg.type === 'ai-add-host' && typeof msg.origin === 'string') {
         const origin = msg.origin.replace(/\/$/, '');
         const storage = await chrome.storage.local.get(['aiDnrRules']);
@@ -228,7 +247,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
     } catch (e) {
-      console.error('ai-add-host failed:', e);
+      console.error('background message failed:', e);
       sendResponse({ ok: false, error: String(e) });
       return;
     }

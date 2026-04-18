@@ -14,10 +14,13 @@ const AutoSync = (function() {
   const HISTORY_KEY = 'aiLinkHistory';
   const FAVORITES_KEY = 'aiFavoriteLinks';
   const PROJECT_NAME = 'AI-Sidebar';
+  const NATIVE_HOST_RECHECK_INTERVAL = 30000;
 
   let isServerAvailable = false;
   let lastCheckTime = 0;
   const CHECK_INTERVAL = 30000; // 30秒检查一次服务器状态
+  let nativeHostAvailable = null;
+  let lastNativeHostCheck = 0;
 
   /**
    * 检查同步服务器是否可用
@@ -66,6 +69,34 @@ const AutoSync = (function() {
     } catch (error) {
       console.warn(`AutoSync: 无法连接到同步服务器 (${endpoint}):`, error.message);
       return { success: false, error: error.message };
+    }
+  }
+
+  async function sendToNativeHost(message) {
+    const now = Date.now();
+    if (nativeHostAvailable === false && now - lastNativeHostCheck < NATIVE_HOST_RECHECK_INTERVAL) {
+      return { success: false, reason: 'native_host_unavailable' };
+    }
+
+    try {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        return { success: false, reason: 'native_host_unsupported' };
+      }
+
+      const response = await chrome.runtime.sendMessage(message);
+      lastNativeHostCheck = now;
+
+      if (!response?.ok) {
+        nativeHostAvailable = false;
+        return { success: false, error: response?.error || 'native_host_unavailable' };
+      }
+
+      nativeHostAvailable = true;
+      return { success: true, ...(response.result || {}) };
+    } catch (error) {
+      nativeHostAvailable = false;
+      lastNativeHostCheck = now;
+      return { success: false, error: error.message || String(error) };
     }
   }
 
@@ -145,6 +176,19 @@ const AutoSync = (function() {
     try {
       if (!isConversationReadyForMirror(conversation)) {
         return { success: false, reason: 'conversation_not_ready' };
+      }
+
+      const nativeResult = await sendToNativeHost({
+        type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
+        project: PROJECT_NAME,
+        conversation: {
+          ...conversation,
+          project: PROJECT_NAME
+        }
+      });
+
+      if (nativeResult.success) {
+        return { ...nativeResult, transport: 'native-host' };
       }
 
       const available = await checkServerAvailability();
