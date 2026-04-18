@@ -728,6 +728,17 @@
     }
   };
 
+  if (window.top === window) {
+    pageAutoSaveState.href = window.location.href;
+    pageAutoSaveState.title = document.title;
+    schedulePageAutoSave(2500);
+    setInterval(() => {
+      autoSaveCurrentConversation().catch((error) => {
+        console.warn('[Exporter] page auto-save interval failed:', error);
+      });
+    }, AUTO_SAVE_INTERVAL_MS);
+  }
+
   // Listen for command from background script
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((msg) => {
