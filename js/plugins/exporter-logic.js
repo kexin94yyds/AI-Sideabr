@@ -387,6 +387,24 @@
   // Option+S Shortcut - Show Export Panel on Page
   // ============================================================================
   const PANEL_ID = 'ai-sidebar-export-panel';
+  const PROJECT_NAME = 'AI-Sidebar';
+
+  async function syncSavedConversationToNativeHost(conversation) {
+    if (!conversation || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
+
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
+        project: PROJECT_NAME,
+        conversation: {
+          ...conversation,
+          project: PROJECT_NAME
+        }
+      });
+    } catch (error) {
+      console.warn('[Exporter] native mirror sync failed:', error);
+    }
+  }
   
   const createExportPanel = () => {
     if (document.getElementById(PANEL_ID)) return document.getElementById(PANEL_ID);
@@ -563,6 +581,7 @@
 
         if (typeof window.saveConversation === 'function') {
           await window.saveConversation(result.data);
+          await syncSavedConversationToNativeHost(result.data);
           showStatus('✓ Saved to library', 'success');
           setTimeout(closePanel, 1500);
           return;
