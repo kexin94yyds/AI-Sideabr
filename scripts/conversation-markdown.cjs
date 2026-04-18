@@ -5,25 +5,78 @@ const path = require('path');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SYNC_DIR = path.join(REPO_ROOT, 'sync');
 const SYNC_CONFIG_PATH = path.join(SYNC_DIR, 'config.json');
+const RI_EXPORT_SUBDIR = 'AI-Sidebar';
+const RI_CONFIG_CANDIDATES = [
+  path.join(process.env.HOME || '', 'Library', 'Application Support', 'replace-information', 'config.json'),
+  path.join(process.env.HOME || '', 'Library', 'Application Support', 'relearn', 'config.json')
+].filter(Boolean);
 
-function readSyncConfig(syncDir = SYNC_DIR) {
-  const configPath = path.join(syncDir, 'config.json');
+function readJsonFile(filePath) {
   try {
-    if (!fs.existsSync(configPath)) return {};
-    const raw = fs.readFileSync(configPath, 'utf8');
+    if (!filePath || !fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, 'utf8');
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    return parsed && typeof parsed === 'object' ? parsed : null;
   } catch (error) {
-    console.warn('⚠️ 读取 sync/config.json 失败，将使用默认配置:', error.message);
-    return {};
+    console.warn(`⚠️ 读取 JSON 配置失败 (${filePath}):`, error.message);
+    return null;
   }
 }
 
-function getMarkdownBaseDir(options = {}) {
+function readSyncConfig(syncDir = SYNC_DIR) {
+  const configPath = path.join(syncDir, 'config.json');
+  const config = readJsonFile(configPath);
+  if (config) return config;
+  if (fs.existsSync(configPath)) {
+    console.warn('⚠️ 读取 sync/config.json 失败，将使用默认配置');
+  }
+  return {};
+}
+
+function getRiExportConfig() {
+  for (const configPath of RI_CONFIG_CANDIDATES) {
+    const config = readJsonFile(configPath);
+    const exportLocalPath = String(config?.exportLocalPath || '').trim();
+    if (!exportLocalPath) continue;
+    return {
+      configPath,
+      exportLocalPath: path.resolve(exportLocalPath),
+      markdownBaseDir: path.resolve(exportLocalPath, RI_EXPORT_SUBDIR)
+    };
+  }
+
+  return null;
+}
+
+function getMarkdownBaseDirDetails(options = {}) {
   const syncDir = options.syncDir || SYNC_DIR;
   const config = readSyncConfig(syncDir);
-  const configured = options.baseDir || process.env.AI_SIDEBAR_MARKDOWN_DIR || config.markdownBaseDir;
-  return configured ? path.resolve(configured) : path.join(syncDir, 'markdown');
+  const explicitBaseDir = options.baseDir || process.env.AI_SIDEBAR_MARKDOWN_DIR || config.markdownBaseDir;
+  if (explicitBaseDir) {
+    return {
+      baseDir: path.resolve(explicitBaseDir),
+      source: options.baseDir ? 'options' : process.env.AI_SIDEBAR_MARKDOWN_DIR ? 'env' : 'sync-config'
+    };
+  }
+
+  const riConfig = getRiExportConfig();
+  if (riConfig) {
+    return {
+      baseDir: riConfig.markdownBaseDir,
+      source: 'ri-export-local-path',
+      riConfigPath: riConfig.configPath,
+      riExportLocalPath: riConfig.exportLocalPath
+    };
+  }
+
+  return {
+    baseDir: path.join(syncDir, 'markdown'),
+    source: 'default'
+  };
+}
+
+function getMarkdownBaseDir(options = {}) {
+  return getMarkdownBaseDirDetails(options).baseDir;
 }
 
 function ensureDir(dirPath) {
@@ -158,8 +211,12 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
 
 module.exports = {
   REPO_ROOT,
+  RI_CONFIG_CANDIDATES,
+  RI_EXPORT_SUBDIR,
   SYNC_DIR,
   SYNC_CONFIG_PATH,
+  getMarkdownBaseDirDetails,
+  getRiExportConfig,
   readSyncConfig,
   getMarkdownBaseDir,
   sanitizeFileName,

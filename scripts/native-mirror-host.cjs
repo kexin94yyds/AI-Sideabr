@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-const { getMarkdownBaseDir, sanitizeFileName, upsertConversationMarkdown } = require('./conversation-markdown.cjs');
+const {
+  getMarkdownBaseDirDetails,
+  sanitizeFileName,
+  upsertConversationMarkdown
+} = require('./conversation-markdown.cjs');
 
 function writeNativeMessage(message) {
   const json = Buffer.from(JSON.stringify(message), 'utf8');
@@ -24,10 +28,14 @@ async function handleMessage(message) {
     }
 
     if (message.type === 'ping') {
+      const baseDirDetails = getMarkdownBaseDirDetails();
       writeNativeMessage({
         success: true,
         type: 'pong',
-        baseDir: getMarkdownBaseDir()
+        baseDir: baseDirDetails.baseDir,
+        baseDirSource: baseDirDetails.source,
+        riConfigPath: baseDirDetails.riConfigPath || null,
+        riExportLocalPath: baseDirDetails.riExportLocalPath || null
       });
       return;
     }
@@ -41,11 +49,15 @@ async function handleMessage(message) {
       }
 
       const result = upsertConversationMarkdown(projectName, conversation);
+      const baseDirDetails = getMarkdownBaseDirDetails();
       writeNativeMessage({
         success: true,
         type: 'syncConversation',
         project: projectName,
-        baseDir: getMarkdownBaseDir(),
+        baseDir: baseDirDetails.baseDir,
+        baseDirSource: baseDirDetails.source,
+        riConfigPath: baseDirDetails.riConfigPath || null,
+        riExportLocalPath: baseDirDetails.riExportLocalPath || null,
         ...result
       });
       return;
