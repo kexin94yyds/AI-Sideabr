@@ -98,6 +98,7 @@
     if (hostname.includes('claude.ai')) return 'claude';
     if (hostname.includes('gemini.google.com')) return 'gemini';
     if (hostname.includes('deepseek.com')) return 'deepseek';
+    if (hostname.includes('notebooklm.google.com')) return 'notebooklm';
     return 'unknown';
   }
 
@@ -112,6 +113,8 @@
           return window.location.hash.substring(1) || '';
         case 'deepseek':
           return /deepseek\.com\/chat\/([a-z0-9-]+)/i.exec(url)?.[1] || '';
+        case 'notebooklm':
+          return /\/notebook\/([^/?#]+)/i.exec(url)?.[1] || '';
         default:
           return '';
       }
@@ -136,10 +139,24 @@
     
     // 1. Title Extraction
     const getTitle = () => {
-      const selectors = ['nav .bg-token-surface-active', '.ds-sidebar-item--active', '.selected[data-test-id="conversation"]', 'h1', 'title'];
+      const selectors = [
+        '.title-label-inner',
+        'editable-project-title',
+        'input.title-input',
+        '[role="heading"][aria-level="1"]',
+        'nav .bg-token-surface-active',
+        '.ds-sidebar-item--active',
+        '.selected[data-test-id="conversation"]',
+        'h1',
+        'title'
+      ];
       for (const s of selectors) {
         const el = document.querySelector(s);
-        if (el?.innerText.trim()) return el.innerText.trim().split('\n')[0];
+        const value =
+          typeof el?.value === 'string' && el.value.trim()
+            ? el.value.trim()
+            : el?.innerText?.trim();
+        if (value) return value.split('\n')[0];
       }
       return document.title;
     };
@@ -442,10 +459,22 @@
       if (provider === 'gemini') return /\/app\/(?:conversation\/)?[^/?#]+/.test(u.pathname);
       if (provider === 'deepseek') return /\/(sessions|s)\/[^/?#]+/.test(u.pathname);
       if (provider === 'claude') return /\/chat\/[\w-]+/i.test(u.pathname);
+      if (provider === 'notebooklm') return /\/notebook\/[^/?#]+/.test(u.pathname);
       return Boolean(u.pathname && u.pathname !== '/');
     } catch (_) {
       return false;
     }
+  }
+
+  function buildConversationFingerprint(conversation, href, title) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    const messageCount = Number(conversation?.messageCount || messages.length || 0);
+    const stableKey = String(conversation?.conversationId || href || '');
+    const lastMessage = messages[messages.length - 1] || null;
+    const lastRole = String(lastMessage?.role || '').trim();
+    const lastContent = String(lastMessage?.content || '').trim();
+    const lastTail = lastContent.slice(-120);
+    return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || title || ''}`;
   }
 
   function canAutoSaveCurrentPage(provider, href, title) {
@@ -470,8 +499,7 @@
       const result = window.exportChatToMarkdown();
       if (!result?.data) return { ok: false, reason: 'export_failed' };
 
-      const messageCount = Number(result.data.messageCount || result.data.messages?.length || 0);
-      const fingerprint = `${result.data.conversationId || href}|${messageCount}|${result.data.title || title}`;
+      const fingerprint = buildConversationFingerprint(result.data, href, title);
       if (!force && fingerprint === pageAutoSaveState.lastFingerprint) {
         return { ok: false, reason: 'unchanged' };
       }
