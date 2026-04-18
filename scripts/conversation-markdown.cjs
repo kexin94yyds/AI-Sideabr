@@ -115,6 +115,31 @@ function buildConversationBlockId(conversation) {
   return crypto.createHash('sha1').update(source).digest('hex').slice(0, 12);
 }
 
+function findExistingConversationFile(dayDir, blockId, legacyTitle) {
+  if (!fs.existsSync(dayDir)) return null;
+
+  const markerStart = `<!-- AI_SIDEBAR_BLOCK:${blockId}:START -->`;
+  for (const entry of fs.readdirSync(dayDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    const candidatePath = path.join(dayDir, entry.name);
+    try {
+      const content = fs.readFileSync(candidatePath, 'utf8');
+      if (content.includes(markerStart)) {
+        return candidatePath;
+      }
+    } catch (_) {}
+  }
+
+  if (legacyTitle) {
+    const legacyPath = path.join(dayDir, `${legacyTitle}.md`);
+    if (fs.existsSync(legacyPath)) {
+      return legacyPath;
+    }
+  }
+
+  return null;
+}
+
 function formatConversationMessages(messages) {
   return (Array.isArray(messages) ? messages : [])
     .map((message) => {
@@ -180,11 +205,12 @@ function buildConversationBlock(projectName, conversation) {
 function upsertConversationMarkdown(projectName, conversation, options = {}) {
   const baseDir = getMarkdownBaseDir(options);
   const documentTitle = getConversationDocumentTitle(projectName, conversation);
-  const projectFileName = `${documentTitle}.md`;
   const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
   const dayDir = path.join(baseDir, dateKey);
-  const filePath = path.join(dayDir, projectFileName);
   const { blockId, content } = buildConversationBlock(projectName, conversation);
+  const existingFilePath = findExistingConversationFile(dayDir, blockId, documentTitle);
+  const projectFileName = `${blockId}-${documentTitle}.md`;
+  const filePath = existingFilePath || path.join(dayDir, projectFileName);
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const blockPattern = new RegExp(`<!-- AI_SIDEBAR_BLOCK:${escapedBlockId}:START -->[\\s\\S]*?<!-- AI_SIDEBAR_BLOCK:${escapedBlockId}:END -->`, 'g');
 
