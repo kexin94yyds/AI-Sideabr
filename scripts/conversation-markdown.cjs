@@ -141,6 +141,13 @@ function formatProviderLabel(providerName) {
   return labels[normalized] || (normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Unknown');
 }
 
+function getConversationDocumentTitle(projectName, conversation) {
+  return sanitizeFileName(
+    String(conversation?.title || '').trim() || projectName,
+    'AI-Sidebar'
+  );
+}
+
 function buildConversationBlock(projectName, conversation) {
   const blockId = buildConversationBlockId(conversation);
   const blockTime = timeKeyFromTimestamp(conversation.updatedAt || conversation.timestamp || Date.now());
@@ -172,7 +179,8 @@ function buildConversationBlock(projectName, conversation) {
 
 function upsertConversationMarkdown(projectName, conversation, options = {}) {
   const baseDir = getMarkdownBaseDir(options);
-  const projectFileName = `${sanitizeFileName(projectName, 'AI-Sidebar')}.md`;
+  const documentTitle = getConversationDocumentTitle(projectName, conversation);
+  const projectFileName = `${documentTitle}.md`;
   const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
   const dayDir = path.join(baseDir, dateKey);
   const filePath = path.join(dayDir, projectFileName);
@@ -187,7 +195,7 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
     existing = fs.readFileSync(filePath, 'utf8');
   }
 
-  const header = `# ${sanitizeFileName(projectName, 'AI-Sidebar')}\n\n`;
+  const header = `# ${documentTitle}\n\n`;
   if (!existing.trim()) {
     fs.writeFileSync(filePath, `${header}${content}\n`, 'utf8');
     return { filePath, dateKey, blockId, created: true, updated: false };
