@@ -301,12 +301,14 @@
         window.parent.postMessage({
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
           data: result.data,
-          content: result.content
+          content: result.content,
+          meta: data.meta || null
         }, '*');
       } catch (err) {
         window.parent.postMessage({
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
-          error: err.message
+          error: err.message,
+          meta: data.meta || null
         }, '*');
       }
     }
@@ -618,4 +620,3 @@
   }
 
 })();
-

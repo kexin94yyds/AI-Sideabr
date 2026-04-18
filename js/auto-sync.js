@@ -13,6 +13,7 @@ const AutoSync = (function() {
   const SYNC_SERVER_URL = 'http://localhost:3456';
   const HISTORY_KEY = 'aiLinkHistory';
   const FAVORITES_KEY = 'aiFavoriteLinks';
+  const PROJECT_NAME = 'AI-Sidebar';
 
   let isServerAvailable = false;
   let lastCheckTime = 0;
@@ -107,6 +108,61 @@ const AutoSync = (function() {
     addAll(remoteList);
     addAll(localList);
     return Array.from(map.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
+  }
+
+  function isUsefulConversationTitle(title) {
+    const value = String(title || '').trim();
+    if (!value) return false;
+
+    const normalized = value.toLowerCase();
+    if (normalized.length < 4) return false;
+    if (/^(new\s*chat|chatgpt|gemini|deepseek|claude|ai|conversation with gemini)$/i.test(normalized)) return false;
+    if (/^(新聊天|新对话|最近|recent)$/i.test(value)) return false;
+    return true;
+  }
+
+  function hasStableConversationUrl(url, provider) {
+    try {
+      const u = new URL(String(url || ''));
+      if (provider === 'chatgpt') return /\/c\/[\w-]+/i.test(u.pathname);
+      if (provider === 'gemini') return /\/app\/(?:conversation\/)?[^/?#]+/.test(u.pathname);
+      if (provider === 'deepseek') return /\/(sessions|s)\/[^/?#]+/.test(u.pathname);
+      if (provider === 'claude') return /\/chat\/[\w-]+/i.test(u.pathname);
+      return Boolean(u.pathname && u.pathname !== '/');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isConversationReadyForMirror(conversation) {
+    if (!conversation || !Array.isArray(conversation.messages) || conversation.messages.length === 0) return false;
+    if (!isUsefulConversationTitle(conversation.title)) return false;
+    if (!hasStableConversationUrl(conversation.url, conversation.provider)) return false;
+    return true;
+  }
+
+  async function syncConversation(conversation) {
+    try {
+      if (!isConversationReadyForMirror(conversation)) {
+        return { success: false, reason: 'conversation_not_ready' };
+      }
+
+      const available = await checkServerAvailability();
+      if (!available) {
+        return { success: false, reason: 'server_unavailable' };
+      }
+
+      return await sendToServer('/sync/conversations', {
+        project: PROJECT_NAME,
+        conversation: {
+          ...conversation,
+          project: PROJECT_NAME
+        }
+      });
+    } catch (error) {
+      console.warn('AutoSync: Conversation 同步失败:', error.message || error);
+      return { success: false, error: error.message || String(error) };
+    }
   }
 
   /**
@@ -342,9 +398,13 @@ const AutoSync = (function() {
   return {
     syncHistory,
     syncFavorites,
+    syncConversation,
     syncAll,
     enableAutoSync,
-    checkServerAvailability
+    checkServerAvailability,
+    isConversationReadyForMirror,
+    isUsefulConversationTitle,
+    hasStableConversationUrl
   };
 })();
 

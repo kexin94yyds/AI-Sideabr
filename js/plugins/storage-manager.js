@@ -9,6 +9,35 @@
   const DB_VERSION = 1;
   
   let db = null;
+  const mirrorTimers = new Map();
+
+  function queueConversationMirror(conversation) {
+    try {
+      if (typeof window === 'undefined' || typeof window.AutoSync?.syncConversation !== 'function') return;
+
+      const key = String(
+        conversation?.conversationId ||
+        conversation?.url ||
+        `${conversation?.provider || 'unknown'}:${conversation?.title || ''}`
+      );
+
+      if (!key) return;
+      clearTimeout(mirrorTimers.get(key));
+
+      const timer = setTimeout(async () => {
+        mirrorTimers.delete(key);
+        try {
+          await window.AutoSync.syncConversation(conversation);
+        } catch (error) {
+          console.warn('[AI Sidebar] Conversation markdown mirror failed:', error);
+        }
+      }, 400);
+
+      mirrorTimers.set(key, timer);
+    } catch (error) {
+      console.warn('[AI Sidebar] queueConversationMirror failed:', error);
+    }
+  }
 
   async function openDb() {
     if (db) return db;
@@ -64,7 +93,10 @@
           modifiedAt: Date.now()
         };
         const request = os.add(data);
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+          queueConversationMirror(data);
+          resolve(request.result);
+        };
         request.onerror = () => reject(request.error);
       }));
     },
@@ -75,9 +107,17 @@
         getRequest.onsuccess = () => {
           const existing = getRequest.result;
           if (!existing) return reject(new Error('Not found'));
-          const updated = { ...existing, ...updates, modifiedAt: Date.now() };
+          const updated = {
+            ...existing,
+            ...updates,
+            createdAt: existing.createdAt || updates.createdAt || Date.now(),
+            modifiedAt: Date.now()
+          };
           const putRequest = os.put(updated);
-          putRequest.onsuccess = () => resolve(updated);
+          putRequest.onsuccess = () => {
+            queueConversationMirror(updated);
+            resolve(updated);
+          };
           putRequest.onerror = () => reject(putRequest.error);
         };
         getRequest.onerror = () => reject(getRequest.error);
@@ -134,5 +174,6 @@
   if (typeof window !== 'undefined') {
     window.saveConversation = (data) => window.ChatHistoryDB.saveConversation(data);
     window.findDuplicate = (cid) => window.ChatHistoryDB.findByConversationId(cid);
+    window.updateConversation = (id, updates) => window.ChatHistoryDB.update(id, updates);
   }
 })();

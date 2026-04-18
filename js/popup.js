@@ -2162,8 +2162,11 @@ const initializeBar = async () => {
       
       // Save to Library Response (from sidebar button)
       if (data.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE') {
+        const isSilent = Boolean(data.meta?.silent);
         if (data.error) {
-          updateStatus(`Error: ${data.error}`, 'error');
+          const providerKey = String(data.meta?.provider || '');
+          if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+          if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.data) {
           try {
             const convData = {
@@ -2175,12 +2178,22 @@ const initializeBar = async () => {
             };
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              updateStatus(`✓ Saved to library`, 'success');
+              const providerKey = String(convData.provider || data.meta?.provider || '');
+              if (providerKey) {
+                const state = getAutoSaveState(providerKey);
+                state.inFlight = false;
+                state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
+                state.lastConversationId = String(convData.conversationId || '');
+                state.lastFingerprint = `${state.lastConversationId}|${state.lastMessageCount}|${convData.title || ''}`;
+              }
+              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
             } else {
-              updateStatus('Storage not available', 'error');
+              if (!isSilent) updateStatus('Storage not available', 'error');
             }
           } catch (err) {
-            updateStatus(`Error: ${err.message}`, 'error');
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+            if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
           }
         }
       }
@@ -2814,6 +2827,60 @@ const initializeBar = async () => {
 
 // (Global command message listener removed)
 
+const AUTO_SAVE_INTERVAL_MS = 12000;
+const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const autoSaveStateByProvider = Object.create(null);
+
+function getAutoSaveState(provider) {
+  if (!autoSaveStateByProvider[provider]) {
+    autoSaveStateByProvider[provider] = {
+      timer: null,
+      inFlight: false,
+      title: '',
+      href: '',
+      lastMessageCount: 0,
+      lastConversationId: '',
+      lastFingerprint: ''
+    };
+  }
+  return autoSaveStateByProvider[provider];
+}
+
+function canAutoSaveConversation(provider, href, title) {
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') return false;
+  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') return false;
+  return (
+    window.AutoSync.isUsefulConversationTitle(title) &&
+    window.AutoSync.hasStableConversationUrl(href, provider)
+  );
+}
+
+function requestSilentSaveToLibrary(provider) {
+  const state = getAutoSaveState(provider);
+  if (state.inFlight) return;
+
+  const frame = cachedFrames[provider];
+  if (!frame || !frame.contentWindow) return;
+  if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+
+  state.inFlight = true;
+  frame.contentWindow.postMessage({
+    type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+    meta: {
+      silent: true,
+      provider
+    }
+  }, '*');
+}
+
+function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
+  const state = getAutoSaveState(provider);
+  clearTimeout(state.timer);
+
+  if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+  state.timer = setTimeout(() => requestSilentSaveToLibrary(provider), delay);
+}
+
 // Also close panel on Escape (backdrop version handles outside clicks)
 try {
   document.addEventListener('keydown', (e) => {
@@ -2861,6 +2928,7 @@ try {
         }
       } catch (_) {}
       currentUrlByProvider[matchedKey] = data.href;
+      getAutoSaveState(matchedKey).href = data.href;
       // Save URL for restoration on next open
       saveProviderUrl(matchedKey, data.href);
 
@@ -2881,7 +2949,11 @@ try {
         }
       } catch (_) {}
       // Track last known title for this provider for better Add Current defaults
-      try { currentTitleByProvider[matchedKey] = data.title || ''; } catch (_) {}
+      try {
+        currentTitleByProvider[matchedKey] = data.title || '';
+        getAutoSaveState(matchedKey).title = data.title || '';
+        scheduleSilentSave(matchedKey);
+      } catch (_) {}
     }
   } catch (_) {}
 });
@@ -2926,6 +2998,19 @@ initializeBar();
       console.log('AutoSync: 同步服务器未运行，跳过自动同步', e);
     }
   }
+
+  setInterval(() => {
+    try {
+      const iframeContainer = document.getElementById('iframe');
+      const activeFrame = iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])');
+      const provider = activeFrame?.dataset?.provider;
+      if (!provider) return;
+
+      const state = getAutoSaveState(provider);
+      if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+      requestSilentSaveToLibrary(provider);
+    } catch (_) {}
+  }, AUTO_SAVE_INTERVAL_MS);
 })();
 
 // ============== 来自后台的消息与待处理队列 ==============
