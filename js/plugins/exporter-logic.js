@@ -560,19 +560,26 @@
           showStatus('Failed to capture chat data', 'error');
           return;
         }
-        
+
+        if (typeof window.saveConversation === 'function') {
+          await window.saveConversation(result.data);
+          showStatus('✓ Saved to library', 'success');
+          setTimeout(closePanel, 1500);
+          return;
+        }
+
         const saveData = {
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
           data: result.data,
           content: result.content
         };
-        
+
         // Try postMessage first (works if in sidebar iframe)
         if (window.parent !== window) {
           window.parent.postMessage(saveData, '*');
         }
-        
-        // Also send via chrome.runtime for standalone page usage
+
+        // Fallback to background queue only when storage manager is unavailable.
         if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
           try {
             chrome.runtime.sendMessage(saveData);
@@ -580,8 +587,8 @@
             console.log('[Exporter] runtime.sendMessage failed:', e);
           }
         }
-        
-        showStatus(`✓ Saved to library`, 'success');
+
+        showStatus('✓ Saved to library', 'success');
         setTimeout(closePanel, 1500);
       } catch (err) {
         showStatus(`Error: ${err.message}`, 'error');
