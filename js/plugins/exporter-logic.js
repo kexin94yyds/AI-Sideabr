@@ -398,6 +398,7 @@
   const PROJECT_NAME = 'AI-Sidebar';
   const AUTO_SAVE_INTERVAL_MS = 12000;
   const AUTO_SAVE_DEBOUNCE_MS = 1800;
+  const AUTO_SAVE_MUTATION_DEBOUNCE_MS = 900;
   const pageAutoSaveState = {
     timer: null,
     inFlight: false,
@@ -486,6 +487,8 @@
 
   function schedulePageAutoSave(delay = AUTO_SAVE_DEBOUNCE_MS) {
     clearTimeout(pageAutoSaveState.timer);
+    pageAutoSaveState.href = window.location.href;
+    pageAutoSaveState.title = document.title;
     const provider = detectProvider(window.location.hostname);
     const href = pageAutoSaveState.href || window.location.href;
     const title = pageAutoSaveState.title || document.title;
@@ -732,6 +735,27 @@
     pageAutoSaveState.href = window.location.href;
     pageAutoSaveState.title = document.title;
     schedulePageAutoSave(2500);
+
+    const observer = new MutationObserver(() => {
+      schedulePageAutoSave(AUTO_SAVE_MUTATION_DEBOUNCE_MS);
+    });
+
+    const startObserving = () => {
+      if (!document.body) return false;
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      return true;
+    };
+
+    if (!startObserving()) {
+      document.addEventListener('DOMContentLoaded', () => {
+        startObserving();
+      }, { once: true });
+    }
+
     setInterval(() => {
       autoSaveCurrentConversation().catch((error) => {
         console.warn('[Exporter] page auto-save interval failed:', error);
