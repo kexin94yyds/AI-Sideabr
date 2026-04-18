@@ -351,8 +351,11 @@
     const resolveNotebookLMHref = () => {
       try {
         if (location.hostname !== 'notebooklm.google.com') return null;
+        if (/\/notebook\/[^/?#]+/.test(location.pathname)) {
+          return location.href;
+        }
         // Prefer links containing /project/ or /c/
-        const a = deepFind(document, (el)=> el && el.tagName==='A' && /\/(project|c)\//.test(el.getAttribute('href')||''));
+        const a = deepFind(document, (el)=> el && el.tagName==='A' && /\/(notebook|project|c)\//.test(el.getAttribute('href')||''));
         if (a) {
           const h = a.getAttribute('href');
           return h.startsWith('http') ? h : new URL(h, location.origin).href;

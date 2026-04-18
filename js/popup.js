@@ -2176,16 +2176,28 @@ const initializeBar = async () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             };
+            const providerKey = String(convData.provider || data.meta?.provider || '');
+            if (providerKey) {
+              const state = getAutoSaveState(providerKey);
+              state.inFlight = false;
+              state.href = String(convData.url || state.href || '');
+              state.title = String(convData.title || state.title || '');
+
+              if (!canAutoSaveConversation(providerKey, state.href, state.title)) {
+                return;
+              }
+
+              const fingerprint = buildAutoSaveFingerprint(convData);
+              if (isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+                return;
+              }
+
+              state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
+              state.lastConversationId = String(convData.conversationId || '');
+              state.lastFingerprint = fingerprint;
+            }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              const providerKey = String(convData.provider || data.meta?.provider || '');
-              if (providerKey) {
-                const state = getAutoSaveState(providerKey);
-                state.inFlight = false;
-                state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
-                state.lastConversationId = String(convData.conversationId || '');
-                state.lastFingerprint = `${state.lastConversationId}|${state.lastMessageCount}|${convData.title || ''}`;
-              }
               if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
             } else {
               if (!isSilent) updateStatus('Storage not available', 'error');
