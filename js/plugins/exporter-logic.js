@@ -259,6 +259,14 @@
   // ============================================================================
   window.addEventListener('message', async (event) => {
     const data = event.data || {};
+
+    if (data.type === 'ai-url-changed') {
+      if (window.top !== window) return;
+      pageAutoSaveState.href = String(data.href || window.location.href || '');
+      pageAutoSaveState.title = String(data.title || document.title || '');
+      schedulePageAutoSave();
+      return;
+    }
     
     // Quick Export
     if (data.type === 'AI_SIDEBAR_EXPORT_REQUEST') {
@@ -388,6 +396,15 @@
   // ============================================================================
   const PANEL_ID = 'ai-sidebar-export-panel';
   const PROJECT_NAME = 'AI-Sidebar';
+  const AUTO_SAVE_INTERVAL_MS = 12000;
+  const AUTO_SAVE_DEBOUNCE_MS = 1800;
+  const pageAutoSaveState = {
+    timer: null,
+    inFlight: false,
+    title: '',
+    href: '',
+    lastFingerprint: ''
+  };
 
   async function syncSavedConversationToNativeHost(conversation) {
     if (!conversation || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
@@ -404,6 +421,81 @@
     } catch (error) {
       console.warn('[Exporter] native mirror sync failed:', error);
     }
+  }
+
+  function isUsefulConversationTitle(title) {
+    const value = String(title || '').trim();
+    if (!value) return false;
+
+    const normalized = value.toLowerCase();
+    if (normalized.length < 4) return false;
+    if (/^(new\s*chat|chatgpt|gemini|deepseek|claude|ai|conversation with gemini)$/i.test(normalized)) return false;
+    if (/^(新聊天|新对话|最近|recent)$/i.test(value)) return false;
+    return true;
+  }
+
+  function hasStableConversationUrl(url, provider) {
+    try {
+      const u = new URL(String(url || ''));
+      if (provider === 'chatgpt') return /\/c\/[\w-]+/i.test(u.pathname);
+      if (provider === 'gemini') return /\/app\/(?:conversation\/)?[^/?#]+/.test(u.pathname);
+      if (provider === 'deepseek') return /\/(sessions|s)\/[^/?#]+/.test(u.pathname);
+      if (provider === 'claude') return /\/chat\/[\w-]+/i.test(u.pathname);
+      return Boolean(u.pathname && u.pathname !== '/');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function canAutoSaveCurrentPage(provider, href, title) {
+    if (window.top !== window) return false;
+    if (typeof window.saveConversation !== 'function') return false;
+    return isUsefulConversationTitle(title) && hasStableConversationUrl(href, provider);
+  }
+
+  async function autoSaveCurrentConversation(force = false) {
+    if (window.top !== window) return { ok: false, reason: 'not_top_window' };
+    if (pageAutoSaveState.inFlight) return { ok: false, reason: 'in_flight' };
+
+    const provider = detectProvider(window.location.hostname);
+    const href = pageAutoSaveState.href || window.location.href;
+    const title = pageAutoSaveState.title || document.title;
+    if (!canAutoSaveCurrentPage(provider, href, title)) {
+      return { ok: false, reason: 'conversation_not_ready' };
+    }
+
+    pageAutoSaveState.inFlight = true;
+    try {
+      const result = window.exportChatToMarkdown();
+      if (!result?.data) return { ok: false, reason: 'export_failed' };
+
+      const messageCount = Number(result.data.messageCount || result.data.messages?.length || 0);
+      const fingerprint = `${result.data.conversationId || href}|${messageCount}|${result.data.title || title}`;
+      if (!force && fingerprint === pageAutoSaveState.lastFingerprint) {
+        return { ok: false, reason: 'unchanged' };
+      }
+
+      await window.saveConversation(result.data);
+      await syncSavedConversationToNativeHost(result.data);
+      pageAutoSaveState.lastFingerprint = fingerprint;
+      return { ok: true, fingerprint };
+    } finally {
+      pageAutoSaveState.inFlight = false;
+    }
+  }
+
+  function schedulePageAutoSave(delay = AUTO_SAVE_DEBOUNCE_MS) {
+    clearTimeout(pageAutoSaveState.timer);
+    const provider = detectProvider(window.location.hostname);
+    const href = pageAutoSaveState.href || window.location.href;
+    const title = pageAutoSaveState.title || document.title;
+    if (!canAutoSaveCurrentPage(provider, href, title)) return;
+
+    pageAutoSaveState.timer = setTimeout(() => {
+      autoSaveCurrentConversation().catch((error) => {
+        console.warn('[Exporter] page auto-save failed:', error);
+      });
+    }, delay);
   }
   
   const createExportPanel = () => {
