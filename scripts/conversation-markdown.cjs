@@ -152,6 +152,61 @@ function formatConversationMessages(messages) {
     .join('\n\n');
 }
 
+function isNotebookLmNoiseMessage(content) {
+  const value = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!value) return true;
+  if (value === 'Loading' || value === '(1)') return true;
+  return /Processing material|Chat history is now saved across sessions|Jump to bottom|Light mode|Dark mode|Device theme|Good response|Bad response|Generate an AI|Generate reports based on your sources|Infinite Curiosity|Click to open citation details/i.test(value);
+}
+
+function looksLikeNotebookLmQuestion(content) {
+  const value = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!value || value.length > 140) return false;
+  return /[?？]$/.test(value) || /^(为什么|怎么|如何|它是怎么|达芬奇|莱昂纳多)/.test(value);
+}
+
+function normalizeNotebookLmMessages(messages) {
+  const cleaned = [];
+
+  for (const raw of Array.isArray(messages) ? messages : []) {
+    const role = String(raw?.role || '').trim() || 'Assistant';
+    const content = String(raw?.content || '').trim();
+    if (!content || isNotebookLmNoiseMessage(content)) continue;
+
+    const prev = cleaned[cleaned.length - 1];
+    if (prev && prev.content === content) continue;
+
+    cleaned.push({ role, content });
+  }
+
+  return cleaned.map((message, index, arr) => {
+    const next = arr[index + 1];
+    if (
+      message.role === 'Assistant' &&
+      looksLikeNotebookLmQuestion(message.content) &&
+      next &&
+      next.role === 'Assistant' &&
+      next.content.length > Math.max(message.content.length * 2, 160)
+    ) {
+      return { role: 'User', content: message.content };
+    }
+
+    return message;
+  });
+}
+
+function normalizeConversationForMarkdown(conversation) {
+  const provider = String(conversation?.provider || '').trim().toLowerCase();
+  if (provider !== 'notebooklm') return conversation;
+
+  const nextMessages = normalizeNotebookLmMessages(conversation.messages);
+  return {
+    ...conversation,
+    messages: nextMessages,
+    messageCount: nextMessages.length
+  };
+}
+
 function formatProviderLabel(providerName) {
   const normalized = String(providerName || 'unknown').trim().toLowerCase();
   const labels = {
@@ -203,6 +258,7 @@ function buildConversationBlock(projectName, conversation) {
 }
 
 function upsertConversationMarkdown(projectName, conversation, options = {}) {
+  conversation = normalizeConversationForMarkdown(conversation);
   const baseDir = getMarkdownBaseDir(options);
   const documentTitle = getConversationDocumentTitle(projectName, conversation);
   const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
