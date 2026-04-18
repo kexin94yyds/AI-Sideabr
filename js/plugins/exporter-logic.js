@@ -124,6 +124,69 @@
     }
   }
 
+  function isNotebookLmNoiseMessage(content) {
+    const value = String(content || '').replace(/\s+/g, ' ').trim();
+    if (!value) return true;
+    if (value === 'Loading' || value === '(1)') return true;
+    return /Chat history is now saved across sessions|Jump to bottom|Light mode|Dark mode|Device theme|Good response|Bad response|CopyGood response|Copy model response|Generate an AI|Generate reports based on your sources|Infinite Curiosity|Click to open citation details/i.test(value);
+  }
+
+  function looksLikeNotebookLmQuestion(content) {
+    const value = String(content || '').replace(/\s+/g, ' ').trim();
+    if (!value) return false;
+    if (value.length > 140) return false;
+    return /[?？]$/.test(value) || /^(为什么|怎么|如何|它是怎么|达芬奇|莱昂纳多)/.test(value);
+  }
+
+  function normalizeNotebookLmMessages(messages) {
+    const cleaned = [];
+
+    for (const raw of Array.isArray(messages) ? messages : []) {
+      const role = String(raw?.role || '').trim() || 'Assistant';
+      const content = String(raw?.content || '').trim();
+      if (!content || isNotebookLmNoiseMessage(content)) continue;
+
+      const prev = cleaned[cleaned.length - 1];
+      if (prev && prev.content === content) {
+        continue;
+      }
+
+      cleaned.push({ role, content });
+    }
+
+    return cleaned.map((message, index, arr) => {
+      const next = arr[index + 1];
+      if (
+        message.role === 'Assistant' &&
+        looksLikeNotebookLmQuestion(message.content) &&
+        next &&
+        next.role === 'Assistant' &&
+        next.content.length > Math.max(message.content.length * 2, 160)
+      ) {
+        return { role: 'User', content: message.content };
+      }
+
+      return message;
+    });
+  }
+
+  function finalizeMessages(provider, messages) {
+    if (provider === 'notebooklm') {
+      return normalizeNotebookLmMessages(messages);
+    }
+
+    const final = [];
+    const seen = new Set();
+    messages.forEach(m => {
+      const key = `${m.role}:${m.content.substring(0, 100)}`;
+      if (!seen.has(key)) {
+        final.push(m);
+        seen.add(key);
+      }
+    });
+    return final;
+  }
+
   // ============================================================================
   // Main
   // ============================================================================
@@ -216,13 +279,8 @@
          });
     }
 
-    // 5. Deduplicate & Return
-    const final = [];
-    const seen = new Set();
-    messages.forEach(m => {
-      const key = `${m.role}:${m.content.substring(0, 100)}`;
-      if (!seen.has(key)) { final.push(m); seen.add(key); }
-    });
+    // 5. Normalize & Return
+    const final = finalizeMessages(provider, messages);
 
     if (final.length === 0) {
       console.error('[AI Chat Exporter] FAILED. Platform:', host, 'DOM Size:', all.length);
