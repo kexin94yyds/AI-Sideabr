@@ -2831,6 +2831,17 @@ const AUTO_SAVE_INTERVAL_MS = 12000;
 const AUTO_SAVE_DEBOUNCE_MS = 1800;
 const autoSaveStateByProvider = Object.create(null);
 
+function buildAutoSaveFingerprint(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const messageCount = Number(conversation?.messageCount || messages.length || 0);
+  const stableKey = String(conversation?.conversationId || conversation?.url || '');
+  const lastMessage = messages[messages.length - 1] || null;
+  const lastRole = String(lastMessage?.role || '').trim();
+  const lastContent = String(lastMessage?.content || '').trim();
+  const lastTail = lastContent.slice(-120);
+  return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || ''}`;
+}
+
 function getAutoSaveState(provider) {
   if (!autoSaveStateByProvider[provider]) {
     autoSaveStateByProvider[provider] = {
@@ -2861,7 +2872,6 @@ function requestSilentSaveToLibrary(provider) {
 
   const frame = cachedFrames[provider];
   if (!frame || !frame.contentWindow) return;
-  if (!canAutoSaveConversation(provider, state.href, state.title)) return;
 
   state.inFlight = true;
   frame.contentWindow.postMessage({
