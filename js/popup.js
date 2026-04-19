@@ -3208,6 +3208,14 @@ initializeBar();
           showExporterPanelInActiveFrame();
           return;
         }
+        if (message.type === 'AISB_SHOW_EXPORT_PANEL_IF_FOCUSED') {
+          const handled = document.hasFocus();
+          if (handled) {
+            showExporterPanelInActiveFrame();
+          }
+          try { sendResponse({ handled }); } catch (_) {}
+          return;
+        }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入
         if (message.type === 'aisb.request-frame-selection') {
           const target = getActiveProviderFrame();

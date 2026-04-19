@@ -520,8 +520,26 @@ try {
 
 async function handleExportChat() {
   try {
-    await deliverToSidePanel({ type: 'AISB_SHOW_EXPORT_PANEL' }, 'aisbPendingExportPanel');
-    await openSidePanelForCurrentWindow();
+    const sidePanelHandled = await new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'AISB_SHOW_EXPORT_PANEL_IF_FOCUSED' }, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(!!response?.handled);
+        });
+      } catch (_) {
+        resolve(false);
+      }
+    });
+
+    if (sidePanelHandled) return;
+
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
+    }
   } catch (e) {
     console.error('[AI Sidebar] Export chat error:', e);
   }
