@@ -554,10 +554,10 @@
   };
 
   async function syncSavedConversationToNativeHost(conversation) {
-    if (!conversation || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
+    if (!conversation || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return false;
 
     try {
-      await chrome.runtime.sendMessage({
+      const response = await chrome.runtime.sendMessage({
         type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
         project: PROJECT_NAME,
         conversation: {
@@ -565,8 +565,10 @@
           project: PROJECT_NAME
         }
       });
+      return response?.ok !== false && response?.result?.success !== false;
     } catch (error) {
       console.warn('[Exporter] native mirror sync failed:', error);
+      return false;
     }
   }
 
