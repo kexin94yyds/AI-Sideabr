@@ -377,7 +377,7 @@
     }
 
     if (data.type === 'AISB_SHOW_EXPORT_PANEL') {
-      toggleExportPanel();
+      showExportPanel();
       return;
     }
     
@@ -841,9 +841,15 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       e.stopPropagation();
-      toggleExportPanel();
+      showExportPanel();
     }
   }, true);
+
+  const showExportPanel = () => {
+    if (!document.getElementById(PANEL_ID)) {
+      createExportPanel();
+    }
+  };
 
   const toggleExportPanel = () => {
     const existing = document.getElementById(PANEL_ID);
@@ -891,7 +897,7 @@
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === 'AISB_SHOW_EXPORT_PANEL') {
-        toggleExportPanel();
+        showExportPanel();
       }
     });
   }
