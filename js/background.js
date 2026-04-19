@@ -37,6 +37,7 @@ const DNR_CONFIG = {
 };
 
 const NATIVE_HOST_NAME = 'com.aisidebar.bridge';
+let lastShortcutTarget = { surface: '', tabId: null, at: 0 };
 
 // 生成DNR规则的工厂函数
 function createDnrRules() {
@@ -170,6 +171,15 @@ chrome.cookies.onChanged.addListener((change) => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
+      if (msg && msg.type === 'AISB_SHORTCUT_TARGET') {
+        lastShortcutTarget = {
+          surface: String(msg.surface || ''),
+          tabId: sender?.tab?.id || null,
+          at: Date.now()
+        };
+        sendResponse({ ok: true });
+        return;
+      }
       if (msg && msg.type === 'AI_SIDEBAR_NATIVE_HOST_PING') {
         const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, { type: 'ping' });
         sendResponse({ ok: true, result });
@@ -520,7 +530,7 @@ try {
 
 async function handleExportChat() {
   try {
-    const sidePanelHandled = await new Promise((resolve) => {
+    const requestSidePanelShortcut = () => new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED' }, (response) => {
           if (chrome.runtime.lastError) {
@@ -534,12 +544,12 @@ async function handleExportChat() {
       }
     });
 
-    if (sidePanelHandled) return;
-
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
+    const sendShortcutToActiveTab = async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return false;
       try {
         await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' });
+        return true;
       } catch (sendError) {
         await deliverToSidePanel({
           type: 'aisb.notify',
@@ -547,8 +557,24 @@ async function handleExportChat() {
           text: '当前页面没有可用的导出脚本，请切换到支持的 AI 聊天页面后再试。'
         }, 'aisbPendingNotify');
         await openSidePanelForCurrentWindow();
+        return false;
       }
+    };
+
+    const recentTarget = Date.now() - Number(lastShortcutTarget.at || 0) < 8000
+      ? lastShortcutTarget.surface
+      : '';
+
+    if (recentTarget === 'page') {
+      if (await sendShortcutToActiveTab()) return;
     }
+
+    if (recentTarget === 'sidepanel') {
+      if (await requestSidePanelShortcut()) return;
+    }
+
+    if (await requestSidePanelShortcut()) return;
+    await sendShortcutToActiveTab();
   } catch (e) {
     console.error('[AI Sidebar] Export chat error:', e);
   }

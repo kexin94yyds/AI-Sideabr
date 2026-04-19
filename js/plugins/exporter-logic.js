@@ -365,6 +365,19 @@
   // ============================================================================
   // Communication Bridge for AI-Sidebar
   // ============================================================================
+  const markShortcutTarget = () => {
+    try {
+      if (window.top === window) {
+        chrome.runtime?.sendMessage?.({ type: 'AISB_SHORTCUT_TARGET', surface: 'page' });
+      } else if (window.parent !== window) {
+        window.parent.postMessage({ type: 'AISB_SHORTCUT_TARGET' }, '*');
+      }
+    } catch (_) {}
+  };
+
+  try { document.addEventListener('pointerdown', markShortcutTarget, true); } catch (_) {}
+  try { window.addEventListener('focus', markShortcutTarget, true); } catch (_) {}
+
   window.addEventListener('message', async (event) => {
     const data = event.data || {};
 

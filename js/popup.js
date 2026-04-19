@@ -1478,6 +1478,9 @@ let __providerFrameShortcutArmed = false;
 
 const armProviderFrameShortcut = () => {
   __providerFrameShortcutArmed = true;
+  try {
+    chrome.runtime?.sendMessage({ type: 'AISB_SHORTCUT_TARGET', surface: 'sidepanel' });
+  } catch (_) {}
 };
 
 try {
@@ -2987,6 +2990,19 @@ try {
     try {
       const data = event.data || {};
       if (!data || !data.type) return;
+      if (data.type === 'AISB_SHORTCUT_TARGET') {
+        let matched = false;
+        for (const el of Object.values(cachedFrames)) {
+          try {
+            if (el && el.contentWindow === event.source) {
+              matched = true;
+              break;
+            }
+          } catch (_) {}
+        }
+        if (matched) armProviderFrameShortcut();
+        return;
+      }
       if (data.type === 'ai-tab-cycle') {
         const dir = (data.dir === 'prev') ? -1 : 1;
         // When message comes from iframe, don't focus the frame after switching
