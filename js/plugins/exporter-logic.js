@@ -380,6 +380,11 @@
       showExportPanel();
       return;
     }
+
+    if (data.type === 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL') {
+      await shortcutSaveToggleExportPanel();
+      return;
+    }
     
     // Quick Export
     if (data.type === 'AI_SIDEBAR_EXPORT_REQUEST') {
@@ -861,6 +866,84 @@
     }
   };
 
+  let shortcutToggleAt = 0;
+
+  async function saveCurrentConversationFromShortcut() {
+    const panel = document.getElementById(PANEL_ID);
+    const statusEl = panel?.querySelector('.ep-status');
+    const setStatus = (message, type = 'info') => {
+      if (!statusEl) return;
+      statusEl.textContent = message;
+      statusEl.className = `ep-status ${type}`;
+    };
+
+    setStatus('Saving to history...', 'info');
+
+    try {
+      const result = window.exportChatToMarkdown();
+      if (!result?.data) {
+        setStatus('Failed to capture chat data', 'error');
+        return;
+      }
+
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
+          data: result.data,
+          content: result.content,
+          meta: { shortcut: true }
+        }, '*');
+        setStatus('✓ Saved to history', 'success');
+        return;
+      }
+
+      if (typeof autoSaveCurrentConversation === 'function') {
+        const saved = await autoSaveCurrentConversation(true);
+        if (saved?.ok) {
+          setStatus('✓ Saved to history & folder', 'success');
+          return;
+        }
+      }
+
+      if (typeof window.saveConversation === 'function') {
+        await window.saveConversation(result.data);
+        await syncSavedConversationToNativeHost(result.data);
+        setStatus('✓ Saved to history & folder', 'success');
+        return;
+      }
+
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        await chrome.runtime.sendMessage({
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
+          data: result.data,
+          content: result.content
+        });
+        setStatus('✓ Save queued', 'success');
+        return;
+      }
+
+      setStatus('Storage not available', 'error');
+    } catch (error) {
+      setStatus(`Error: ${error.message}`, 'error');
+    }
+  }
+
+  async function shortcutSaveToggleExportPanel() {
+    const now = Date.now();
+    if (now - shortcutToggleAt < 300) return;
+    shortcutToggleAt = now;
+
+    const existing = document.getElementById(PANEL_ID);
+    if (existing) {
+      existing.remove();
+      document.getElementById(`${PANEL_ID}-backdrop`)?.remove();
+      return;
+    }
+
+    createExportPanel();
+    await saveCurrentConversationFromShortcut();
+  }
+
   if (window.top === window) {
     pageAutoSaveState.href = window.location.href;
     pageAutoSaveState.title = document.title;
@@ -899,6 +982,10 @@
       if (msg.type === 'AISB_SHOW_EXPORT_PANEL') {
         if (window.top !== window && !document.hasFocus()) return;
         showExportPanel();
+      }
+      if (msg.type === 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL') {
+        if (window.top !== window && !document.hasFocus()) return;
+        shortcutSaveToggleExportPanel();
       }
     });
   }

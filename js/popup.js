@@ -2279,7 +2279,7 @@ const initializeBar = async () => {
         updateStatus('No active chat found.', 'error');
         return;
       }
-      frame.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+      frame.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*');
     };
 
     document.addEventListener('keydown', (e) => {
@@ -3252,10 +3252,11 @@ initializeBar();
           showExporterPanelInActiveFrame();
           return;
         }
-        if (message.type === 'AISB_SHOW_EXPORT_PANEL_IF_FOCUSED') {
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
           const handled = isActiveProviderFrameFocused();
           if (handled) {
-            showExporterPanelInActiveFrame();
+            const target = getActiveProviderFrame();
+            try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
           }
           try { sendResponse({ handled }); } catch (_) {}
           return;

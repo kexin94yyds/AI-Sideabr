@@ -522,7 +522,7 @@ async function handleExportChat() {
   try {
     const sidePanelHandled = await new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: 'AISB_SHOW_EXPORT_PANEL_IF_FOCUSED' }, (response) => {
+        chrome.runtime.sendMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED' }, (response) => {
           if (chrome.runtime.lastError) {
             resolve(false);
             return;
@@ -539,7 +539,7 @@ async function handleExportChat() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
       try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
+        await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' });
       } catch (sendError) {
         await deliverToSidePanel({
           type: 'aisb.notify',
