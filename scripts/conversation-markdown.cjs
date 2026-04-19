@@ -115,13 +115,12 @@ function buildConversationBlockId(conversation) {
   return crypto.createHash('sha1').update(source).digest('hex').slice(0, 12);
 }
 
-function findExistingConversationFile(dayDir, blockId, legacyTitle) {
-  if (!fs.existsSync(dayDir)) return null;
-
+function findExistingConversationFileInDir(dirPath, blockId, legacyTitle) {
+  if (!fs.existsSync(dirPath)) return null;
   const markerStart = `<!-- AI_SIDEBAR_BLOCK:${blockId}:START -->`;
-  for (const entry of fs.readdirSync(dayDir, { withFileTypes: true })) {
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
     if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
-    const candidatePath = path.join(dayDir, entry.name);
+    const candidatePath = path.join(dirPath, entry.name);
     try {
       const content = fs.readFileSync(candidatePath, 'utf8');
       if (content.includes(markerStart)) {
@@ -131,10 +130,26 @@ function findExistingConversationFile(dayDir, blockId, legacyTitle) {
   }
 
   if (legacyTitle) {
-    const legacyPath = path.join(dayDir, `${legacyTitle}.md`);
+    const legacyPath = path.join(dirPath, `${legacyTitle}.md`);
     if (fs.existsSync(legacyPath)) {
       return legacyPath;
     }
+  }
+
+  return null;
+}
+
+function findExistingConversationFile(baseDir, dayDir, blockId, legacyTitle) {
+  const inCurrentDay = findExistingConversationFileInDir(dayDir, blockId, legacyTitle);
+  if (inCurrentDay) return inCurrentDay;
+  if (!fs.existsSync(baseDir)) return null;
+
+  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const candidateDir = path.join(baseDir, entry.name);
+    if (candidateDir === dayDir) continue;
+    const found = findExistingConversationFileInDir(candidateDir, blockId, legacyTitle);
+    if (found) return found;
   }
 
   return null;
@@ -264,7 +279,7 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
   const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
   const dayDir = path.join(baseDir, dateKey);
   const { blockId, content } = buildConversationBlock(projectName, conversation);
-  const existingFilePath = findExistingConversationFile(dayDir, blockId, documentTitle);
+  const existingFilePath = findExistingConversationFile(baseDir, dayDir, blockId, documentTitle);
   const projectFileName = `${blockId}-${documentTitle}.md`;
   const filePath = existingFilePath || path.join(dayDir, projectFileName);
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
