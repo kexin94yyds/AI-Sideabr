@@ -176,15 +176,48 @@
     }
 
     const final = [];
-    const seen = new Set();
+    const seen = new Map();
     messages.forEach(m => {
-      const key = `${m.role}:${m.content.substring(0, 100)}`;
-      if (!seen.has(key)) {
+      const key = normalizeDuplicateMessageKey(m.content);
+      if (!key) return;
+      const existingIndex = seen.get(key);
+      if (existingIndex === undefined) {
+        seen.set(key, final.length);
         final.push(m);
-        seen.add(key);
+        return;
+      }
+
+      const preferred = choosePreferredDuplicateMessage(final[existingIndex], m);
+      if (preferred !== final[existingIndex]) {
+        final[existingIndex] = preferred;
       }
     });
     return final;
+  }
+
+  function normalizeDuplicateMessageKey(content) {
+    return String(content || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 2000);
+  }
+
+  function looksLikeUserPrompt(content) {
+    const value = String(content || '').replace(/\s+/g, ' ').trim();
+    if (!value) return false;
+    if (/[?？]$/.test(value)) return true;
+    if (value.length <= 180 && /^(那|请|帮我|你|我们|怎么|如何|为什么|能不能|是否|如果)/.test(value)) return true;
+    return false;
+  }
+
+  function choosePreferredDuplicateMessage(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    if (a.role === b.role) return a;
+    const preferUser = looksLikeUserPrompt(a.content || b.content);
+    const wantedRole = preferUser ? 'User' : 'Assistant';
+    if (b.role === wantedRole) return b;
+    return a;
   }
 
   // ============================================================================
