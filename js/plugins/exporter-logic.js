@@ -398,6 +398,21 @@
       await shortcutSaveToggleExportPanel();
       return;
     }
+
+    if (data.type === 'AI_SIDEBAR_SHORTCUT_SAVE_ACK') {
+      const panel = document.getElementById(PANEL_ID);
+      const statusEl = panel?.querySelector('.ep-status');
+      if (statusEl) {
+        if (data.ok) {
+          statusEl.textContent = '✓ Saved to history; folder sync queued';
+          statusEl.className = 'ep-status success';
+        } else {
+          statusEl.textContent = `Save failed: ${data.error || 'Unknown error'}`;
+          statusEl.className = 'ep-status error';
+        }
+      }
+      return;
+    }
     
     // Quick Export
     if (data.type === 'AI_SIDEBAR_EXPORT_REQUEST') {
@@ -906,7 +921,7 @@
           content: result.content,
           meta: { shortcut: true }
         }, '*');
-        setStatus('✓ Saved to history & folder', 'success');
+        setStatus('Saving to history...', 'info');
         return;
       }
 
@@ -920,8 +935,8 @@
 
       if (typeof window.saveConversation === 'function') {
         await window.saveConversation(result.data);
-        await syncSavedConversationToNativeHost(result.data);
-        setStatus('✓ Saved to history & folder', 'success');
+        const mirrored = await syncSavedConversationToNativeHost(result.data);
+        setStatus(mirrored ? '✓ Saved to history & folder' : '✓ Saved to history; folder sync pending', 'success');
         return;
       }
 
@@ -943,7 +958,7 @@
 
   async function shortcutSaveToggleExportPanel() {
     const now = Date.now();
-    if (now - shortcutToggleAt < 300) return;
+    if (now - shortcutToggleAt < 1000) return;
     shortcutToggleAt = now;
 
     const existing = document.getElementById(PANEL_ID);

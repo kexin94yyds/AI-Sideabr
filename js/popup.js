@@ -2208,10 +2208,21 @@ const initializeBar = async () => {
       // Save to Library Response (from sidebar button)
       if (data.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE') {
         const isSilent = Boolean(data.meta?.silent);
+        const isManualSave = !isSilent || Boolean(data.meta?.shortcut);
+        const sendShortcutAck = (payload) => {
+          if (!data.meta?.shortcut) return;
+          try {
+            event.source?.postMessage({
+              type: 'AI_SIDEBAR_SHORTCUT_SAVE_ACK',
+              ...payload
+            }, event.origin);
+          } catch (_) {}
+        };
         if (data.error) {
           const providerKey = String(data.meta?.provider || '');
           if (providerKey) getAutoSaveState(providerKey).inFlight = false;
           if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
+          sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
           try {
             const convData = {
@@ -2228,12 +2239,12 @@ const initializeBar = async () => {
               state.href = String(convData.url || state.href || '');
               state.title = String(convData.title || state.title || '');
 
-              if (!canAutoSaveConversation(providerKey, state.href, state.title)) {
+              if (!isManualSave && !canAutoSaveConversation(providerKey, state.href, state.title)) {
                 return;
               }
 
               const fingerprint = buildAutoSaveFingerprint(convData);
-              if (isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+              if (!isManualSave && isSilent && fingerprint && fingerprint === state.lastFingerprint) {
                 return;
               }
 
@@ -2244,13 +2255,16 @@ const initializeBar = async () => {
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
               if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
+              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
               if (!isSilent) updateStatus('Storage not available', 'error');
+              sendShortcutAck({ ok: false, error: 'Storage not available' });
             }
           } catch (err) {
             const providerKey = String(data.data?.provider || data.meta?.provider || '');
             if (providerKey) getAutoSaveState(providerKey).inFlight = false;
             if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
+            sendShortcutAck({ ok: false, error: err.message });
           }
         }
       }
@@ -3629,6 +3643,7 @@ initializeBar();
   try {
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
+      const remaining = [];
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3641,13 +3656,15 @@ initializeBar();
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
+          } else {
+            remaining.push(item);
           }
         } catch (e) {
           console.error('[AI Sidebar] Failed to save queued item:', e);
+          remaining.push({ ...item, lastError: String(e), retryAt: Date.now() });
         }
       }
-      // Clear queue after processing
-      await chrome.storage.local.set({ __saveQueue: [] });
+      await chrome.storage.local.set({ __saveQueue: remaining });
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);

@@ -172,9 +172,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
       if (msg && msg.type === 'AISB_SHORTCUT_TARGET') {
+        const surface = String(msg.surface || '');
+        if (surface !== 'page' && surface !== 'sidepanel') {
+          sendResponse({ ok: false, error: 'invalid_surface' });
+          return;
+        }
+        if (surface === 'page' && !sender?.tab?.id) {
+          sendResponse({ ok: false, error: 'missing_tab' });
+          return;
+        }
         lastShortcutTarget = {
-          surface: String(msg.surface || ''),
+          surface,
           tabId: sender?.tab?.id || null,
+          windowId: sender?.tab?.windowId || null,
           at: Date.now()
         };
         sendResponse({ ok: true });
