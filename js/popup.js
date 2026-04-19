@@ -3085,7 +3085,21 @@ initializeBar();
 
   async function handlePendingFromStorage() {
     try {
-      const { aisbPendingInsert, aisbPendingScreenshot, aisbPendingNotify } = await chrome.storage?.local.get(['aisbPendingInsert','aisbPendingScreenshot','aisbPendingNotify']);
+      const {
+        aisbPendingExportPanel,
+        aisbPendingInsert,
+        aisbPendingScreenshot,
+        aisbPendingNotify
+      } = await chrome.storage?.local.get([
+        'aisbPendingExportPanel',
+        'aisbPendingInsert',
+        'aisbPendingScreenshot',
+        'aisbPendingNotify'
+      ]);
+      if (aisbPendingExportPanel) {
+        showExporterPanelInActiveFrame();
+        try { await chrome.storage?.local.remove(['aisbPendingExportPanel']); } catch (_) {}
+      }
       if (aisbPendingNotify && aisbPendingNotify.text) {
         toast(aisbPendingNotify.text, aisbPendingNotify.level || 'info');
         try { await chrome.storage?.local.remove(['aisbPendingNotify']); } catch (_) {}
@@ -3099,6 +3113,23 @@ initializeBar();
         try { await chrome.storage?.local.remove(['aisbPendingScreenshot']); } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  function showExporterPanelInActiveFrame() {
+    try {
+      const target = getActiveProviderFrame();
+      if (!target || !target.contentWindow) {
+        toast('未找到活动的 AI 面板。', 'warn');
+        return;
+      }
+      try { window.focus(); } catch (_) {}
+      try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
+      try { target.focus(); } catch (_) {}
+      try { target.contentWindow.focus(); } catch (_) {}
+      target.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+    } catch (e) {
+      toast('打开导出面板失败：' + String(e), 'error');
+    }
   }
 
   function routeInsertText(msg) {
@@ -3171,6 +3202,10 @@ initializeBar();
         }
         if (message.type === 'aisb.insert-text') {
           routeInsertText(message);
+          return;
+        }
+        if (message.type === 'AISB_SHOW_EXPORT_PANEL') {
+          showExporterPanelInActiveFrame();
           return;
         }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入

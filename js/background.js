@@ -418,7 +418,7 @@ async function deliverToSidePanel(message, fallbackKey) {
     try {
       await new Promise((resolve) => {
         chrome.runtime.sendMessage(message, () => {
-          responded = true;
+          responded = !chrome.runtime.lastError;
           resolve();
         });
       });
@@ -520,10 +520,8 @@ try {
 
 async function handleExportChat() {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
-    }
+    await deliverToSidePanel({ type: 'AISB_SHOW_EXPORT_PANEL' }, 'aisbPendingExportPanel');
+    await openSidePanelForCurrentWindow();
   } catch (e) {
     console.error('[AI Sidebar] Export chat error:', e);
   }
