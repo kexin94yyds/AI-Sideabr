@@ -893,7 +893,7 @@
           content: result.content,
           meta: { shortcut: true }
         }, '*');
-        setStatus('✓ Saved to history', 'success');
+        setStatus('✓ Saved to history & folder', 'success');
         return;
       }
 
