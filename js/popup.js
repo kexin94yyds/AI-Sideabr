@@ -2113,9 +2113,38 @@ const initializeBar = async () => {
       panel.style.display = 'none';
     });
 
+    const findProviderFrameBySource = (source) => {
+      for (const [key, frame] of Object.entries(cachedFrames)) {
+        try {
+          if (frame?.contentWindow === source) return { key, frame };
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const isTrustedProviderMessage = (event) => {
+      const match = findProviderFrameBySource(event.source);
+      if (!match) return false;
+
+      const expectedOrigins = new Set();
+      try {
+        const origin = cachedFrameMeta[match.key]?.origin;
+        if (origin) expectedOrigins.add(origin);
+      } catch (_) {}
+      try {
+        const currentUrl = currentUrlByProvider[match.key];
+        if (currentUrl) expectedOrigins.add(new URL(currentUrl).origin);
+      } catch (_) {}
+
+      return expectedOrigins.size === 0 || expectedOrigins.has(event.origin);
+    };
+
     // Handle export responses from iframe
     window.addEventListener('message', async (event) => {
       const data = event.data || {};
+      if (String(data.type || '').startsWith('AI_SIDEBAR_') && !isTrustedProviderMessage(event)) {
+        return;
+      }
       
       // Quick Export Response
       if (data.type === 'AI_SIDEBAR_EXPORT_RESPONSE') {
@@ -2239,10 +2268,13 @@ const initializeBar = async () => {
     const getProviderSync = () => __currentProviderSync;
     updateProviderSync();
 
+    const getVisibleProviderFrame = () => {
+      const iframeContainer = document.getElementById('iframe');
+      return iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])') || null;
+    };
+
     const showExporterPanelInCurrentFrame = async () => {
-      const provider = await getProvider();
-      await updateProviderSync();
-      const frame = cachedFrames[provider];
+      const frame = getVisibleProviderFrame();
       if (!frame || !frame.contentWindow) {
         updateStatus('No active chat found.', 'error');
         return;
@@ -2254,6 +2286,9 @@ const initializeBar = async () => {
       try {
         if (!(e.metaKey || e.ctrlKey)) return;
         if (e.shiftKey || e.altKey || e.key.toLowerCase() !== 's') return;
+        const target = e.target;
+        const tag = target?.tagName ? target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
         e.preventDefault();
         e.stopPropagation();
         showExporterPanelInCurrentFrame();
@@ -3132,6 +3167,15 @@ initializeBar();
     }
   }
 
+  function isActiveProviderFrameFocused() {
+    try {
+      const target = getActiveProviderFrame();
+      return !!target && document.activeElement === target;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function routeInsertText(msg) {
     try {
       const target = getActiveProviderFrame();
@@ -3209,7 +3253,7 @@ initializeBar();
           return;
         }
         if (message.type === 'AISB_SHOW_EXPORT_PANEL_IF_FOCUSED') {
-          const handled = document.hasFocus();
+          const handled = isActiveProviderFrameFocused();
           if (handled) {
             showExporterPanelInActiveFrame();
           }

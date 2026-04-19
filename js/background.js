@@ -538,7 +538,16 @@ async function handleExportChat() {
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.id) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
+      } catch (sendError) {
+        await deliverToSidePanel({
+          type: 'aisb.notify',
+          level: 'warn',
+          text: '当前页面没有可用的导出脚本，请切换到支持的 AI 聊天页面后再试。'
+        }, 'aisbPendingNotify');
+        await openSidePanelForCurrentWindow();
+      }
     }
   } catch (e) {
     console.error('[AI Sidebar] Export chat error:', e);

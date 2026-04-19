@@ -897,6 +897,7 @@
   if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === 'AISB_SHOW_EXPORT_PANEL') {
+        if (window.top !== window && !document.hasFocus()) return;
         showExportPanel();
       }
     });
