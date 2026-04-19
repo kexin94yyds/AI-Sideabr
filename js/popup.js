@@ -3176,6 +3176,25 @@ initializeBar();
     }
   }
 
+  function isEditableElement(element) {
+    try {
+      const tag = element?.tagName ? element.tagName.toLowerCase() : '';
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || !!element?.isContentEditable;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function shouldHandleSidePanelShortcut() {
+    try {
+      if (!document.hasFocus()) return false;
+      if (isEditableElement(document.activeElement)) return false;
+      return !!getActiveProviderFrame();
+    } catch (_) {
+      return false;
+    }
+  }
+
   function routeInsertText(msg) {
     try {
       const target = getActiveProviderFrame();
@@ -3253,7 +3272,7 @@ initializeBar();
           return;
         }
         if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
-          const handled = isActiveProviderFrameFocused();
+          const handled = isActiveProviderFrameFocused() || shouldHandleSidePanelShortcut();
           if (handled) {
             const target = getActiveProviderFrame();
             try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
