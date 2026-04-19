@@ -3311,6 +3311,16 @@ initializeBar();
           try { sendResponse({ handled }); } catch (_) {}
           return;
         }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL') {
+          const target = getActiveProviderFrame();
+          const handled = !!target?.contentWindow;
+          if (handled) {
+            armProviderFrameShortcut();
+            try { target.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
+          return;
+        }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入
         if (message.type === 'aisb.request-frame-selection') {
           const target = getActiveProviderFrame();

@@ -530,9 +530,11 @@ try {
 
 async function handleExportChat() {
   try {
-    const requestSidePanelShortcut = () => new Promise((resolve) => {
+    const requestSidePanelShortcut = (force = false) => new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED' }, (response) => {
+        chrome.runtime.sendMessage({
+          type: force ? 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL' : 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED'
+        }, (response) => {
           if (chrome.runtime.lastError) {
             resolve(false);
             return;
@@ -570,7 +572,7 @@ async function handleExportChat() {
     }
 
     if (recentTarget === 'sidepanel') {
-      if (await requestSidePanelShortcut()) return;
+      if (await requestSidePanelShortcut(true)) return;
     }
 
     if (await requestSidePanelShortcut()) return;
