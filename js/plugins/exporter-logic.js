@@ -375,6 +375,11 @@
       schedulePageAutoSave();
       return;
     }
+
+    if (data.type === 'AISB_SHOW_EXPORT_PANEL') {
+      toggleExportPanel();
+      return;
+    }
     
     // Quick Export
     if (data.type === 'AI_SIDEBAR_EXPORT_REQUEST') {

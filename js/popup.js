@@ -2239,6 +2239,27 @@ const initializeBar = async () => {
     const getProviderSync = () => __currentProviderSync;
     updateProviderSync();
 
+    const showExporterPanelInCurrentFrame = async () => {
+      const provider = await getProvider();
+      await updateProviderSync();
+      const frame = cachedFrames[provider];
+      if (!frame || !frame.contentWindow) {
+        updateStatus('No active chat found.', 'error');
+        return;
+      }
+      frame.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+    };
+
+    document.addEventListener('keydown', (e) => {
+      try {
+        if (!(e.metaKey || e.ctrlKey)) return;
+        if (e.shiftKey || e.altKey || e.key.toLowerCase() !== 's') return;
+        e.preventDefault();
+        e.stopPropagation();
+        showExporterPanelInCurrentFrame();
+      } catch (_) {}
+    }, true);
+
     const runExport = async (format) => {
       updateStatus(`Exporting as ${format}...`, 'info');
       try {
