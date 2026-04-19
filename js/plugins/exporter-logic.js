@@ -846,7 +846,7 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       e.stopPropagation();
-      showExportPanel();
+      shortcutSaveToggleExportPanel();
     }
   }, true);
 
