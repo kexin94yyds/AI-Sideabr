@@ -1474,6 +1474,17 @@ const showOnlyFrame = (container, key) => {
 
 
 let __suppressNextFrameFocus = false; // when true, do not focus iframe/webview on switch (e.g., Tab cycling)
+let __providerFrameShortcutArmed = false;
+
+const armProviderFrameShortcut = () => {
+  __providerFrameShortcutArmed = true;
+};
+
+try {
+  window.addEventListener('blur', () => {
+    __providerFrameShortcutArmed = false;
+  }, true);
+} catch (_) {}
 
 const ensureFrame = async (container, key, provider) => {
   if (!cachedFrames[key]) {
@@ -1557,6 +1568,8 @@ const ensureFrame = async (container, key, provider) => {
         view.addEventListener('contentload', focusHandler);
       }
     }
+    try { view.addEventListener('focus', armProviderFrameShortcut, true); } catch (_) {}
+    try { view.addEventListener('pointerdown', armProviderFrameShortcut, true); } catch (_) {}
   }
   // hide message overlay if any
   const msg = document.getElementById('provider-msg');
@@ -2274,6 +2287,7 @@ const initializeBar = async () => {
     };
 
     const showExporterPanelInCurrentFrame = async () => {
+      armProviderFrameShortcut();
       const frame = getVisibleProviderFrame();
       if (!frame || !frame.contentWindow) {
         updateStatus('No active chat found.', 'error');
@@ -3189,7 +3203,7 @@ initializeBar();
     try {
       if (!document.hasFocus()) return false;
       if (isEditableElement(document.activeElement)) return false;
-      return !!getActiveProviderFrame();
+      return __providerFrameShortcutArmed && !!getActiveProviderFrame();
     } catch (_) {
       return false;
     }
@@ -3274,6 +3288,7 @@ initializeBar();
         if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
           const handled = isActiveProviderFrameFocused() || shouldHandleSidePanelShortcut();
           if (handled) {
+            armProviderFrameShortcut();
             const target = getActiveProviderFrame();
             try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
           }
