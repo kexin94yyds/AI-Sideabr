@@ -111,6 +111,42 @@
     return fallbackUrl;
   }
 
+  function resolveAspectResize(startSize, deltaX, deltaY, maxWidth, maxHeight) {
+    const aspectRatio = startSize.w > 0 && startSize.h > 0
+      ? startSize.w / startSize.h
+      : PANEL_DEFAULT_WIDTH / PANEL_DEFAULT_HEIGHT;
+    let width = startSize.w + deltaX;
+    let height = startSize.h + deltaY;
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      height = width / aspectRatio;
+    } else {
+      width = height * aspectRatio;
+    }
+
+    if (width > maxWidth) {
+      width = maxWidth;
+      height = width / aspectRatio;
+    }
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = height * aspectRatio;
+    }
+    if (width < PANEL_MIN_WIDTH) {
+      width = PANEL_MIN_WIDTH;
+      height = width / aspectRatio;
+    }
+    if (height < PANEL_MIN_HEIGHT) {
+      height = PANEL_MIN_HEIGHT;
+      width = height * aspectRatio;
+    }
+
+    return {
+      width: clamp(width, PANEL_MIN_WIDTH, maxWidth),
+      height: clamp(height, PANEL_MIN_HEIGHT, maxHeight)
+    };
+  }
+
   // 注入样式
   function injectStyles() {
     if (stylesInjected) return;
@@ -490,12 +526,21 @@
 
     document.addEventListener('mousemove', (e) => {
       if (!isResizing) return;
-      const newWidth = startSize.w + (e.clientX - startPos.x);
-      const newHeight = startSize.h + (e.clientY - startPos.y);
+      const deltaX = e.clientX - startPos.x;
+      const deltaY = e.clientY - startPos.y;
+      const newWidth = startSize.w + deltaX;
+      const newHeight = startSize.h + deltaY;
       const maxWidth = Math.max(PANEL_MIN_WIDTH, window.innerWidth - panel.offsetLeft - PANEL_VIEWPORT_MARGIN);
       const maxHeight = Math.max(PANEL_MIN_HEIGHT, window.innerHeight - panel.offsetTop - PANEL_VIEWPORT_MARGIN);
-      panel.style.width = clamp(newWidth, PANEL_MIN_WIDTH, maxWidth) + 'px';
-      panel.style.height = clamp(newHeight, PANEL_MIN_HEIGHT, maxHeight) + 'px';
+      const nextSize = e.shiftKey
+        ? resolveAspectResize(startSize, deltaX, deltaY, maxWidth, maxHeight)
+        : {
+            width: clamp(newWidth, PANEL_MIN_WIDTH, maxWidth),
+            height: clamp(newHeight, PANEL_MIN_HEIGHT, maxHeight)
+          };
+
+      panel.style.width = nextSize.width + 'px';
+      panel.style.height = nextSize.height + 'px';
       updatePanelCompactState(panel);
       clampPanelPosition(panel, panel.offsetLeft, panel.offsetTop);
     });
