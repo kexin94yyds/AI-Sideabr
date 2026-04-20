@@ -281,7 +281,7 @@ const getProvider = async () => {
 const setProvider = async (key) => {
   return new Promise((resolve) => {
     try {
-      chrome.storage?.local.set({ provider: key }, () => resolve());
+      chrome.storage?.local.set({ provider: key, currentProvider: key }, () => resolve());
     } catch (_) {
       resolve();
     }
@@ -2684,12 +2684,17 @@ const initializeBar = async () => {
         if (!granted) return;
       }
     } catch (_) {}
+
+    const providerUrl = (
+      currentUrlByProvider && currentUrlByProvider[currentProvider]
+    ) || await getProviderUrl(currentProvider);
     
     // Send message or inject script
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       try {
@@ -2701,7 +2706,8 @@ const initializeBar = async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, { 
               action: 'toggleParallelPanel',
-              provider: currentProvider 
+              provider: currentProvider,
+              providerUrl
             });
           } catch (e) {}
         }, 150);
