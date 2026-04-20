@@ -79,6 +79,38 @@
     });
   }
 
+  function configureProviderFrame(iframe) {
+    iframe.scrolling = 'auto';
+    iframe.frameBorder = '0';
+    iframe.allow = [
+      'fullscreen',
+      'clipboard-read',
+      'clipboard-write',
+      'geolocation',
+      'camera',
+      'microphone',
+      'display-capture',
+      'storage-access'
+    ].join('; ');
+  }
+
+  function resolveProviderUrl(providerKey, requestedUrl) {
+    const provider = PROVIDERS[providerKey];
+    const fallbackUrl = provider?.iframeUrl;
+    if (!fallbackUrl) return '';
+    if (!requestedUrl || typeof requestedUrl !== 'string') return fallbackUrl;
+
+    try {
+      const fallback = new URL(fallbackUrl);
+      const requested = new URL(requestedUrl);
+      if (requested.origin === fallback.origin) {
+        return requested.href;
+      }
+    } catch (_) {}
+
+    return fallbackUrl;
+  }
+
   // 注入样式
   function injectStyles() {
     if (stylesInjected) return;
@@ -332,7 +364,7 @@
   }
 
   // 创建面板
-  function createPanel(initialProvider = 'chatgpt') {
+  function createPanel(initialProvider = 'chatgpt', initialUrl = null) {
     injectStyles();
     
     const panelNumber = getNextPanelNumber();
@@ -375,7 +407,7 @@
     updatePanelCompactState(panel);
     clampPanelPosition(panel, panel.offsetLeft, panel.offsetTop);
     panel.classList.add('visible');
-    loadAI(panel, initialProvider);
+    loadAI(panel, initialProvider, initialUrl);
     
     return panel;
   }
@@ -482,7 +514,7 @@
   }
 
   // 加载 AI
-  function loadAI(panel, providerKey) {
+  function loadAI(panel, providerKey, requestedUrl = null) {
     const iframe = panel.querySelector('.panel-iframe');
     const loading = panel.querySelector('.loading-overlay');
     const status = panel.querySelector('.panel-status');
@@ -494,7 +526,8 @@
     const panelData = panels.find(p => p.element === panel);
     if (panelData) panelData.currentProvider = providerKey;
 
-    iframe.src = provider.iframeUrl;
+    configureProviderFrame(iframe);
+    iframe.src = resolveProviderUrl(providerKey, requestedUrl);
     loading.style.display = 'flex';
     status.textContent = `正在加载 ${provider.label}...`;
 
@@ -537,10 +570,10 @@
   }
 
   // 切换面板显示
-  function togglePanel(provider = 'chatgpt') {
+  function togglePanel(provider = 'chatgpt', providerUrl = null) {
     if (panels.length === 0) {
       // 使用传入的 provider 创建面板
-      createPanel(provider);
+      createPanel(provider, providerUrl);
       return true;
     } else {
       const anyVisible = panels.some(p => p.element.classList.contains('visible'));
@@ -560,13 +593,14 @@
       case 'toggleParallelPanel':
         // 使用传入的 provider，默认为 chatgpt
         const provider = request.provider || 'chatgpt';
-        const isVisible = togglePanel(provider);
-        sendResponse({ success: true, visible: isVisible, provider: provider });
+        const providerUrl = request.providerUrl || null;
+        const isVisible = togglePanel(provider, providerUrl);
+        sendResponse({ success: true, visible: isVisible, provider: provider, providerUrl: providerUrl });
         break;
 
       case 'createParallelPanel':
         const createProvider = request.provider || 'chatgpt';
-        createPanel(createProvider);
+        createPanel(createProvider, request.providerUrl || null);
         sendResponse({ success: true });
         break;
 
