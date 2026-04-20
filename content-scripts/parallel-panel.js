@@ -246,6 +246,8 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        cursor: move;
+        user-select: none;
       }
       .parallel-ai-panel.compact .panel-header {
         padding: 8px 10px;
@@ -266,15 +268,33 @@
         padding: 6px 10px;
       }
       .parallel-ai-panel.tiny .panel-title {
-        flex: 0 1 28px;
-        max-width: 28px;
+        flex: 0 0 20px;
+        max-width: 20px;
+      }
+      .parallel-ai-panel.tiny .panel-header {
+        padding: 6px;
+        gap: 4px;
+      }
+      .parallel-ai-panel.tiny .panel-actions {
+        gap: 3px;
       }
       .parallel-ai-panel.tiny .panel-select {
-        min-width: 68px;
-        max-width: 74px;
+        min-width: 58px;
+        max-width: 58px;
+        padding-inline: 3px;
+      }
+      .parallel-ai-panel.tiny .panel-btn {
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
+        padding: 0;
+      }
+      .parallel-ai-panel.tiny .panel-btn.add,
+      .parallel-ai-panel.tiny .panel-btn.close {
+        padding: 0;
       }
       .parallel-ai-panel.tiny .panel-btn.sync {
-        width: 28px;
+        width: 24px;
         padding: 0;
         overflow: hidden;
         text-indent: -999px;
@@ -367,6 +387,7 @@
     const addBtn = panel.querySelector('.panel-btn.add');
     const selectEl = panel.querySelector('.panel-select');
     const header = panel.querySelector('.drag-handle');
+    const statusBar = panel.querySelector('.panel-status');
     const resizeHandle = panel.querySelector('.resize-handle');
 
     // 平台选择变化
@@ -393,7 +414,7 @@
     let isDragging = false;
     let dragOffset = { x: 0, y: 0 };
 
-    header.addEventListener('mousedown', (e) => {
+    const startDrag = (e) => {
       if (e.button !== 0) return;
       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
       isDragging = true;
@@ -401,6 +422,10 @@
       dragOffset.y = e.clientY - panel.offsetTop;
       setPanelInteractionMode(panel, true, 'move');
       e.preventDefault();
+    };
+
+    [header, statusBar].filter(Boolean).forEach((handle) => {
+      handle.addEventListener('mousedown', startDrag);
     });
 
     document.addEventListener('mousemove', (e) => {
