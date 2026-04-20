@@ -43,6 +43,8 @@
   const PANEL_COMPACT_WIDTH = 280;
   const PANEL_TINY_WIDTH = 220;
   const PANEL_VIEWPORT_MARGIN = 8;
+  const LOAD_TIMEOUT_MS = 12000;
+  const LOGIN_HELP_PROVIDERS = new Set(['notebooklm', 'google', 'aistudio']);
 
   let panels = [];
   let panelCounter = 0;
@@ -262,6 +264,55 @@
         min-height: 0;
         overflow: hidden;
       }
+      .parallel-ai-panel .fallback-overlay {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        z-index: 3;
+        display: none;
+        gap: 8px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid rgba(203, 213, 225, 0.95);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+        color: #334155;
+        font-size: 12px;
+      }
+      .parallel-ai-panel .fallback-overlay.visible {
+        display: flex;
+      }
+      .parallel-ai-panel .fallback-message {
+        flex: 1;
+        min-width: 0;
+        line-height: 1.35;
+      }
+      .parallel-ai-panel .fallback-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .parallel-ai-panel .fallback-actions button {
+        height: 28px;
+        border: 1px solid #cbd5e1;
+        border-radius: 7px;
+        background: #ffffff;
+        color: #0f172a;
+        padding: 0 8px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .parallel-ai-panel .fallback-actions button:hover {
+        background: #f1f5f9;
+      }
+      .parallel-ai-panel .fallback-actions .fallback-primary {
+        border-color: #93c5fd;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
       .parallel-ai-panel .panel-iframe {
         width: 100%;
         height: 100%;
@@ -377,6 +428,16 @@
         justify-content: center;
         text-indent: 0;
       }
+      .parallel-ai-panel.tiny .fallback-overlay {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .parallel-ai-panel.tiny .fallback-actions {
+        justify-content: flex-end;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -431,6 +492,14 @@
           <span class="loading-text">加载中...</span>
         </div>
         <iframe class="panel-iframe"></iframe>
+        <div class="fallback-overlay" aria-live="polite">
+          <div class="fallback-message"></div>
+          <div class="fallback-actions">
+            <button class="fallback-open fallback-primary" type="button">新标签页登录</button>
+            <button class="fallback-reload" type="button">刷新</button>
+            <button class="fallback-close" type="button" aria-label="关闭提示">×</button>
+          </div>
+        </div>
       </div>
       <div class="panel-status">就绪</div>
       <div class="resize-handle"></div>
@@ -457,6 +526,10 @@
     const header = panel.querySelector('.drag-handle');
     const statusBar = panel.querySelector('.panel-status');
     const resizeHandle = panel.querySelector('.resize-handle');
+    const fallback = panel.querySelector('.fallback-overlay');
+    const fallbackOpen = panel.querySelector('.fallback-open');
+    const fallbackReload = panel.querySelector('.fallback-reload');
+    const fallbackClose = panel.querySelector('.fallback-close');
 
     // 平台选择变化
     selectEl.addEventListener('change', () => {
@@ -477,6 +550,28 @@
     syncBtn.addEventListener('click', () => {
       syncContext(panel);
     });
+
+    if (fallbackOpen) {
+      fallbackOpen.addEventListener('click', () => {
+        const url = fallbackOpen.dataset.url;
+        if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    }
+
+    if (fallbackReload) {
+      fallbackReload.addEventListener('click', () => {
+        const providerKey = fallbackReload.dataset.provider || selectEl.value;
+        const url = fallbackReload.dataset.url || null;
+        fallback?.classList.remove('visible');
+        loadAI(panel, providerKey, url);
+      });
+    }
+
+    if (fallbackClose) {
+      fallbackClose.addEventListener('click', () => {
+        fallback?.classList.remove('visible');
+      });
+    }
 
     // 拖拽功能
     let isDragging = false;
@@ -562,28 +657,72 @@
   function loadAI(panel, providerKey, requestedUrl = null) {
     const iframe = panel.querySelector('.panel-iframe');
     const loading = panel.querySelector('.loading-overlay');
+    const fallback = panel.querySelector('.fallback-overlay');
+    const fallbackMessage = panel.querySelector('.fallback-message');
+    const fallbackOpen = panel.querySelector('.fallback-open');
+    const fallbackReload = panel.querySelector('.fallback-reload');
     const status = panel.querySelector('.panel-status');
     const provider = PROVIDERS[providerKey];
 
     if (!iframe || !provider) return;
+    const resolvedUrl = resolveProviderUrl(providerKey, requestedUrl);
+
+    function hideFallback() {
+      if (fallback) fallback.classList.remove('visible');
+    }
+
+    function showFallback(message) {
+      if (!fallback || !fallbackMessage || !fallbackOpen || !fallbackReload) return;
+      fallbackMessage.textContent = message;
+      fallbackOpen.dataset.url = resolvedUrl;
+      fallbackReload.dataset.provider = providerKey;
+      fallbackReload.dataset.url = resolvedUrl;
+      fallback.classList.add('visible');
+    }
+
+    if (panel.__loadFallbackTimer) {
+      clearTimeout(panel.__loadFallbackTimer);
+      panel.__loadFallbackTimer = null;
+    }
+    hideFallback();
 
     // 更新面板记录
     const panelData = panels.find(p => p.element === panel);
     if (panelData) panelData.currentProvider = providerKey;
 
     configureProviderFrame(iframe);
-    iframe.src = resolveProviderUrl(providerKey, requestedUrl);
+    iframe.src = resolvedUrl;
     loading.style.display = 'flex';
     status.textContent = `正在加载 ${provider.label}...`;
+
+    panel.__loadFallbackTimer = setTimeout(() => {
+      showFallback(`${provider.label} 如果一直空白或登录循环，请在新标签页登录后回来刷新。`);
+    }, LOAD_TIMEOUT_MS);
 
     iframe.onload = () => {
       loading.style.display = 'none';
       status.textContent = `已连接到 ${provider.label}`;
+      if (panel.__loadFallbackTimer) {
+        clearTimeout(panel.__loadFallbackTimer);
+        panel.__loadFallbackTimer = null;
+      }
+      if (LOGIN_HELP_PROVIDERS.has(providerKey)) {
+        panel.__loadFallbackTimer = setTimeout(() => {
+          showFallback(`${provider.label} 登录失败或重定向循环时，请先在新标签页登录。`);
+        }, 1800);
+      } else {
+        hideFallback();
+      }
     };
 
     iframe.onerror = () => {
       loading.style.display = 'none';
       status.textContent = '加载失败，请重试';
+      if (panel.__loadFallbackTimer) {
+        clearTimeout(panel.__loadFallbackTimer);
+        panel.__loadFallbackTimer = null;
+      }
+      showFallback(`${provider.label} 未能在浮窗中加载。可以先在新标签页打开，登录后再刷新浮窗。`);
     };
   }
 
