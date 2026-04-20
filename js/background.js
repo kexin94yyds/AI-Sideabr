@@ -605,16 +605,23 @@ async function handleOpenParallelLeft() {
     
     // Get current provider from storage
     let currentProvider = 'chatgpt';
+    let providerUrl = null;
     try {
-      const result = await chrome.storage.local.get(['currentProvider']);
-      if (result.currentProvider) currentProvider = result.currentProvider;
+      const result = await chrome.storage.local.get(['currentProvider', 'provider', 'providerUrls']);
+      if (result.currentProvider || result.provider) {
+        currentProvider = result.currentProvider || result.provider;
+      }
+      if (result.providerUrls && typeof result.providerUrls === 'object') {
+        providerUrl = result.providerUrls[currentProvider] || null;
+      }
     } catch (_) {}
     
     // Try to send message to content script, inject if needed
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       // Content script not loaded, inject it first
@@ -627,7 +634,8 @@ async function handleOpenParallelLeft() {
         await new Promise(r => setTimeout(r, 100));
         await chrome.tabs.sendMessage(tab.id, { 
           action: 'toggleParallelPanel',
-          provider: currentProvider 
+          provider: currentProvider,
+          providerUrl
         });
       } catch (e) {
         console.error('[AI Sidebar] Failed to inject parallel panel:', e);

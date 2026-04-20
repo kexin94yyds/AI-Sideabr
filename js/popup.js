@@ -1508,7 +1508,8 @@ const ensureFrame = async (container, key, provider) => {
         'geolocation',
         'camera',
         'microphone',
-        'display-capture'
+        'display-capture',
+        'storage-access'
       ].join('; ');
     } else {
       // webview specific attributes
