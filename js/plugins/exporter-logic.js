@@ -110,7 +110,7 @@
         case 'claude':
           return /claude\.ai\/chat\/([a-z0-9-]+)/i.exec(url)?.[1] || '';
         case 'gemini':
-          return window.location.hash.substring(1) || '';
+          return /gemini\.google\.com\/app\/(?:conversation\/)?([^/?#]+)/i.exec(url)?.[1] || window.location.hash.substring(1) || '';
         case 'deepseek':
           return /deepseek\.com\/chat\/([a-z0-9-]+)/i.exec(url)?.[1] || '';
         case 'notebooklm':
@@ -235,6 +235,16 @@
     
     // 1. Title Extraction
     const getTitle = () => {
+      if (provider === 'gemini') {
+        const pageTitle = String(document.title || '')
+          .replace(/ - Google Gemini$/i, '')
+          .replace(/ - Gemini$/i, '')
+          .trim();
+        if (pageTitle && !/^(gemini|conversation with gemini)$/i.test(pageTitle)) {
+          return pageTitle;
+        }
+      }
+
       const selectors = [
         '.title-label-inner',
         'editable-project-title',
