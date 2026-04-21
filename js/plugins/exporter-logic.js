@@ -284,6 +284,83 @@
     return messages;
   }
 
+  function geminiElementLabel(element) {
+    if (!element) return '';
+    return [
+      element.getAttribute?.('aria-label') || '',
+      element.innerText || '',
+      element.textContent || ''
+    ].map(normalizeGeminiVisibleLine).filter(Boolean).join(' ');
+  }
+
+  function stripGeminiSpeakerPrefix(value, role) {
+    const marker = role === 'User' ? 'You said' : 'Gemini said';
+    return normalizeGeminiVisibleLine(value).replace(new RegExp(`^${marker}\\s*`, 'i'), '').trim();
+  }
+
+  function cleanGeminiTextBlock(value) {
+    return String(value || '')
+      .split(/\n+/)
+      .map(normalizeGeminiVisibleLine)
+      .filter(line => line && !isGeminiVisibleNoiseLine(line))
+      .join('\n\n')
+      .trim();
+  }
+
+  function contentFromGeminiHeading(heading, role) {
+    const fromHeading = cleanGeminiTextBlock(stripGeminiSpeakerPrefix(geminiElementLabel(heading), role));
+    if (fromHeading.length > 2) return fromHeading;
+
+    const parts = [];
+    let sibling = heading.nextElementSibling;
+    let inspected = 0;
+    while (sibling && inspected < 4) {
+      inspected += 1;
+      const siblingLabel = geminiElementLabel(sibling);
+      if (/^(You said|Gemini said)\b/i.test(siblingLabel)) break;
+
+      const markdown = extractMarkdownFromElement(sibling).trim();
+      const text = cleanGeminiTextBlock(markdown || siblingLabel);
+      if (text) parts.push(text);
+      sibling = sibling.nextElementSibling;
+    }
+
+    if (parts.length) return parts.join('\n\n').trim();
+
+    let parent = heading.parentElement;
+    let depth = 0;
+    while (parent && depth < 3) {
+      depth += 1;
+      const parentText = cleanGeminiTextBlock(stripGeminiSpeakerPrefix(extractMarkdownFromElement(parent) || geminiElementLabel(parent), role));
+      if (parentText.length > 2) return parentText;
+      parent = parent.parentElement;
+    }
+
+    return '';
+  }
+
+  function extractGeminiMessagesFromHeadingBoundaries(allElements) {
+    const elements = Array.isArray(allElements) ? allElements : getDeepElements();
+    const headingCandidates = elements.filter((element) => {
+      const tag = element.tagName?.toLowerCase?.() || '';
+      const role = element.getAttribute?.('role') || '';
+      if (!/^h[1-6]$/.test(tag) && role !== 'heading') return false;
+      return /^(You said|Gemini said)\b/i.test(geminiElementLabel(element));
+    });
+
+    const messages = [];
+    headingCandidates.forEach((heading) => {
+      const label = geminiElementLabel(heading);
+      const role = /^You said\b/i.test(label) ? 'User' : 'Assistant';
+      const content = contentFromGeminiHeading(heading, role);
+      if (content.length > 2) {
+        messages.push({ role, content });
+      }
+    });
+
+    return messages;
+  }
+
   // ============================================================================
   // Main
   // ============================================================================
@@ -387,8 +464,11 @@
     }
 
     if (provider === 'gemini' && messages.length === 0) {
-      console.log('[AI Chat Exporter] Gemini DOM scan failed, parsing visible transcript text...');
-      messages = extractGeminiMessagesFromVisibleText();
+      console.log('[AI Chat Exporter] Gemini DOM scan failed, parsing heading transcript boundaries...');
+      messages = extractGeminiMessagesFromHeadingBoundaries(all);
+      if (messages.length === 0) {
+        messages = extractGeminiMessagesFromVisibleText();
+      }
       console.log(`[AI Chat Exporter] Gemini visible text messages captured: ${messages.length}`);
     }
 
