@@ -656,20 +656,13 @@
     // Confirm Update (User said yes)
     if (data.type === 'AI_SIDEBAR_SAVE_EXPORT_CONFIRMED') {
       const result = data.result;
-      if (typeof window.saveConversation === 'function') {
-        // Find existing ID to update
-        const duplicate = await window.findDuplicate(result.data.conversationId);
-        if (duplicate && typeof window.updateConversation === 'function') {
-          await window.updateConversation(duplicate.id, result.data);
-        } else {
-          await window.saveConversation(result.data);
-        }
-        window.parent.postMessage({
-          type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
-          result: result,
-          saved: true
-        }, '*');
-      }
+      const saved = await saveResultToExtensionHistory(result);
+      window.parent.postMessage({
+        type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
+        result: result,
+        saved: saved.ok,
+        warning: saved.ok ? '' : (saved.error || 'History save failed')
+      }, '*');
     }
   });
 
@@ -1071,7 +1064,7 @@
 
       const saved = await saveResultToExtensionHistory(result, { shortcut: true });
       if (saved.ok) {
-        setStatus('Saving to history...', 'info');
+        setStatus(saved.via === 'parent' ? 'Saving to history...' : '✓ Save queued to history', saved.via === 'parent' ? 'info' : 'success');
         return;
       }
 
