@@ -220,6 +220,70 @@
     return a;
   }
 
+  function normalizeGeminiVisibleLine(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function isGeminiVisibleNoiseLine(value) {
+    const line = normalizeGeminiVisibleLine(value);
+    if (!line) return true;
+    if (/^Google Account:/i.test(line)) return true;
+    if (/^(Gemini|Google Gemini|Upgrade|Share conversation|Open menu for conversation actions\.?|Main menu|New chat|Settings & help|Ask Gemini|Sources|Copy|Copy prompt|Listen|Show thinking|Good response|Bad response|Redo|Edit|Tools|Pro|Microphone|Toggle preview panel|Open upload file menu|Open mode picker|Uploaded image preview|NotebookLM icon|TXT|MD)$/i.test(line)) {
+      return true;
+    }
+    if (/^(去水印监控中|搜索\.\.\.|在 Chrome 应用商店|自定义 Chrome)$/.test(line)) return true;
+    return false;
+  }
+
+  function pushGeminiVisibleMessage(messages, current) {
+    if (!current || !Array.isArray(current.lines)) return;
+    const content = current.lines
+      .map(normalizeGeminiVisibleLine)
+      .filter(line => line && !isGeminiVisibleNoiseLine(line))
+      .join('\n\n')
+      .trim();
+
+    if (content.length > 2) {
+      messages.push({ role: current.role, content });
+    }
+  }
+
+  function extractGeminiMessagesFromVisibleText() {
+    const raw = String(document.body?.innerText || '');
+    if (!raw.trim()) return [];
+
+    const lines = raw
+      .split(/\n+/)
+      .map(normalizeGeminiVisibleLine)
+      .filter(Boolean);
+
+    const messages = [];
+    let current = null;
+
+    lines.forEach((line) => {
+      const userMatch = /^You said(?:\s+(.+))?$/i.exec(line);
+      if (userMatch) {
+        pushGeminiVisibleMessage(messages, current);
+        current = { role: 'User', lines: [] };
+        if (userMatch[1]) current.lines.push(userMatch[1]);
+        return;
+      }
+
+      const assistantMatch = /^Gemini said(?:\s+(.+))?$/i.exec(line);
+      if (assistantMatch) {
+        pushGeminiVisibleMessage(messages, current);
+        current = { role: 'Assistant', lines: [] };
+        if (assistantMatch[1]) current.lines.push(assistantMatch[1]);
+        return;
+      }
+
+      if (current) current.lines.push(line);
+    });
+
+    pushGeminiVisibleMessage(messages, current);
+    return messages;
+  }
+
   // ============================================================================
   // Main
   // ============================================================================
@@ -320,6 +384,12 @@
             if (userText) messages.push({ role: 'User', content: userText });
             messages.push({ role: 'Assistant', content: extractMarkdownFromElement(ai).trim() });
          });
+    }
+
+    if (provider === 'gemini' && messages.length === 0) {
+      console.log('[AI Chat Exporter] Gemini DOM scan failed, parsing visible transcript text...');
+      messages = extractGeminiMessagesFromVisibleText();
+      console.log(`[AI Chat Exporter] Gemini visible text messages captured: ${messages.length}`);
     }
 
     // 5. Normalize & Return
