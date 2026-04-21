@@ -140,19 +140,8 @@ function findExistingConversationFileInDir(dirPath, blockId, legacyTitle) {
 }
 
 function findExistingConversationFile(baseDir, dayDir, blockId, legacyTitle) {
-  const inCurrentDay = findExistingConversationFileInDir(dayDir, blockId, legacyTitle);
-  if (inCurrentDay) return inCurrentDay;
-  if (!fs.existsSync(baseDir)) return null;
-
-  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const candidateDir = path.join(baseDir, entry.name);
-    if (candidateDir === dayDir) continue;
-    const found = findExistingConversationFileInDir(candidateDir, blockId, legacyTitle);
-    if (found) return found;
-  }
-
-  return null;
+  void baseDir;
+  return findExistingConversationFileInDir(dayDir, blockId, legacyTitle);
 }
 
 function formatConversationMessages(messages) {
