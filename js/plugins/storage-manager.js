@@ -27,7 +27,10 @@
       const timer = setTimeout(async () => {
         mirrorTimers.delete(key);
         try {
-          await window.AutoSync.syncConversation(conversation);
+          const result = await window.AutoSync.syncConversation(conversation);
+          if (!result?.success) {
+            console.warn('[AI Sidebar] Conversation markdown mirror skipped:', result);
+          }
         } catch (error) {
           console.warn('[AI Sidebar] Conversation markdown mirror failed:', error);
         }
