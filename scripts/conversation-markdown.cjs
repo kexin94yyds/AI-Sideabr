@@ -106,6 +106,10 @@ function timeKeyFromTimestamp(ts) {
   return `${hours}:${minutes}`;
 }
 
+function archiveTimestampFromConversation(conversation) {
+  return conversation.updatedAt || conversation.timestamp || conversation.createdAt || Date.now();
+}
+
 function buildConversationBlockId(conversation) {
   const source = String(
     conversation.conversationId ||
@@ -276,10 +280,10 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
   conversation = normalizeConversationForMarkdown(conversation);
   const baseDir = getMarkdownBaseDir(options);
   const documentTitle = getConversationDocumentTitle(projectName, conversation);
-  const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
+  const dateKey = dateKeyFromTimestamp(archiveTimestampFromConversation(conversation));
   const dayDir = path.join(baseDir, dateKey);
   const { blockId, content } = buildConversationBlock(projectName, conversation);
-  const existingFilePath = findExistingConversationFile(baseDir, dayDir, blockId, documentTitle);
+  const existingFilePath = findExistingConversationFileInDir(dayDir, blockId, documentTitle);
   const projectFileName = `${documentTitle}.md`;
   const filePath = existingFilePath || path.join(dayDir, projectFileName);
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
