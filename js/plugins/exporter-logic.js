@@ -386,6 +386,15 @@
         }
       }
 
+      if (provider === 'notebooklm') {
+        const pageTitle = String(document.title || '')
+          .replace(/\s+-\s+NotebookLM$/i, '')
+          .trim();
+        if (pageTitle && !/^(notebooklm)$/i.test(pageTitle)) {
+          return pageTitle;
+        }
+      }
+
       const selectors = [
         '.title-label-inner',
         'editable-project-title',
@@ -407,7 +416,7 @@
       }
       return document.title;
     };
-    const title = getTitle().replace(/ - (ChatGPT|Claude|DeepSeek|Gemini|AI)$/i, '').replace(/[\/\?%*:|"<>]/g, '_').substring(0, 50);
+    const title = getTitle().replace(/ - (ChatGPT|Claude|DeepSeek|Gemini|NotebookLM|AI)$/i, '').replace(/[\/\?%*:|"<>]/g, '_').substring(0, 50);
 
     // 2. Universal Block Discovery
     const all = getDeepElements();
