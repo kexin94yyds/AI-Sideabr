@@ -110,7 +110,7 @@
         case 'claude':
           return /claude\.ai\/chat\/([a-z0-9-]+)/i.exec(url)?.[1] || '';
         case 'gemini':
-          return /gemini\.google\.com\/app\/(?:conversation\/)?([^/?#]+)/i.exec(url)?.[1] || window.location.hash.substring(1) || '';
+          return window.location.hash.substring(1) || '';
         case 'deepseek':
           return /deepseek\.com\/chat\/([a-z0-9-]+)/i.exec(url)?.[1] || '';
         case 'notebooklm':
@@ -220,147 +220,6 @@
     return a;
   }
 
-  function normalizeGeminiVisibleLine(value) {
-    return String(value || '').replace(/\s+/g, ' ').trim();
-  }
-
-  function isGeminiVisibleNoiseLine(value) {
-    const line = normalizeGeminiVisibleLine(value);
-    if (!line) return true;
-    if (/^Google Account:/i.test(line)) return true;
-    if (/^(Gemini|Google Gemini|Upgrade|Share conversation|Open menu for conversation actions\.?|Main menu|New chat|Settings & help|Ask Gemini|Sources|Copy|Copy prompt|Listen|Show thinking|Good response|Bad response|Redo|Edit|Tools|Pro|Microphone|Toggle preview panel|Open upload file menu|Open mode picker|Uploaded image preview|NotebookLM icon|TXT|MD)$/i.test(line)) {
-      return true;
-    }
-    if (/^(去水印监控中|搜索\.\.\.|在 Chrome 应用商店|自定义 Chrome)$/.test(line)) return true;
-    return false;
-  }
-
-  function pushGeminiVisibleMessage(messages, current) {
-    if (!current || !Array.isArray(current.lines)) return;
-    const content = current.lines
-      .map(normalizeGeminiVisibleLine)
-      .filter(line => line && !isGeminiVisibleNoiseLine(line))
-      .join('\n\n')
-      .trim();
-
-    if (content.length > 2) {
-      messages.push({ role: current.role, content });
-    }
-  }
-
-  function extractGeminiMessagesFromVisibleText() {
-    const raw = String(document.body?.innerText || '');
-    if (!raw.trim()) return [];
-
-    const lines = raw
-      .split(/\n+/)
-      .map(normalizeGeminiVisibleLine)
-      .filter(Boolean);
-
-    const messages = [];
-    let current = null;
-
-    lines.forEach((line) => {
-      const userMatch = /^You said(?:\s+(.+))?$/i.exec(line);
-      if (userMatch) {
-        pushGeminiVisibleMessage(messages, current);
-        current = { role: 'User', lines: [] };
-        if (userMatch[1]) current.lines.push(userMatch[1]);
-        return;
-      }
-
-      const assistantMatch = /^Gemini said(?:\s+(.+))?$/i.exec(line);
-      if (assistantMatch) {
-        pushGeminiVisibleMessage(messages, current);
-        current = { role: 'Assistant', lines: [] };
-        if (assistantMatch[1]) current.lines.push(assistantMatch[1]);
-        return;
-      }
-
-      if (current) current.lines.push(line);
-    });
-
-    pushGeminiVisibleMessage(messages, current);
-    return messages;
-  }
-
-  function geminiElementLabel(element) {
-    if (!element) return '';
-    return [
-      element.getAttribute?.('aria-label') || '',
-      element.innerText || '',
-      element.textContent || ''
-    ].map(normalizeGeminiVisibleLine).filter(Boolean).join(' ');
-  }
-
-  function stripGeminiSpeakerPrefix(value, role) {
-    const marker = role === 'User' ? 'You said' : 'Gemini said';
-    return normalizeGeminiVisibleLine(value).replace(new RegExp(`^${marker}\\s*`, 'i'), '').trim();
-  }
-
-  function cleanGeminiTextBlock(value) {
-    return String(value || '')
-      .split(/\n+/)
-      .map(normalizeGeminiVisibleLine)
-      .filter(line => line && !isGeminiVisibleNoiseLine(line))
-      .join('\n\n')
-      .trim();
-  }
-
-  function contentFromGeminiHeading(heading, role) {
-    const fromHeading = cleanGeminiTextBlock(stripGeminiSpeakerPrefix(geminiElementLabel(heading), role));
-    if (fromHeading.length > 2) return fromHeading;
-
-    const parts = [];
-    let sibling = heading.nextElementSibling;
-    let inspected = 0;
-    while (sibling && inspected < 4) {
-      inspected += 1;
-      const siblingLabel = geminiElementLabel(sibling);
-      if (/^(You said|Gemini said)\b/i.test(siblingLabel)) break;
-
-      const markdown = extractMarkdownFromElement(sibling).trim();
-      const text = cleanGeminiTextBlock(markdown || siblingLabel);
-      if (text) parts.push(text);
-      sibling = sibling.nextElementSibling;
-    }
-
-    if (parts.length) return parts.join('\n\n').trim();
-
-    let parent = heading.parentElement;
-    let depth = 0;
-    while (parent && depth < 3) {
-      depth += 1;
-      const parentText = cleanGeminiTextBlock(stripGeminiSpeakerPrefix(extractMarkdownFromElement(parent) || geminiElementLabel(parent), role));
-      if (parentText.length > 2) return parentText;
-      parent = parent.parentElement;
-    }
-
-    return '';
-  }
-
-  function extractGeminiMessagesFromHeadingBoundaries(allElements) {
-    const elements = Array.isArray(allElements) ? allElements : getDeepElements();
-    const headingCandidates = elements.filter((element) => {
-      const tag = element.tagName?.toLowerCase?.() || '';
-      const role = element.getAttribute?.('role') || '';
-      if (!/^h[1-6]$/.test(tag) && role !== 'heading') return false;
-      return /^(You said|Gemini said)\b/i.test(geminiElementLabel(element));
-    });
-
-    const messages = [];
-    headingCandidates.forEach((heading) => {
-      const label = geminiElementLabel(heading);
-      const role = /^You said\b/i.test(label) ? 'User' : 'Assistant';
-      const content = contentFromGeminiHeading(heading, role);
-      if (content.length > 2) {
-        messages.push({ role, content });
-      }
-    });
-
-    return messages;
-  }
-
   // ============================================================================
   // Main
   // ============================================================================
@@ -376,25 +235,6 @@
     
     // 1. Title Extraction
     const getTitle = () => {
-      if (provider === 'gemini') {
-        const pageTitle = String(document.title || '')
-          .replace(/ - Google Gemini$/i, '')
-          .replace(/ - Gemini$/i, '')
-          .trim();
-        if (pageTitle && !/^(gemini|conversation with gemini)$/i.test(pageTitle)) {
-          return pageTitle;
-        }
-      }
-
-      if (provider === 'notebooklm') {
-        const pageTitle = String(document.title || '')
-          .replace(/\s+-\s+NotebookLM$/i, '')
-          .trim();
-        if (pageTitle && !/^(notebooklm)$/i.test(pageTitle)) {
-          return pageTitle;
-        }
-      }
-
       const selectors = [
         '.title-label-inner',
         'editable-project-title',
@@ -416,7 +256,7 @@
       }
       return document.title;
     };
-    const title = getTitle().replace(/ - (ChatGPT|Claude|DeepSeek|Gemini|NotebookLM|AI)$/i, '').replace(/[\/\?%*:|"<>]/g, '_').substring(0, 50);
+    const title = getTitle().replace(/ - (ChatGPT|Claude|DeepSeek|Gemini|AI)$/i, '').replace(/[\/\?%*:|"<>]/g, '_').substring(0, 50);
 
     // 2. Universal Block Discovery
     const all = getDeepElements();
@@ -470,15 +310,6 @@
             if (userText) messages.push({ role: 'User', content: userText });
             messages.push({ role: 'Assistant', content: extractMarkdownFromElement(ai).trim() });
          });
-    }
-
-    if (provider === 'gemini' && messages.length === 0) {
-      console.log('[AI Chat Exporter] Gemini DOM scan failed, parsing heading transcript boundaries...');
-      messages = extractGeminiMessagesFromHeadingBoundaries(all);
-      if (messages.length === 0) {
-        messages = extractGeminiMessagesFromVisibleText();
-      }
-      console.log(`[AI Chat Exporter] Gemini visible text messages captured: ${messages.length}`);
     }
 
     // 5. Normalize & Return
@@ -647,13 +478,37 @@
         const result = window.exportChatToMarkdown();
         if (!result) throw new Error('Failed to capture chat');
 
-        const saved = await saveResultToExtensionHistory(result);
-        window.parent.postMessage({
-          type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
-          result: result,
-          saved: saved.ok,
-          warning: saved.ok ? '' : (saved.error || 'History save failed')
-        }, '*');
+        // Check for duplicate if storage manager is present
+        if (typeof window.findDuplicate === 'function' && result.data.conversationId) {
+          const duplicate = await window.findDuplicate(result.data.conversationId);
+          if (duplicate) {
+            // We can't show confirm() easily from iframe to sidebar, 
+            // so we send a message back to sidebar to ask the user.
+            window.parent.postMessage({
+              type: 'AI_SIDEBAR_CONFIRM_UPDATE',
+              duplicate: { title: duplicate.title, id: duplicate.id },
+              result: result
+            }, '*');
+            return;
+          }
+        }
+
+        // Save if storage manager is present
+        if (typeof window.saveConversation === 'function') {
+          await window.saveConversation(result.data);
+          window.parent.postMessage({
+            type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
+            result: result,
+            saved: true
+          }, '*');
+        } else {
+          window.parent.postMessage({
+            type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
+            result: result,
+            saved: false,
+            warning: 'Storage manager not found, only exported'
+          }, '*');
+        }
       } catch (err) {
         window.parent.postMessage({
           type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
@@ -665,13 +520,20 @@
     // Confirm Update (User said yes)
     if (data.type === 'AI_SIDEBAR_SAVE_EXPORT_CONFIRMED') {
       const result = data.result;
-      const saved = await saveResultToExtensionHistory(result);
-      window.parent.postMessage({
-        type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
-        result: result,
-        saved: saved.ok,
-        warning: saved.ok ? '' : (saved.error || 'History save failed')
-      }, '*');
+      if (typeof window.saveConversation === 'function') {
+        // Find existing ID to update
+        const duplicate = await window.findDuplicate(result.data.conversationId);
+        if (duplicate && typeof window.updateConversation === 'function') {
+          await window.updateConversation(duplicate.id, result.data);
+        } else {
+          await window.saveConversation(result.data);
+        }
+        window.parent.postMessage({
+          type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
+          result: result,
+          saved: true
+        }, '*');
+      }
     }
   });
 
@@ -708,45 +570,6 @@
       console.warn('[Exporter] native mirror sync failed:', error);
       return false;
     }
-  }
-
-  function postSaveResultToParent(result, meta = null) {
-    window.parent.postMessage({
-      type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
-      data: result.data,
-      content: result.content,
-      meta
-    }, '*');
-  }
-
-  async function saveResultToExtensionHistory(result, meta = null) {
-    if (!result?.data) {
-      return { ok: false, error: 'missing_conversation_data' };
-    }
-
-    if (window.parent !== window) {
-      postSaveResultToParent(result, meta);
-      return { ok: true, via: 'parent' };
-    }
-
-    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
-          data: result.data,
-          content: result.content,
-          meta
-        });
-        if (response?.ok === false) {
-          return { ok: false, error: response.error || 'save_queue_failed' };
-        }
-        return { ok: true, via: 'background' };
-      } catch (error) {
-        return { ok: false, error: error?.message || String(error) };
-      }
-    }
-
-    return { ok: false, error: 'extension_history_unavailable' };
   }
 
   function isUsefulConversationTitle(title) {
@@ -787,7 +610,7 @@
 
   function canAutoSaveCurrentPage(provider, href, title) {
     if (window.top !== window) return false;
-    if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return false;
+    if (typeof window.saveConversation !== 'function') return false;
     return isUsefulConversationTitle(title) && hasStableConversationUrl(href, provider);
   }
 
@@ -812,8 +635,8 @@
         return { ok: false, reason: 'unchanged' };
       }
 
-      const saved = await saveResultToExtensionHistory(result, { silent: true, provider });
-      if (!saved.ok) return { ok: false, reason: saved.error || 'history_save_failed' };
+      await window.saveConversation(result.data);
+      await syncSavedConversationToNativeHost(result.data);
       pageAutoSaveState.lastFingerprint = fingerprint;
       return { ok: true, fingerprint };
     } finally {
@@ -1010,13 +833,35 @@
           return;
         }
 
-        const saved = await saveResultToExtensionHistory(result);
-        if (!saved.ok) {
-          showStatus(`Save failed: ${saved.error || 'History unavailable'}`, 'error');
+        if (typeof window.saveConversation === 'function') {
+          await window.saveConversation(result.data);
+          await syncSavedConversationToNativeHost(result.data);
+          showStatus('✓ Saved to library', 'success');
+          setTimeout(closePanel, 1500);
           return;
         }
 
-        showStatus(saved.via === 'parent' ? '✓ Sent to history' : '✓ Save queued to history', 'success');
+        const saveData = {
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
+          data: result.data,
+          content: result.content
+        };
+
+        // Try postMessage first (works if in sidebar iframe)
+        if (window.parent !== window) {
+          window.parent.postMessage(saveData, '*');
+        }
+
+        // Fallback to background queue only when storage manager is unavailable.
+        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+          try {
+            chrome.runtime.sendMessage(saveData);
+          } catch (e) {
+            console.log('[Exporter] runtime.sendMessage failed:', e);
+          }
+        }
+
+        showStatus('✓ Saved to library', 'success');
         setTimeout(closePanel, 1500);
       } catch (err) {
         showStatus(`Error: ${err.message}`, 'error');
@@ -1071,13 +916,43 @@
         return;
       }
 
-      const saved = await saveResultToExtensionHistory(result, { shortcut: true });
-      if (saved.ok) {
-        setStatus(saved.via === 'parent' ? 'Saving to history...' : '✓ Save queued to history', saved.via === 'parent' ? 'info' : 'success');
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
+          data: result.data,
+          content: result.content,
+          meta: { shortcut: true }
+        }, '*');
+        setStatus('Saving to history...', 'info');
         return;
       }
 
-      setStatus(`Save failed: ${saved.error || 'History unavailable'}`, 'error');
+      if (typeof autoSaveCurrentConversation === 'function') {
+        const saved = await autoSaveCurrentConversation(true);
+        if (saved?.ok) {
+          setStatus('✓ Saved to history & folder', 'success');
+          return;
+        }
+      }
+
+      if (typeof window.saveConversation === 'function') {
+        await window.saveConversation(result.data);
+        const mirrored = await syncSavedConversationToNativeHost(result.data);
+        setStatus(mirrored ? '✓ Saved to history & folder' : '✓ Saved to history; folder sync pending', 'success');
+        return;
+      }
+
+      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        await chrome.runtime.sendMessage({
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
+          data: result.data,
+          content: result.content
+        });
+        setStatus('✓ Save queued', 'success');
+        return;
+      }
+
+      setStatus('Storage not available', 'error');
     } catch (error) {
       setStatus(`Error: ${error.message}`, 'error');
     }

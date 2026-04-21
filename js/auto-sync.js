@@ -72,28 +72,6 @@ const AutoSync = (function() {
     }
   }
 
-  function sendRuntimeMessage(message) {
-    return new Promise((resolve) => {
-      try {
-        if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
-          resolve({ ok: false, error: 'runtime_unavailable' });
-          return;
-        }
-
-        chrome.runtime.sendMessage(message, (response) => {
-          const lastError = chrome.runtime.lastError;
-          if (lastError) {
-            resolve({ ok: false, error: lastError.message || String(lastError) });
-            return;
-          }
-          resolve(response || { ok: false, error: 'empty_response' });
-        });
-      } catch (error) {
-        resolve({ ok: false, error: error?.message || String(error) });
-      }
-    });
-  }
-
   async function sendToNativeHost(message) {
     const now = Date.now();
     if (nativeHostAvailable === false && now - lastNativeHostCheck < NATIVE_HOST_RECHECK_INTERVAL) {
@@ -105,7 +83,7 @@ const AutoSync = (function() {
         return { success: false, reason: 'native_host_unsupported' };
       }
 
-      const response = await sendRuntimeMessage(message);
+      const response = await chrome.runtime.sendMessage(message);
       lastNativeHostCheck = now;
 
       if (!response?.ok) {

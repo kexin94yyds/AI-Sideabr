@@ -530,72 +530,7 @@ let __pendingInlineEditCloseOnEnter = false;
 // Persist history panel search across re-renders
 let __historySearchQuery = '';
 // History panel view mode: 'link' or 'content'
-let __historyViewMode = 'content';
-
-function sendRuntimeMessage(message) {
-  return new Promise((resolve) => {
-    try {
-      if (typeof chrome === 'undefined' || typeof chrome.runtime?.sendMessage !== 'function') {
-        resolve({ ok: false, error: 'runtime_unavailable' });
-        return;
-      }
-
-      chrome.runtime.sendMessage(message, (response) => {
-        const lastError = chrome.runtime.lastError;
-        if (lastError) {
-          resolve({ ok: false, error: lastError.message || String(lastError) });
-          return;
-        }
-        resolve(response || { ok: false, error: 'empty_response' });
-      });
-    } catch (error) {
-      resolve({ ok: false, error: error?.message || String(error) });
-    }
-  });
-}
-
-async function mirrorSavedConversationToMarkdown(conversation, source = 'history-save') {
-  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
-  if (!messages.length) {
-    const result = { ok: false, reason: 'messages_missing' };
-    console.warn('[AI Sidebar] Conversation markdown mirror skipped:', source, result);
-    return result;
-  }
-
-  if (typeof window.AutoSync?.syncConversation === 'function') {
-    try {
-      const result = await window.AutoSync.syncConversation(conversation);
-      if (result && result.success !== false) {
-        console.log('[AI Sidebar] Conversation mirrored to markdown:', source, result);
-        return { ok: true, result, transport: result.transport || 'auto-sync' };
-      }
-      console.warn('[AI Sidebar] AutoSync declined conversation markdown mirror:', source, result);
-    } catch (error) {
-      console.warn('[AI Sidebar] AutoSync conversation markdown mirror failed:', source, error);
-    }
-  }
-
-  try {
-    const response = await sendRuntimeMessage({
-      type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
-      project: 'AI-Sidebar',
-      conversation: {
-        ...conversation,
-        project: conversation?.project || 'AI-Sidebar'
-      }
-    });
-
-    if (!response?.ok) {
-      return { ok: false, reason: response?.error || 'native_mirror_failed' };
-    }
-
-    console.log('[AI Sidebar] Conversation mirrored to markdown via native fallback:', source, response.result);
-    return { ok: true, result: response.result, transport: 'native-fallback' };
-  } catch (error) {
-    console.warn('[AI Sidebar] Conversation markdown mirror failed:', source, error);
-    return { ok: false, reason: error?.message || String(error) };
-  }
-}
+let __historyViewMode = 'link';
 
 function escapeAttr(s) {
   return String(s || '')
@@ -2320,21 +2255,8 @@ const initializeBar = async () => {
             }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              const mirrorResult = await mirrorSavedConversationToMarkdown(convData, 'save-to-library-response');
-              __historyViewMode = 'content';
-              try {
-                const panel = document.getElementById('historyPanel');
-                if (panel && panel.style.display === 'block') renderHistoryPanel();
-              } catch (_) {}
-              if (!isSilent) {
-                const mirrorOk = mirrorResult?.ok !== false;
-                updateStatus(mirrorOk ? `✓ Saved to library & local Markdown` : `✓ Saved to library (Markdown mirror pending)`, 'success');
-              }
-              sendShortcutAck({
-                ok: true,
-                status: mirrorResult?.ok === false ? 'history_saved_markdown_pending' : 'history_saved_markdown_synced',
-                mirror: mirrorResult
-              });
+              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
+              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
               if (!isSilent) updateStatus('Storage not available', 'error');
               sendShortcutAck({ ok: false, error: 'Storage not available' });
@@ -2361,7 +2283,6 @@ const initializeBar = async () => {
           
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
-            await mirrorSavedConversationToMarkdown(convData, 'save-to-library-message');
             console.log('[AI Sidebar] Conversation saved to library');
           } else {
             console.error('[AI Sidebar] ChatHistoryDB not available');
@@ -3730,7 +3651,6 @@ initializeBar();
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
       const remaining = [];
-      let savedAny = false;
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3742,8 +3662,6 @@ initializeBar();
           };
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
-            await mirrorSavedConversationToMarkdown(convData, 'save-queue');
-            savedAny = true;
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
           } else {
             remaining.push(item);
@@ -3754,13 +3672,6 @@ initializeBar();
         }
       }
       await chrome.storage.local.set({ __saveQueue: remaining });
-      if (savedAny) {
-        __historyViewMode = 'content';
-        try {
-          const panel = document.getElementById('historyPanel');
-          if (panel && panel.style.display === 'block') renderHistoryPanel();
-        } catch (_) {}
-      }
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);

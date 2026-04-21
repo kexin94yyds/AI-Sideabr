@@ -106,10 +106,6 @@ function timeKeyFromTimestamp(ts) {
   return `${hours}:${minutes}`;
 }
 
-function archiveTimestampFromConversation(conversation) {
-  return conversation.updatedAt || conversation.timestamp || conversation.createdAt || Date.now();
-}
-
 function buildConversationBlockId(conversation) {
   const source = String(
     conversation.conversationId ||
@@ -138,6 +134,22 @@ function findExistingConversationFileInDir(dirPath, blockId, legacyTitle) {
     if (fs.existsSync(legacyPath)) {
       return legacyPath;
     }
+  }
+
+  return null;
+}
+
+function findExistingConversationFile(baseDir, dayDir, blockId, legacyTitle) {
+  const inCurrentDay = findExistingConversationFileInDir(dayDir, blockId, legacyTitle);
+  if (inCurrentDay) return inCurrentDay;
+  if (!fs.existsSync(baseDir)) return null;
+
+  for (const entry of fs.readdirSync(baseDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const candidateDir = path.join(baseDir, entry.name);
+    if (candidateDir === dayDir) continue;
+    const found = findExistingConversationFileInDir(candidateDir, blockId, legacyTitle);
+    if (found) return found;
   }
 
   return null;
@@ -264,10 +276,10 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
   conversation = normalizeConversationForMarkdown(conversation);
   const baseDir = getMarkdownBaseDir(options);
   const documentTitle = getConversationDocumentTitle(projectName, conversation);
-  const dateKey = dateKeyFromTimestamp(archiveTimestampFromConversation(conversation));
+  const dateKey = dateKeyFromTimestamp(conversation.createdAt || conversation.timestamp || conversation.updatedAt || Date.now());
   const dayDir = path.join(baseDir, dateKey);
   const { blockId, content } = buildConversationBlock(projectName, conversation);
-  const existingFilePath = findExistingConversationFileInDir(dayDir, blockId, documentTitle);
+  const existingFilePath = findExistingConversationFile(baseDir, dayDir, blockId, documentTitle);
   const projectFileName = `${documentTitle}.md`;
   const filePath = existingFilePath || path.join(dayDir, projectFileName);
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
