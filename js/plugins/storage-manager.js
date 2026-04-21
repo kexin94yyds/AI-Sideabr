@@ -11,9 +11,65 @@
   let db = null;
   const mirrorTimers = new Map();
 
+  function sendRuntimeMessage(message) {
+    return new Promise((resolve) => {
+      try {
+        if (typeof chrome === 'undefined' || typeof chrome.runtime?.sendMessage !== 'function') {
+          resolve({ ok: false, error: 'runtime_unavailable' });
+          return;
+        }
+
+        chrome.runtime.sendMessage(message, (response) => {
+          const lastError = chrome.runtime.lastError;
+          if (lastError) {
+            resolve({ ok: false, error: lastError.message || String(lastError) });
+            return;
+          }
+          resolve(response || { ok: false, error: 'empty_response' });
+        });
+      } catch (error) {
+        resolve({ ok: false, error: error?.message || String(error) });
+      }
+    });
+  }
+
+  async function mirrorConversationToNativeHost(conversation, source = 'storage-manager') {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    if (!messages.length) {
+      return { success: false, reason: 'messages_missing' };
+    }
+
+    if (typeof window.AutoSync?.syncConversation === 'function') {
+      try {
+        const result = await window.AutoSync.syncConversation(conversation);
+        if (result?.success !== false) {
+          return { success: true, result, transport: result?.transport || 'auto-sync' };
+        }
+        console.warn('[AI Sidebar] AutoSync conversation mirror declined:', source, result);
+      } catch (error) {
+        console.warn('[AI Sidebar] AutoSync conversation mirror failed:', source, error);
+      }
+    }
+
+    const response = await sendRuntimeMessage({
+      type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
+      project: 'AI-Sidebar',
+      conversation: {
+        ...conversation,
+        project: conversation?.project || 'AI-Sidebar'
+      }
+    });
+
+    if (!response?.ok) {
+      return { success: false, reason: response?.error || 'native_mirror_failed' };
+    }
+
+    return { success: true, result: response.result, transport: 'native-fallback' };
+  }
+
   function queueConversationMirror(conversation) {
     try {
-      if (typeof window === 'undefined' || typeof window.AutoSync?.syncConversation !== 'function') return;
+      if (typeof window === 'undefined') return;
 
       const key = String(
         conversation?.conversationId ||
@@ -27,7 +83,12 @@
       const timer = setTimeout(async () => {
         mirrorTimers.delete(key);
         try {
-          await window.AutoSync.syncConversation(conversation);
+          const result = await mirrorConversationToNativeHost(conversation);
+          if (result?.success === false) {
+            console.warn('[AI Sidebar] Conversation markdown mirror did not complete:', result);
+          } else {
+            console.log('[AI Sidebar] Conversation mirrored to markdown:', result);
+          }
         } catch (error) {
           console.warn('[AI Sidebar] Conversation markdown mirror failed:', error);
         }
