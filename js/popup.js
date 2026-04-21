@@ -530,7 +530,7 @@ let __pendingInlineEditCloseOnEnter = false;
 // Persist history panel search across re-renders
 let __historySearchQuery = '';
 // History panel view mode: 'link' or 'content'
-let __historyViewMode = 'link';
+let __historyViewMode = 'content';
 
 function escapeAttr(s) {
   return String(s || '')
@@ -2255,6 +2255,11 @@ const initializeBar = async () => {
             }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
+              __historyViewMode = 'content';
+              try {
+                const panel = document.getElementById('historyPanel');
+                if (panel && panel.style.display === 'block') renderHistoryPanel();
+              } catch (_) {}
               if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
               sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
@@ -3651,6 +3656,7 @@ initializeBar();
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
       const remaining = [];
+      let savedAny = false;
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3662,6 +3668,7 @@ initializeBar();
           };
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
+            savedAny = true;
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
           } else {
             remaining.push(item);
@@ -3672,6 +3679,13 @@ initializeBar();
         }
       }
       await chrome.storage.local.set({ __saveQueue: remaining });
+      if (savedAny) {
+        __historyViewMode = 'content';
+        try {
+          const panel = document.getElementById('historyPanel');
+          if (panel && panel.style.display === 'block') renderHistoryPanel();
+        } catch (_) {}
+      }
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);
