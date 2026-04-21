@@ -532,6 +532,28 @@ let __historySearchQuery = '';
 // History panel view mode: 'link' or 'content'
 let __historyViewMode = 'content';
 
+function sendRuntimeMessage(message) {
+  return new Promise((resolve) => {
+    try {
+      if (typeof chrome === 'undefined' || typeof chrome.runtime?.sendMessage !== 'function') {
+        resolve({ ok: false, error: 'runtime_unavailable' });
+        return;
+      }
+
+      chrome.runtime.sendMessage(message, (response) => {
+        const lastError = chrome.runtime.lastError;
+        if (lastError) {
+          resolve({ ok: false, error: lastError.message || String(lastError) });
+          return;
+        }
+        resolve(response || { ok: false, error: 'empty_response' });
+      });
+    } catch (error) {
+      resolve({ ok: false, error: error?.message || String(error) });
+    }
+  });
+}
+
 async function mirrorSavedConversationToMarkdown(conversation, source = 'history-save') {
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
   if (!messages.length) {
@@ -554,11 +576,7 @@ async function mirrorSavedConversationToMarkdown(conversation, source = 'history
   }
 
   try {
-    if (typeof chrome === 'undefined' || typeof chrome.runtime?.sendMessage !== 'function') {
-      return { ok: false, reason: 'runtime_unavailable' };
-    }
-
-    const response = await chrome.runtime.sendMessage({
+    const response = await sendRuntimeMessage({
       type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
       project: 'AI-Sidebar',
       conversation: {
