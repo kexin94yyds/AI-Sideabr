@@ -167,9 +167,14 @@ const AutoSync = (function() {
 
   function isConversationReadyForMirror(conversation) {
     if (!conversation || !Array.isArray(conversation.messages) || conversation.messages.length === 0) return false;
-    if (!isUsefulConversationTitle(conversation.title)) return false;
-    if (!hasStableConversationUrl(conversation.url, conversation.provider)) return false;
+    if (!hasStableConversationIdentity(conversation)) return false;
     return true;
+  }
+
+  function hasStableConversationIdentity(conversation) {
+    const conversationId = String(conversation?.conversationId || '').trim();
+    if (conversationId) return true;
+    return hasStableConversationUrl(conversation?.url, conversation?.provider);
   }
 
   async function syncConversation(conversation) {
@@ -448,7 +453,8 @@ const AutoSync = (function() {
     checkServerAvailability,
     isConversationReadyForMirror,
     isUsefulConversationTitle,
-    hasStableConversationUrl
+    hasStableConversationUrl,
+    hasStableConversationIdentity
   };
 })();
 
