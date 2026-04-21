@@ -638,37 +638,13 @@
         const result = window.exportChatToMarkdown();
         if (!result) throw new Error('Failed to capture chat');
 
-        // Check for duplicate if storage manager is present
-        if (typeof window.findDuplicate === 'function' && result.data.conversationId) {
-          const duplicate = await window.findDuplicate(result.data.conversationId);
-          if (duplicate) {
-            // We can't show confirm() easily from iframe to sidebar, 
-            // so we send a message back to sidebar to ask the user.
-            window.parent.postMessage({
-              type: 'AI_SIDEBAR_CONFIRM_UPDATE',
-              duplicate: { title: duplicate.title, id: duplicate.id },
-              result: result
-            }, '*');
-            return;
-          }
-        }
-
-        // Save if storage manager is present
-        if (typeof window.saveConversation === 'function') {
-          await window.saveConversation(result.data);
-          window.parent.postMessage({
-            type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
-            result: result,
-            saved: true
-          }, '*');
-        } else {
-          window.parent.postMessage({
-            type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
-            result: result,
-            saved: false,
-            warning: 'Storage manager not found, only exported'
-          }, '*');
-        }
+        const saved = await saveResultToExtensionHistory(result);
+        window.parent.postMessage({
+          type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
+          result: result,
+          saved: saved.ok,
+          warning: saved.ok ? '' : (saved.error || 'History save failed')
+        }, '*');
       } catch (err) {
         window.parent.postMessage({
           type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
@@ -732,6 +708,45 @@
     }
   }
 
+  function postSaveResultToParent(result, meta = null) {
+    window.parent.postMessage({
+      type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
+      data: result.data,
+      content: result.content,
+      meta
+    }, '*');
+  }
+
+  async function saveResultToExtensionHistory(result, meta = null) {
+    if (!result?.data) {
+      return { ok: false, error: 'missing_conversation_data' };
+    }
+
+    if (window.parent !== window) {
+      postSaveResultToParent(result, meta);
+      return { ok: true, via: 'parent' };
+    }
+
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        const response = await chrome.runtime.sendMessage({
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
+          data: result.data,
+          content: result.content,
+          meta
+        });
+        if (response?.ok === false) {
+          return { ok: false, error: response.error || 'save_queue_failed' };
+        }
+        return { ok: true, via: 'background' };
+      } catch (error) {
+        return { ok: false, error: error?.message || String(error) };
+      }
+    }
+
+    return { ok: false, error: 'extension_history_unavailable' };
+  }
+
   function isUsefulConversationTitle(title) {
     const value = String(title || '').trim();
     if (!value) return false;
@@ -770,7 +785,7 @@
 
   function canAutoSaveCurrentPage(provider, href, title) {
     if (window.top !== window) return false;
-    if (typeof window.saveConversation !== 'function') return false;
+    if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return false;
     return isUsefulConversationTitle(title) && hasStableConversationUrl(href, provider);
   }
 
@@ -795,8 +810,8 @@
         return { ok: false, reason: 'unchanged' };
       }
 
-      await window.saveConversation(result.data);
-      await syncSavedConversationToNativeHost(result.data);
+      const saved = await saveResultToExtensionHistory(result, { silent: true, provider });
+      if (!saved.ok) return { ok: false, reason: saved.error || 'history_save_failed' };
       pageAutoSaveState.lastFingerprint = fingerprint;
       return { ok: true, fingerprint };
     } finally {
@@ -993,35 +1008,13 @@
           return;
         }
 
-        if (typeof window.saveConversation === 'function') {
-          await window.saveConversation(result.data);
-          await syncSavedConversationToNativeHost(result.data);
-          showStatus('✓ Saved to library', 'success');
-          setTimeout(closePanel, 1500);
+        const saved = await saveResultToExtensionHistory(result);
+        if (!saved.ok) {
+          showStatus(`Save failed: ${saved.error || 'History unavailable'}`, 'error');
           return;
         }
 
-        const saveData = {
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
-          data: result.data,
-          content: result.content
-        };
-
-        // Try postMessage first (works if in sidebar iframe)
-        if (window.parent !== window) {
-          window.parent.postMessage(saveData, '*');
-        }
-
-        // Fallback to background queue only when storage manager is unavailable.
-        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-          try {
-            chrome.runtime.sendMessage(saveData);
-          } catch (e) {
-            console.log('[Exporter] runtime.sendMessage failed:', e);
-          }
-        }
-
-        showStatus('✓ Saved to library', 'success');
+        showStatus(saved.via === 'parent' ? '✓ Sent to history' : '✓ Save queued to history', 'success');
         setTimeout(closePanel, 1500);
       } catch (err) {
         showStatus(`Error: ${err.message}`, 'error');
@@ -1076,43 +1069,13 @@
         return;
       }
 
-      if (window.parent !== window) {
-        window.parent.postMessage({
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
-          data: result.data,
-          content: result.content,
-          meta: { shortcut: true }
-        }, '*');
+      const saved = await saveResultToExtensionHistory(result, { shortcut: true });
+      if (saved.ok) {
         setStatus('Saving to history...', 'info');
         return;
       }
 
-      if (typeof autoSaveCurrentConversation === 'function') {
-        const saved = await autoSaveCurrentConversation(true);
-        if (saved?.ok) {
-          setStatus('✓ Saved to history & folder', 'success');
-          return;
-        }
-      }
-
-      if (typeof window.saveConversation === 'function') {
-        await window.saveConversation(result.data);
-        const mirrored = await syncSavedConversationToNativeHost(result.data);
-        setStatus(mirrored ? '✓ Saved to history & folder' : '✓ Saved to history; folder sync pending', 'success');
-        return;
-      }
-
-      if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-        await chrome.runtime.sendMessage({
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY',
-          data: result.data,
-          content: result.content
-        });
-        setStatus('✓ Save queued', 'success');
-        return;
-      }
-
-      setStatus('Storage not available', 'error');
+      setStatus(`Save failed: ${saved.error || 'History unavailable'}`, 'error');
     } catch (error) {
       setStatus(`Error: ${error.message}`, 'error');
     }
