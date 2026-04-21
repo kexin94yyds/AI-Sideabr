@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin node
 
 const {
   getMarkdownBaseDirDetails,
