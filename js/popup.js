@@ -532,6 +532,53 @@ let __historySearchQuery = '';
 // History panel view mode: 'link' or 'content'
 let __historyViewMode = 'content';
 
+async function mirrorSavedConversationToMarkdown(conversation, source = 'history-save') {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  if (!messages.length) {
+    const result = { ok: false, reason: 'messages_missing' };
+    console.warn('[AI Sidebar] Conversation markdown mirror skipped:', source, result);
+    return result;
+  }
+
+  if (typeof window.AutoSync?.syncConversation === 'function') {
+    try {
+      const result = await window.AutoSync.syncConversation(conversation);
+      if (result && result.success !== false) {
+        console.log('[AI Sidebar] Conversation mirrored to markdown:', source, result);
+        return { ok: true, result, transport: result.transport || 'auto-sync' };
+      }
+      console.warn('[AI Sidebar] AutoSync declined conversation markdown mirror:', source, result);
+    } catch (error) {
+      console.warn('[AI Sidebar] AutoSync conversation markdown mirror failed:', source, error);
+    }
+  }
+
+  try {
+    if (typeof chrome === 'undefined' || typeof chrome.runtime?.sendMessage !== 'function') {
+      return { ok: false, reason: 'runtime_unavailable' };
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
+      project: 'AI-Sidebar',
+      conversation: {
+        ...conversation,
+        project: conversation?.project || 'AI-Sidebar'
+      }
+    });
+
+    if (!response?.ok) {
+      return { ok: false, reason: response?.error || 'native_mirror_failed' };
+    }
+
+    console.log('[AI Sidebar] Conversation mirrored to markdown via native fallback:', source, response.result);
+    return { ok: true, result: response.result, transport: 'native-fallback' };
+  } catch (error) {
+    console.warn('[AI Sidebar] Conversation markdown mirror failed:', source, error);
+    return { ok: false, reason: error?.message || String(error) };
+  }
+}
+
 function escapeAttr(s) {
   return String(s || '')
     .replace(/&/g, '&amp;')
@@ -2255,13 +2302,21 @@ const initializeBar = async () => {
             }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
+              const mirrorResult = await mirrorSavedConversationToMarkdown(convData, 'save-to-library-response');
               __historyViewMode = 'content';
               try {
                 const panel = document.getElementById('historyPanel');
                 if (panel && panel.style.display === 'block') renderHistoryPanel();
               } catch (_) {}
-              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
-              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
+              if (!isSilent) {
+                const mirrorOk = mirrorResult?.ok !== false;
+                updateStatus(mirrorOk ? `✓ Saved to library & local Markdown` : `✓ Saved to library (Markdown mirror pending)`, 'success');
+              }
+              sendShortcutAck({
+                ok: true,
+                status: mirrorResult?.ok === false ? 'history_saved_markdown_pending' : 'history_saved_markdown_synced',
+                mirror: mirrorResult
+              });
             } else {
               if (!isSilent) updateStatus('Storage not available', 'error');
               sendShortcutAck({ ok: false, error: 'Storage not available' });
@@ -2288,6 +2343,7 @@ const initializeBar = async () => {
           
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
+            await mirrorSavedConversationToMarkdown(convData, 'save-to-library-message');
             console.log('[AI Sidebar] Conversation saved to library');
           } else {
             console.error('[AI Sidebar] ChatHistoryDB not available');
@@ -3668,6 +3724,7 @@ initializeBar();
           };
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
+            await mirrorSavedConversationToMarkdown(convData, 'save-queue');
             savedAny = true;
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
           } else {
