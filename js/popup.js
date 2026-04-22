@@ -2365,6 +2365,18 @@ const initializeBar = async () => {
           return;
         }
 
+        if (format === 'original') {
+          try {
+            frame.contentWindow.postMessage({ type: 'AISB_PREPARE_LIVE_ORIGINAL_PRINT' }, '*');
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+            updateStatus('✓ Live original print opened', 'success');
+            return;
+          } catch (printError) {
+            dbg('Direct frame print failed, falling back to content script print', printError);
+          }
+        }
+
         // Send export request to iframe
         frame.contentWindow.postMessage({
           type: 'AI_SIDEBAR_EXPORT_REQUEST',
