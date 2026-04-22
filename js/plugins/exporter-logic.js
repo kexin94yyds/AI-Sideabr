@@ -388,17 +388,124 @@
     let lastIndex = 0;
     let match;
 
-    const textToParagraphs = (text) => {
-      const normalized = String(text || '').trim();
-      if (!normalized) return '';
-      return normalized
-        .split(/\n{2,}/)
-        .map((block) => `<p>${escapePrintableHtml(block).replace(/\n/g, '<br>')}</p>`)
-        .join('');
+    const renderInlineMarkdown = (text) => {
+      let html = escapePrintableHtml(text);
+      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
+      html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      html = html.replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+      html = html.replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>');
+      return html;
+    };
+
+    const splitTableRow = (line) => String(line || '')
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
+
+    const isTableDivider = (line) => {
+      const cells = splitTableRow(line);
+      return cells.length > 1 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+    };
+
+    const flushParagraph = (paragraphLines, out) => {
+      if (!paragraphLines.length) return;
+      out.push(`<p>${renderInlineMarkdown(paragraphLines.join('\n')).replace(/\n/g, '<br>')}</p>`);
+      paragraphLines.length = 0;
+    };
+
+    const renderMarkdownBlocks = (text) => {
+      const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+      const out = [];
+      const paragraph = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        if (!trimmed) {
+          flushParagraph(paragraph, out);
+          i += 1;
+          continue;
+        }
+
+        const heading = /^(#{1,6})\s+(.+)$/.exec(trimmed);
+        if (heading) {
+          flushParagraph(paragraph, out);
+          const level = Math.min(Number(heading[1].length) + 1, 4);
+          out.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+          i += 1;
+          continue;
+        }
+
+        if (/^>\s?/.test(trimmed)) {
+          flushParagraph(paragraph, out);
+          const quoteLines = [];
+          while (i < lines.length && /^>\s?/.test(lines[i].trim())) {
+            quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+            i += 1;
+          }
+          out.push(`<blockquote>${renderMarkdownBlocks(quoteLines.join('\n'))}</blockquote>`);
+          continue;
+        }
+
+        if (/^\s*[-*+]\s+/.test(line)) {
+          flushParagraph(paragraph, out);
+          const items = [];
+          while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+            items.push(lines[i].replace(/^\s*[-*+]\s+/, ''));
+            i += 1;
+          }
+          out.push(`<ul>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`);
+          continue;
+        }
+
+        if (/^\s*\d+[.)]\s+/.test(line)) {
+          flushParagraph(paragraph, out);
+          const items = [];
+          while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) {
+            items.push(lines[i].replace(/^\s*\d+[.)]\s+/, ''));
+            i += 1;
+          }
+          out.push(`<ol>${items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ol>`);
+          continue;
+        }
+
+        if (
+          trimmed.includes('|') &&
+          i + 1 < lines.length &&
+          isTableDivider(lines[i + 1])
+        ) {
+          flushParagraph(paragraph, out);
+          const headers = splitTableRow(trimmed);
+          i += 2;
+          const rows = [];
+          while (i < lines.length && lines[i].trim().includes('|')) {
+            rows.push(splitTableRow(lines[i]));
+            i += 1;
+          }
+          out.push(`
+            <table>
+              <thead><tr>${headers.map((cell) => `<th>${renderInlineMarkdown(cell)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map((row) => `<tr>${headers.map((_, index) => `<td>${renderInlineMarkdown(row[index] || '')}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>`);
+          continue;
+        }
+
+        paragraph.push(line);
+        i += 1;
+      }
+
+      flushParagraph(paragraph, out);
+      return out.join('');
     };
 
     while ((match = fencePattern.exec(source)) !== null) {
-      parts.push(textToParagraphs(source.slice(lastIndex, match.index)));
+      parts.push(renderMarkdownBlocks(source.slice(lastIndex, match.index)));
       const lang = String(match[1] || '').trim();
       const code = String(match[2] || '').replace(/^\n+|\n+$/g, '');
       parts.push(
@@ -407,7 +514,7 @@
       lastIndex = match.index + match[0].length;
     }
 
-    parts.push(textToParagraphs(source.slice(lastIndex)));
+    parts.push(renderMarkdownBlocks(source.slice(lastIndex)));
     return parts.join('');
   }
 
@@ -496,6 +603,54 @@
     }
     p { margin: 0 0 10px; }
     p:last-child { margin-bottom: 0; }
+    h2, h3, h4 {
+      margin: 18px 0 8px;
+      color: #111827;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+    h2 { font-size: 20px; }
+    h3 { font-size: 17px; }
+    h4 { font-size: 15px; }
+    ul, ol {
+      margin: 8px 0 12px 1.5em;
+      padding: 0;
+    }
+    li { margin: 4px 0; }
+    blockquote {
+      margin: 12px 0;
+      padding: 8px 12px;
+      border-left: 3px solid #9ca3af;
+      background: #f9fafb;
+      color: #374151;
+    }
+    table {
+      width: 100%;
+      margin: 12px 0;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      padding: 7px 8px;
+      border: 1px solid #d1d5db;
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: #f3f4f6;
+      color: #111827;
+      font-weight: 700;
+    }
+    a { color: #1d4ed8; text-decoration: underline; overflow-wrap: anywhere; }
+    strong { color: #111827; font-weight: 700; }
+    .inline-code {
+      padding: 1px 4px;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      border-radius: 3px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
     pre {
       margin: 12px 0;
       padding: 12px;
