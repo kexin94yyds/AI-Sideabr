@@ -1258,6 +1258,8 @@
         result = window.exportChatToJSON();
       } else if (data.format === 'pdf') {
         result = window.exportChatToPrintableHTML();
+      } else if (data.format === 'original') {
+        result = await window.exportChatToOriginalViewHTML();
       }
       
       if (result) {
@@ -1598,6 +1600,7 @@
         <button data-action="markdown">EXPORT MARKDOWN</button>
         <button data-action="json">EXPORT JSON</button>
         <button data-action="pdf">EXPORT PDF</button>
+        <button data-action="original">PRINT ORIGINAL VIEW</button>
       </div>
       <div class="ep-divider"></div>
       <div class="ep-section">
@@ -1682,6 +1685,18 @@
         setTimeout(closePanel, 1500);
       } else {
         showStatus('Failed to capture chat data', 'error');
+      }
+    });
+
+    panel.querySelector('[data-action="original"]').addEventListener('click', async () => {
+      showStatus('Preparing original view...', 'info');
+      const result = await window.exportChatToOriginalViewHTML();
+      if (result) {
+        const opened = openPrintDocument(result.filename, result.content);
+        showStatus(opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML', 'success');
+        setTimeout(closePanel, 1500);
+      } else {
+        showStatus('Failed to capture original view', 'error');
       }
     });
 
