@@ -1197,6 +1197,79 @@
     };
   };
 
+  function installLiveOriginalPrintStyles() {
+    const existing = document.getElementById('aisb-live-original-print-style');
+    if (existing) existing.remove();
+
+    const style = document.createElement('style');
+    style.id = 'aisb-live-original-print-style';
+    style.textContent = `
+      @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        nav, aside, header, footer,
+        form, textarea, input, select,
+        button,
+        [role="button"],
+        [contenteditable="true"],
+        [aria-label*="Copy"],
+        [aria-label*="复制"],
+        [aria-label*="Good response"],
+        [aria-label*="Bad response"],
+        #ai-sidebar-export-panel,
+        #ai-sidebar-export-panel-backdrop {
+          display: none !important;
+        }
+        body {
+          overflow: visible !important;
+        }
+        main,
+        [role="main"],
+        [data-testid^="conversation-turn-"],
+        [data-message-author-role],
+        user-query,
+        model-response,
+        message-content {
+          overflow: visible !important;
+          max-height: none !important;
+        }
+        img, canvas, svg, video {
+          max-width: 100% !important;
+          height: auto !important;
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
+        pre, code {
+          white-space: pre-wrap !important;
+          overflow-wrap: anywhere !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      try { style.remove(); } catch (_) {}
+    };
+  }
+
+  window.printLiveOriginalView = async function() {
+    const result = window.exportChatToMarkdown();
+    const cleanup = installLiveOriginalPrintStyles();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    try {
+      window.print();
+    } finally {
+      setTimeout(cleanup, 3000);
+    }
+    return {
+      livePrinted: true,
+      filename: `${safeExportBaseName(result?.data?.title || document.title || 'ai-chat')}_original_view.pdf`,
+      count: result?.count || getOriginalViewMessageBlocks().length || 0,
+      data: result?.data || null
+    };
+  };
+
   // ============================================================================
   // Communication Bridge for AI-Sidebar
   // ============================================================================
@@ -1260,7 +1333,7 @@
       } else if (data.format === 'pdf') {
         result = window.exportChatToPrintableHTML();
       } else if (data.format === 'original') {
-        result = await window.exportChatToOriginalViewHTML();
+        result = await window.printLiveOriginalView();
       }
       
       if (result) {
@@ -1690,11 +1763,10 @@
     });
 
     panel.querySelector('[data-action="original"]').addEventListener('click', async () => {
-      showStatus('Preparing original view...', 'info');
-      const result = await window.exportChatToOriginalViewHTML();
+      showStatus('Opening live print...', 'info');
+      const result = await window.printLiveOriginalView();
       if (result) {
-        const opened = openPrintDocument(result.filename, result.content);
-        showStatus(opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML', 'success');
+        showStatus('✓ Live original print opened', 'success');
         setTimeout(closePanel, 1500);
       } else {
         showStatus('Failed to capture original view', 'error');
