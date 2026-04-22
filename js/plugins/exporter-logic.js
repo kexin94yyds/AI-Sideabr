@@ -713,6 +713,489 @@
     };
   };
 
+  const ORIGINAL_VIEW_STYLE_PROPS = [
+    'display', 'box-sizing',
+    'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+    'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+    'border', 'border-top', 'border-right', 'border-bottom', 'border-left',
+    'border-radius', 'background', 'background-color', 'background-image',
+    'background-size', 'background-position', 'background-repeat',
+    'background-origin', 'background-clip', 'color',
+    'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
+    'letter-spacing', 'text-align', 'text-decoration', 'text-transform',
+    'white-space', 'overflow-wrap', 'word-break',
+    'list-style-type', 'list-style-position',
+    'width', 'max-width', 'min-width', 'height', 'max-height', 'min-height',
+    'align-items', 'align-self', 'justify-content', 'flex-direction', 'flex-wrap',
+    'gap', 'row-gap', 'column-gap',
+    'grid-template-columns', 'grid-template-rows',
+    'vertical-align'
+  ];
+
+  function isRenderableOriginalNode(el) {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return false;
+    const text = String(el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (text.length < 2 && !el.querySelector('img, pre, code, table')) return false;
+    try {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function getOriginalViewMessageBlocks() {
+    const selectors = [
+      '[data-testid^="conversation-turn-"]',
+      '[data-message-author-role]',
+      'article[data-testid]',
+      'user-query',
+      'model-response',
+      'message-content',
+      '[class*="conversation-turn"]',
+      '[class*="chat-turn"]',
+      '[class*="ds-message"]',
+      '[data-test-render-count]'
+    ];
+    const nodes = selectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)));
+    const unique = Array.from(new Set(nodes)).filter(isRenderableOriginalNode);
+    const outermost = unique.filter((node) => !unique.some((other) => other !== node && other.contains(node)));
+    outermost.sort((a, b) => {
+      if (a === b) return 0;
+      const position = a.compareDocumentPosition(b);
+      if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      return 0;
+    });
+    return outermost;
+  }
+
+  function findCommonAncestor(nodes) {
+    if (!nodes.length) return null;
+    let current = nodes[0];
+    while (current && current !== document.body) {
+      if (nodes.every((node) => current.contains(node))) return current;
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  function findOriginalViewRoot() {
+    const blocks = getOriginalViewMessageBlocks();
+    const ancestor = findCommonAncestor(blocks);
+    if (ancestor && ancestor !== document.body) return ancestor;
+
+    const fallbacks = [
+      'main',
+      '[role="main"]',
+      '[data-testid="conversation"]',
+      '[class*="conversation"]',
+      '[class*="chat"]'
+    ];
+    for (const selector of fallbacks) {
+      const el = document.querySelector(selector);
+      if (isRenderableOriginalNode(el)) return el;
+    }
+
+    return document.body;
+  }
+
+  function inlineOriginalViewStyles(source, clone) {
+    if (!source || !clone || source.nodeType !== Node.ELEMENT_NODE || clone.nodeType !== Node.ELEMENT_NODE) return;
+
+    try {
+      const computed = window.getComputedStyle(source);
+      const rules = ORIGINAL_VIEW_STYLE_PROPS
+        .map((prop) => {
+          const value = computed.getPropertyValue(prop);
+          return value ? `${prop}:${value}` : '';
+        })
+        .filter(Boolean);
+      if (rules.length) clone.setAttribute('style', rules.join(';'));
+    } catch (_) {}
+
+    const sourceChildren = Array.from(source.children || []);
+    const cloneChildren = Array.from(clone.children || []);
+    sourceChildren.forEach((child, index) => inlineOriginalViewStyles(child, cloneChildren[index]));
+  }
+
+  function cleanOriginalViewClone(clone) {
+    if (!clone || clone.nodeType !== Node.ELEMENT_NODE) return clone;
+
+    const noiseSelectors = [
+      'script', 'style', 'noscript',
+      'button', 'textarea', 'input', 'select', 'form',
+      '[role="button"]',
+      '[aria-label*="Copy"]',
+      '[aria-label*="复制"]',
+      '[aria-label*="Good response"]',
+      '[aria-label*="Bad response"]',
+      '[contenteditable="true"]',
+      '.sr-only',
+      '[aria-hidden="true"]'
+    ];
+
+    clone.querySelectorAll(noiseSelectors.join(',')).forEach((el) => el.remove());
+    clone.querySelectorAll('[style]').forEach((el) => {
+      const style = el.getAttribute('style') || '';
+      const normalized = style
+        .replace(/position:\s*(fixed|sticky);?/gi, 'position: static;')
+        .replace(/overflow:\s*(auto|scroll|hidden);?/gi, 'overflow: visible;')
+        .replace(/max-height:\s*[^;]+;?/gi, 'max-height: none;')
+        .replace(/min-height:\s*[^;]+;?/gi, 'min-height: 0;');
+      el.setAttribute('style', normalized);
+    });
+
+    return clone;
+  }
+
+  function normalizeOriginalPrintBlock(clone) {
+    if (!clone || clone.nodeType !== Node.ELEMENT_NODE) return clone;
+    clone.setAttribute('data-aisb-original-block', '1');
+    clone.style.position = 'static';
+    clone.style.inset = 'auto';
+    clone.style.transform = 'none';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    clone.style.height = 'auto';
+    clone.style.opacity = '1';
+    clone.style.visibility = 'visible';
+    clone.style.breakInside = 'avoid';
+    clone.style.pageBreakInside = 'avoid';
+    clone.style.justifyContent = 'flex-start';
+    clone.style.alignItems = 'stretch';
+    clone.style.marginTop = '0';
+    clone.style.paddingTop = '0';
+    clone.style.marginBottom = clone.style.marginBottom || '16px';
+    return clone;
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('Failed to read blob'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function fetchImageDataUrlByRuntime(url) {
+    if (!url || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return '';
+
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'gv.fetchImage', url }, (response) => {
+          if (chrome.runtime.lastError || !response?.ok || !response?.base64) {
+            resolve('');
+            return;
+          }
+          resolve(`data:${response.contentType || 'image/png'};base64,${response.base64}`);
+        });
+      } catch (_) {
+        resolve('');
+      }
+    });
+  }
+
+  async function fetchImageDataUrl(url) {
+    const src = String(url || '').trim();
+    if (!src) return '';
+    if (src.startsWith('data:')) return src;
+
+    try {
+      const response = await fetch(src, {
+        credentials: 'include',
+        cache: 'force-cache'
+      });
+      if (response.ok) {
+        return await blobToDataUrl(await response.blob());
+      }
+    } catch (_) {}
+
+    if (/^https?:\/\//i.test(src)) {
+      return await fetchImageDataUrlByRuntime(src);
+    }
+
+    return '';
+  }
+
+  function imageElementToDataUrl(img) {
+    try {
+      if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return '';
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const context = canvas.getContext('2d');
+      if (!context) return '';
+      context.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function inlineOriginalViewImages(sourceRoot, cloneRoot) {
+    const sourceImages = Array.from(sourceRoot.querySelectorAll('img'));
+    const cloneImages = Array.from(cloneRoot.querySelectorAll('img'));
+    const maxImages = 80;
+
+    for (let index = 0; index < Math.min(sourceImages.length, cloneImages.length, maxImages); index += 1) {
+      const sourceImage = sourceImages[index];
+      const cloneImage = cloneImages[index];
+      const src = sourceImage.currentSrc || sourceImage.getAttribute('src') || cloneImage.getAttribute('src') || '';
+
+      let dataUrl = imageElementToDataUrl(sourceImage);
+      if (!dataUrl) dataUrl = await fetchImageDataUrl(src);
+      if (!dataUrl) continue;
+
+      cloneImage.setAttribute('src', dataUrl);
+      cloneImage.removeAttribute('srcset');
+      cloneImage.removeAttribute('sizes');
+      cloneImage.setAttribute('loading', 'eager');
+      cloneImage.setAttribute('decoding', 'sync');
+
+      const picture = cloneImage.closest('picture');
+      if (picture) {
+        picture.querySelectorAll('source').forEach((source) => source.remove());
+      }
+    }
+
+    const sourceCanvases = Array.from(sourceRoot.querySelectorAll('canvas'));
+    const cloneCanvases = Array.from(cloneRoot.querySelectorAll('canvas'));
+    sourceCanvases.forEach((sourceCanvas, index) => {
+      const cloneCanvas = cloneCanvases[index];
+      if (!cloneCanvas) return;
+      try {
+        const dataUrl = sourceCanvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = cloneCanvas.getAttribute('aria-label') || 'canvas';
+        cloneCanvas.replaceWith(img);
+      } catch (_) {}
+    });
+  }
+
+  function extractCssUrlValues(value) {
+    const urls = [];
+    const pattern = /url\((['"]?)(.*?)\1\)/g;
+    let match;
+    while ((match = pattern.exec(String(value || ''))) !== null) {
+      const url = String(match[2] || '').trim();
+      if (url) urls.push(url);
+    }
+    return urls;
+  }
+
+  function toAbsoluteResourceUrl(url) {
+    const value = String(url || '').trim();
+    if (!value || value.startsWith('data:') || value.startsWith('blob:')) return value;
+    try {
+      return new URL(value, window.location.href).href;
+    } catch (_) {
+      return value;
+    }
+  }
+
+  async function inlineOriginalViewBackgroundImages(sourceRoot, cloneRoot) {
+    const sourceNodes = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll('*'))];
+    const cloneNodes = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll('*'))];
+    const cache = new Map();
+
+    for (let index = 0; index < Math.min(sourceNodes.length, cloneNodes.length); index += 1) {
+      const sourceNode = sourceNodes[index];
+      const cloneNode = cloneNodes[index];
+      if (!(sourceNode instanceof Element) || !(cloneNode instanceof HTMLElement)) continue;
+
+      let backgroundImage = '';
+      try {
+        backgroundImage = window.getComputedStyle(sourceNode).backgroundImage || '';
+      } catch (_) {
+        continue;
+      }
+
+      const urls = extractCssUrlValues(backgroundImage);
+      if (!urls.length) continue;
+
+      let nextBackgroundImage = backgroundImage;
+      for (const rawUrl of urls) {
+        const absoluteUrl = toAbsoluteResourceUrl(rawUrl);
+        if (!absoluteUrl || absoluteUrl.startsWith('data:')) continue;
+
+        if (!cache.has(absoluteUrl)) {
+          cache.set(absoluteUrl, fetchImageDataUrl(absoluteUrl).catch(() => ''));
+        }
+        const dataUrl = await cache.get(absoluteUrl);
+        if (!dataUrl) continue;
+
+        nextBackgroundImage = nextBackgroundImage.split(rawUrl).join(dataUrl);
+      }
+
+      if (nextBackgroundImage !== backgroundImage) {
+        cloneNode.style.backgroundImage = nextBackgroundImage;
+      }
+    }
+  }
+
+  async function buildOriginalViewContentHtml(root) {
+    const blocks = getOriginalViewMessageBlocks();
+    if (blocks.length) {
+      const html = [];
+      for (const block of blocks) {
+        const clonedBlock = block.cloneNode(true);
+        inlineOriginalViewStyles(block, clonedBlock);
+        cleanOriginalViewClone(clonedBlock);
+        normalizeOriginalPrintBlock(clonedBlock);
+        await inlineOriginalViewImages(block, clonedBlock);
+        await inlineOriginalViewBackgroundImages(block, clonedBlock);
+        html.push(clonedBlock.outerHTML);
+      }
+      return html.join('\n');
+    }
+
+    const clonedRoot = root.cloneNode(true);
+    inlineOriginalViewStyles(root, clonedRoot);
+    cleanOriginalViewClone(clonedRoot);
+    normalizeOriginalPrintBlock(clonedRoot);
+    await inlineOriginalViewImages(root, clonedRoot);
+    await inlineOriginalViewBackgroundImages(root, clonedRoot);
+    return clonedRoot.outerHTML;
+  }
+
+  async function buildOriginalViewPrintHtml(root, meta) {
+    const contentHtml = await buildOriginalViewContentHtml(root);
+    const title = String(meta?.title || document.title || 'AI Chat').trim() || 'AI Chat';
+    const url = String(meta?.url || window.location.href || '').trim();
+    const exportedAt = new Date().toLocaleString();
+
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapePrintableHtml(title)} - Original View Export</title>
+  <style>
+    @page { size: A4; margin: 10mm; }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      background: #ffffff;
+      color: #111827;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .original-export-meta {
+      margin: 0 auto 16px;
+      max-width: 980px;
+      padding: 14px 16px;
+      border-bottom: 1px solid #d1d5db;
+      color: #4b5563;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+    .original-export-meta h1 {
+      margin: 0 0 6px;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+    .original-export-content {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 12px 32px;
+    }
+    .original-export-content,
+    .original-export-content * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .original-export-content [data-aisb-original-block] {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      justify-content: flex-start !important;
+      align-items: stretch !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+    .original-export-content [data-aisb-original-block] * {
+      max-height: none !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+    }
+    .original-export-content img,
+    .original-export-content video,
+    .original-export-content canvas {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    .original-export-content pre,
+    .original-export-content code {
+      white-space: pre-wrap !important;
+      overflow-wrap: anywhere !important;
+    }
+    .original-export-content [data-testid^="conversation-turn-"],
+    .original-export-content user-query,
+    .original-export-content model-response,
+    .original-export-content message-content {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    @media print {
+      .original-export-content {
+        max-width: none;
+        padding: 0;
+      }
+      .original-export-meta {
+        max-width: none;
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="original-export-meta">
+    <h1>${escapePrintableHtml(title)}</h1>
+    <div><strong>Exported:</strong> ${escapePrintableHtml(exportedAt)}</div>
+    ${url ? `<div><strong>Source:</strong> ${escapePrintableHtml(url)}</div>` : ''}
+  </section>
+  <main class="original-export-content">
+    ${contentHtml}
+  </main>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        try { window.print(); } catch (_) {}
+      }, 450);
+    });
+  </script>
+</body>
+</html>`;
+  }
+
+  window.exportChatToOriginalViewHTML = async function() {
+    const result = window.exportChatToMarkdown();
+    const root = findOriginalViewRoot();
+    if (!root) return null;
+
+    const title = result?.data?.title || document.title || 'AI Chat';
+    return {
+      filename: `${safeExportBaseName(title)}_original_view.html`,
+      content: await buildOriginalViewPrintHtml(root, {
+        title,
+        url: result?.data?.url || window.location.href
+      }),
+      count: result?.count || getOriginalViewMessageBlocks().length || 0,
+      data: result?.data || null
+    };
+  };
+
   // ============================================================================
   // Communication Bridge for AI-Sidebar
   // ============================================================================
