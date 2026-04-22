@@ -2182,6 +2182,10 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
+          if (data.format === 'original' && result.livePrinted) {
+            updateStatus('✓ Live original print opened', 'success');
+            return;
+          }
           if (data.format === 'pdf' || data.format === 'original') {
             const opened = openPrintDocument(result.filename, result.content);
             updateStatus(
