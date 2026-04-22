@@ -837,10 +837,116 @@
     return clone;
   }
 
-  function buildOriginalViewPrintHtml(root, meta) {
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('Failed to read blob'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function fetchImageDataUrlByRuntime(url) {
+    if (!url || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return '';
+
+    return new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({ type: 'gv.fetchImage', url }, (response) => {
+          if (chrome.runtime.lastError || !response?.ok || !response?.base64) {
+            resolve('');
+            return;
+          }
+          resolve(`data:${response.contentType || 'image/png'};base64,${response.base64}`);
+        });
+      } catch (_) {
+        resolve('');
+      }
+    });
+  }
+
+  async function fetchImageDataUrl(url) {
+    const src = String(url || '').trim();
+    if (!src) return '';
+    if (src.startsWith('data:')) return src;
+
+    try {
+      const response = await fetch(src, {
+        credentials: 'include',
+        cache: 'force-cache'
+      });
+      if (response.ok) {
+        return await blobToDataUrl(await response.blob());
+      }
+    } catch (_) {}
+
+    if (/^https?:\/\//i.test(src)) {
+      return await fetchImageDataUrlByRuntime(src);
+    }
+
+    return '';
+  }
+
+  function imageElementToDataUrl(img) {
+    try {
+      if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return '';
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const context = canvas.getContext('2d');
+      if (!context) return '';
+      context.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  async function inlineOriginalViewImages(sourceRoot, cloneRoot) {
+    const sourceImages = Array.from(sourceRoot.querySelectorAll('img'));
+    const cloneImages = Array.from(cloneRoot.querySelectorAll('img'));
+    const maxImages = 80;
+
+    for (let index = 0; index < Math.min(sourceImages.length, cloneImages.length, maxImages); index += 1) {
+      const sourceImage = sourceImages[index];
+      const cloneImage = cloneImages[index];
+      const src = sourceImage.currentSrc || sourceImage.getAttribute('src') || cloneImage.getAttribute('src') || '';
+
+      let dataUrl = imageElementToDataUrl(sourceImage);
+      if (!dataUrl) dataUrl = await fetchImageDataUrl(src);
+      if (!dataUrl) continue;
+
+      cloneImage.setAttribute('src', dataUrl);
+      cloneImage.removeAttribute('srcset');
+      cloneImage.removeAttribute('sizes');
+      cloneImage.setAttribute('loading', 'eager');
+      cloneImage.setAttribute('decoding', 'sync');
+
+      const picture = cloneImage.closest('picture');
+      if (picture) {
+        picture.querySelectorAll('source').forEach((source) => source.remove());
+      }
+    }
+
+    const sourceCanvases = Array.from(sourceRoot.querySelectorAll('canvas'));
+    const cloneCanvases = Array.from(cloneRoot.querySelectorAll('canvas'));
+    sourceCanvases.forEach((sourceCanvas, index) => {
+      const cloneCanvas = cloneCanvases[index];
+      if (!cloneCanvas) return;
+      try {
+        const dataUrl = sourceCanvas.toDataURL('image/png');
+        const img = document.createElement('img');
+        img.src = dataUrl;
+        img.alt = cloneCanvas.getAttribute('aria-label') || 'canvas';
+        cloneCanvas.replaceWith(img);
+      } catch (_) {}
+    });
+  }
+
+  async function buildOriginalViewPrintHtml(root, meta) {
     const clonedRoot = root.cloneNode(true);
     inlineOriginalViewStyles(root, clonedRoot);
     cleanOriginalViewClone(clonedRoot);
+    await inlineOriginalViewImages(root, clonedRoot);
 
     const title = String(meta?.title || document.title || 'AI Chat').trim() || 'AI Chat';
     const url = String(meta?.url || window.location.href || '').trim();
@@ -934,7 +1040,7 @@
 </html>`;
   }
 
-  window.exportChatToOriginalViewHTML = function() {
+  window.exportChatToOriginalViewHTML = async function() {
     const result = window.exportChatToMarkdown();
     const root = findOriginalViewRoot();
     if (!root) return null;
@@ -942,7 +1048,7 @@
     const title = result?.data?.title || document.title || 'AI Chat';
     return {
       filename: `${safeExportBaseName(title)}_original_view.html`,
-      content: buildOriginalViewPrintHtml(root, {
+      content: await buildOriginalViewPrintHtml(root, {
         title,
         url: result?.data?.url || window.location.href
       }),
@@ -1014,7 +1120,7 @@
       } else if (data.format === 'pdf') {
         result = window.exportChatToPrintableHTML();
       } else if (data.format === 'original') {
-        result = window.exportChatToOriginalViewHTML();
+        result = await window.exportChatToOriginalViewHTML();
       }
       
       if (result) {
@@ -1443,8 +1549,9 @@
       }
     });
 
-    panel.querySelector('[data-action="original"]').addEventListener('click', () => {
-      const result = window.exportChatToOriginalViewHTML();
+    panel.querySelector('[data-action="original"]').addEventListener('click', async () => {
+      showStatus('Preparing original view...', 'info');
+      const result = await window.exportChatToOriginalViewHTML();
       if (result) {
         const opened = openPrintDocument(result.filename, result.content);
         showStatus(opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML', 'success');
