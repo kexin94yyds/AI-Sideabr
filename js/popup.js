@@ -2182,18 +2182,9 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          if (data.format === 'original' && result.livePrinted) {
-            updateStatus('✓ Live original print opened', 'success');
-            return;
-          }
-          if (data.format === 'pdf' || data.format === 'original') {
+          if (data.format === 'pdf') {
             const opened = openPrintDocument(result.filename, result.content);
-            updateStatus(
-              data.format === 'original'
-                ? (opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML')
-                : (opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML'),
-              'success'
-            );
+            updateStatus(opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML', 'success');
           } else {
             downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
             updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
@@ -2365,18 +2356,6 @@ const initializeBar = async () => {
           return;
         }
 
-        if (format === 'original') {
-          try {
-            frame.contentWindow.postMessage({ type: 'AISB_PREPARE_LIVE_ORIGINAL_PRINT' }, '*');
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-            updateStatus('✓ Live original print opened', 'success');
-            return;
-          } catch (printError) {
-            dbg('Direct frame print failed, falling back to content script print', printError);
-          }
-        }
-
         // Send export request to iframe
         frame.contentWindow.postMessage({
           type: 'AI_SIDEBAR_EXPORT_REQUEST',
@@ -2391,7 +2370,6 @@ const initializeBar = async () => {
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
     document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
-    document.getElementById('ep-print-original')?.addEventListener('click', () => runExport('original'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
