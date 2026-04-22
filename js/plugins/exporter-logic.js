@@ -718,7 +718,9 @@
     'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
     'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
     'border', 'border-top', 'border-right', 'border-bottom', 'border-left',
-    'border-radius', 'background', 'background-color', 'color',
+    'border-radius', 'background', 'background-color', 'background-image',
+    'background-size', 'background-position', 'background-repeat',
+    'background-origin', 'background-clip', 'color',
     'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
     'letter-spacing', 'text-align', 'text-decoration', 'text-transform',
     'white-space', 'overflow-wrap', 'word-break',
@@ -973,6 +975,67 @@
     });
   }
 
+  function extractCssUrlValues(value) {
+    const urls = [];
+    const pattern = /url\((['"]?)(.*?)\1\)/g;
+    let match;
+    while ((match = pattern.exec(String(value || ''))) !== null) {
+      const url = String(match[2] || '').trim();
+      if (url) urls.push(url);
+    }
+    return urls;
+  }
+
+  function toAbsoluteResourceUrl(url) {
+    const value = String(url || '').trim();
+    if (!value || value.startsWith('data:') || value.startsWith('blob:')) return value;
+    try {
+      return new URL(value, window.location.href).href;
+    } catch (_) {
+      return value;
+    }
+  }
+
+  async function inlineOriginalViewBackgroundImages(sourceRoot, cloneRoot) {
+    const sourceNodes = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll('*'))];
+    const cloneNodes = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll('*'))];
+    const cache = new Map();
+
+    for (let index = 0; index < Math.min(sourceNodes.length, cloneNodes.length); index += 1) {
+      const sourceNode = sourceNodes[index];
+      const cloneNode = cloneNodes[index];
+      if (!(sourceNode instanceof Element) || !(cloneNode instanceof HTMLElement)) continue;
+
+      let backgroundImage = '';
+      try {
+        backgroundImage = window.getComputedStyle(sourceNode).backgroundImage || '';
+      } catch (_) {
+        continue;
+      }
+
+      const urls = extractCssUrlValues(backgroundImage);
+      if (!urls.length) continue;
+
+      let nextBackgroundImage = backgroundImage;
+      for (const rawUrl of urls) {
+        const absoluteUrl = toAbsoluteResourceUrl(rawUrl);
+        if (!absoluteUrl || absoluteUrl.startsWith('data:')) continue;
+
+        if (!cache.has(absoluteUrl)) {
+          cache.set(absoluteUrl, fetchImageDataUrl(absoluteUrl).catch(() => ''));
+        }
+        const dataUrl = await cache.get(absoluteUrl);
+        if (!dataUrl) continue;
+
+        nextBackgroundImage = nextBackgroundImage.split(rawUrl).join(dataUrl);
+      }
+
+      if (nextBackgroundImage !== backgroundImage) {
+        cloneNode.style.backgroundImage = nextBackgroundImage;
+      }
+    }
+  }
+
   async function buildOriginalViewContentHtml(root) {
     const blocks = getOriginalViewMessageBlocks();
     if (blocks.length) {
@@ -983,6 +1046,7 @@
         cleanOriginalViewClone(clonedBlock);
         normalizeOriginalPrintBlock(clonedBlock);
         await inlineOriginalViewImages(block, clonedBlock);
+        await inlineOriginalViewBackgroundImages(block, clonedBlock);
         html.push(clonedBlock.outerHTML);
       }
       return html.join('\n');
@@ -993,6 +1057,7 @@
     cleanOriginalViewClone(clonedRoot);
     normalizeOriginalPrintBlock(clonedRoot);
     await inlineOriginalViewImages(root, clonedRoot);
+    await inlineOriginalViewBackgroundImages(root, clonedRoot);
     return clonedRoot.outerHTML;
   }
 
