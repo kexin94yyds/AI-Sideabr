@@ -296,13 +296,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Fetch image binary via service worker (用于跨域图片下载/导出)
     if (msg && msg.type === 'gv.fetchImage' && typeof msg.url === 'string') {
       try {
-        const response = await fetch(msg.url, {
-          credentials: 'omit',
-          cache: 'no-cache'
-        });
+        let response = null;
+        let lastError = null;
+        for (const credentials of ['include', 'omit']) {
+          try {
+            response = await fetch(msg.url, {
+              credentials,
+              cache: 'no-cache'
+            });
+            if (response.ok) break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
 
-        if (!response.ok) {
-          sendResponse({ ok: false, error: `HTTP ${response.status}` });
+        if (!response || !response.ok) {
+          sendResponse({ ok: false, error: response ? `HTTP ${response.status}` : String(lastError || 'fetch failed') });
           return;
         }
 
