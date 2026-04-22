@@ -1255,13 +1255,9 @@
 
   window.printLiveOriginalView = async function() {
     const result = window.exportChatToMarkdown();
-    const cleanup = installLiveOriginalPrintStyles();
+    installLiveOriginalPrintStyles();
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    try {
-      window.print();
-    } finally {
-      setTimeout(cleanup, 3000);
-    }
+    window.print();
     return {
       livePrinted: true,
       filename: `${safeExportBaseName(result?.data?.title || document.title || 'ai-chat')}_original_view.pdf`,
@@ -1269,6 +1265,8 @@
       data: result?.data || null
     };
   };
+
+  try { installLiveOriginalPrintStyles(); } catch (_) {}
 
   // ============================================================================
   // Communication Bridge for AI-Sidebar
@@ -1304,6 +1302,11 @@
 
     if (data.type === 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL') {
       await shortcutSaveToggleExportPanel();
+      return;
+    }
+
+    if (data.type === 'AISB_PREPARE_LIVE_ORIGINAL_PRINT') {
+      installLiveOriginalPrintStyles();
       return;
     }
 
