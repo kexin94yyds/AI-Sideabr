@@ -756,7 +756,16 @@
       '[data-test-render-count]'
     ];
     const nodes = selectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)));
-    return Array.from(new Set(nodes)).filter(isRenderableOriginalNode);
+    const unique = Array.from(new Set(nodes)).filter(isRenderableOriginalNode);
+    const outermost = unique.filter((node) => !unique.some((other) => other !== node && other.contains(node)));
+    outermost.sort((a, b) => {
+      if (a === b) return 0;
+      const position = a.compareDocumentPosition(b);
+      if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      return 0;
+    });
+    return outermost;
   }
 
   function findCommonAncestor(nodes) {
@@ -834,6 +843,23 @@
       el.setAttribute('style', normalized);
     });
 
+    return clone;
+  }
+
+  function normalizeOriginalPrintBlock(clone) {
+    if (!clone || clone.nodeType !== Node.ELEMENT_NODE) return clone;
+    clone.setAttribute('data-aisb-original-block', '1');
+    clone.style.position = 'static';
+    clone.style.inset = 'auto';
+    clone.style.transform = 'none';
+    clone.style.overflow = 'visible';
+    clone.style.maxHeight = 'none';
+    clone.style.height = 'auto';
+    clone.style.opacity = '1';
+    clone.style.visibility = 'visible';
+    clone.style.breakInside = 'avoid';
+    clone.style.pageBreakInside = 'avoid';
+    clone.style.marginBottom = clone.style.marginBottom || '16px';
     return clone;
   }
 
@@ -942,11 +968,31 @@
     });
   }
 
-  async function buildOriginalViewPrintHtml(root, meta) {
+  async function buildOriginalViewContentHtml(root) {
+    const blocks = getOriginalViewMessageBlocks();
+    if (blocks.length) {
+      const html = [];
+      for (const block of blocks) {
+        const clonedBlock = block.cloneNode(true);
+        inlineOriginalViewStyles(block, clonedBlock);
+        cleanOriginalViewClone(clonedBlock);
+        normalizeOriginalPrintBlock(clonedBlock);
+        await inlineOriginalViewImages(block, clonedBlock);
+        html.push(clonedBlock.outerHTML);
+      }
+      return html.join('\n');
+    }
+
     const clonedRoot = root.cloneNode(true);
     inlineOriginalViewStyles(root, clonedRoot);
     cleanOriginalViewClone(clonedRoot);
+    normalizeOriginalPrintBlock(clonedRoot);
     await inlineOriginalViewImages(root, clonedRoot);
+    return clonedRoot.outerHTML;
+  }
+
+  async function buildOriginalViewPrintHtml(root, meta) {
+    const contentHtml = await buildOriginalViewContentHtml(root);
 
     const title = String(meta?.title || document.title || 'AI Chat').trim() || 'AI Chat';
     const url = String(meta?.url || window.location.href || '').trim();
@@ -989,6 +1035,21 @@
       margin: 0 auto;
       padding: 0 12px 32px;
     }
+    .original-export-content,
+    .original-export-content * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .original-export-content [data-aisb-original-block] {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
     .original-export-content img,
     .original-export-content video,
     .original-export-content canvas {
@@ -1027,7 +1088,7 @@
     ${url ? `<div><strong>Source:</strong> ${escapePrintableHtml(url)}</div>` : ''}
   </section>
   <main class="original-export-content">
-    ${clonedRoot.outerHTML}
+    ${contentHtml}
   </main>
   <script>
     window.addEventListener('load', () => {
