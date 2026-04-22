@@ -839,7 +839,8 @@
       const normalized = style
         .replace(/position:\s*(fixed|sticky);?/gi, 'position: static;')
         .replace(/overflow:\s*(auto|scroll|hidden);?/gi, 'overflow: visible;')
-        .replace(/max-height:\s*[^;]+;?/gi, 'max-height: none;');
+        .replace(/max-height:\s*[^;]+;?/gi, 'max-height: none;')
+        .replace(/min-height:\s*[^;]+;?/gi, 'min-height: 0;');
       el.setAttribute('style', normalized);
     });
 
@@ -859,6 +860,10 @@
     clone.style.visibility = 'visible';
     clone.style.breakInside = 'avoid';
     clone.style.pageBreakInside = 'avoid';
+    clone.style.justifyContent = 'flex-start';
+    clone.style.alignItems = 'stretch';
+    clone.style.marginTop = '0';
+    clone.style.paddingTop = '0';
     clone.style.marginBottom = clone.style.marginBottom || '16px';
     return clone;
   }
@@ -1049,6 +1054,15 @@
       overflow: visible !important;
       opacity: 1 !important;
       visibility: visible !important;
+      justify-content: flex-start !important;
+      align-items: stretch !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+    .original-export-content [data-aisb-original-block] * {
+      max-height: none !important;
+      min-height: 0 !important;
+      overflow: visible !important;
     }
     .original-export-content img,
     .original-export-content video,
