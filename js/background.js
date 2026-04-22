@@ -32,9 +32,12 @@ const DNR_CONFIG = {
     "https://mubu.com/*",
     "https://*.mubu.com/*",
     "https://excalidraw.com/*",
-    "https://tobooks.netlify.app/*"
+    "https://tobooks.xin/*"
   ]
 };
+
+const NATIVE_HOST_NAME = 'com.aisidebar.bridge';
+let lastShortcutTarget = { surface: '', tabId: null, at: 0 };
 
 // 生成DNR规则的工厂函数
 function createDnrRules() {
@@ -168,6 +171,42 @@ chrome.cookies.onChanged.addListener((change) => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
+      if (msg && msg.type === 'AISB_SHORTCUT_TARGET') {
+        const surface = String(msg.surface || '');
+        if (surface !== 'page' && surface !== 'sidepanel') {
+          sendResponse({ ok: false, error: 'invalid_surface' });
+          return;
+        }
+        if (surface === 'page' && !sender?.tab?.id) {
+          sendResponse({ ok: false, error: 'missing_tab' });
+          return;
+        }
+        lastShortcutTarget = {
+          surface,
+          tabId: sender?.tab?.id || null,
+          windowId: sender?.tab?.windowId || null,
+          at: Date.now()
+        };
+        sendResponse({ ok: true });
+        return;
+      }
+      if (msg && msg.type === 'AI_SIDEBAR_NATIVE_HOST_PING') {
+        const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, { type: 'ping' });
+        sendResponse({ ok: true, result });
+        return;
+      }
+      if (msg && msg.type === 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE') {
+        const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, {
+          type: 'syncConversation',
+          project: msg.project,
+          conversation: msg.conversation
+        });
+        if (!result || result.success === false) {
+          throw new Error(result?.error || 'Native host failed');
+        }
+        sendResponse({ ok: true, result });
+        return;
+      }
       if (msg && msg.type === 'ai-add-host' && typeof msg.origin === 'string') {
         const origin = msg.origin.replace(/\/$/, '');
         const storage = await chrome.storage.local.get(['aiDnrRules']);
@@ -228,7 +267,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
     } catch (e) {
-      console.error('ai-add-host failed:', e);
+      console.error('background message failed:', e);
       sendResponse({ ok: false, error: String(e) });
       return;
     }
@@ -257,13 +296,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Fetch image binary via service worker (用于跨域图片下载/导出)
     if (msg && msg.type === 'gv.fetchImage' && typeof msg.url === 'string') {
       try {
-        const response = await fetch(msg.url, {
-          credentials: 'omit',
-          cache: 'no-cache'
-        });
+        let response = null;
+        let lastError = null;
+        for (const credentials of ['include', 'omit']) {
+          try {
+            response = await fetch(msg.url, {
+              credentials,
+              cache: 'no-cache'
+            });
+            if (response.ok) break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
 
-        if (!response.ok) {
-          sendResponse({ ok: false, error: `HTTP ${response.status}` });
+        if (!response || !response.ok) {
+          sendResponse({ ok: false, error: response ? `HTTP ${response.status}` : String(lastError || 'fetch failed') });
           return;
         }
 
@@ -399,7 +447,7 @@ async function deliverToSidePanel(message, fallbackKey) {
     try {
       await new Promise((resolve) => {
         chrome.runtime.sendMessage(message, () => {
-          responded = true;
+          responded = !chrome.runtime.lastError;
           resolve();
         });
       });
@@ -501,10 +549,53 @@ try {
 
 async function handleExportChat() {
   try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHOW_EXPORT_PANEL' });
+    const requestSidePanelShortcut = (force = false) => new Promise((resolve) => {
+      try {
+        chrome.runtime.sendMessage({
+          type: force ? 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL' : 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED'
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          resolve(!!response?.handled);
+        });
+      } catch (_) {
+        resolve(false);
+      }
+    });
+
+    const sendShortcutToActiveTab = async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return false;
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' });
+        return true;
+      } catch (sendError) {
+        await deliverToSidePanel({
+          type: 'aisb.notify',
+          level: 'warn',
+          text: '当前页面没有可用的导出脚本，请切换到支持的 AI 聊天页面后再试。'
+        }, 'aisbPendingNotify');
+        await openSidePanelForCurrentWindow();
+        return false;
+      }
+    };
+
+    const recentTarget = Date.now() - Number(lastShortcutTarget.at || 0) < 8000
+      ? lastShortcutTarget.surface
+      : '';
+
+    if (recentTarget === 'page') {
+      if (await sendShortcutToActiveTab()) return;
     }
+
+    if (recentTarget === 'sidepanel') {
+      if (await requestSidePanelShortcut(true)) return;
+    }
+
+    if (await requestSidePanelShortcut()) return;
+    await sendShortcutToActiveTab();
   } catch (e) {
     console.error('[AI Sidebar] Export chat error:', e);
   }
@@ -523,16 +614,23 @@ async function handleOpenParallelLeft() {
     
     // Get current provider from storage
     let currentProvider = 'chatgpt';
+    let providerUrl = null;
     try {
-      const result = await chrome.storage.local.get(['currentProvider']);
-      if (result.currentProvider) currentProvider = result.currentProvider;
+      const result = await chrome.storage.local.get(['currentProvider', 'provider', 'providerUrls']);
+      if (result.currentProvider || result.provider) {
+        currentProvider = result.currentProvider || result.provider;
+      }
+      if (result.providerUrls && typeof result.providerUrls === 'object') {
+        providerUrl = result.providerUrls[currentProvider] || null;
+      }
     } catch (_) {}
     
     // Try to send message to content script, inject if needed
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       // Content script not loaded, inject it first
@@ -545,7 +643,8 @@ async function handleOpenParallelLeft() {
         await new Promise(r => setTimeout(r, 100));
         await chrome.tabs.sendMessage(tab.id, { 
           action: 'toggleParallelPanel',
-          provider: currentProvider 
+          provider: currentProvider,
+          providerUrl
         });
       } catch (e) {
         console.error('[AI Sidebar] Failed to inject parallel panel:', e);

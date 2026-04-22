@@ -127,9 +127,9 @@ const PROVIDERS = {
   },
   tobooks: {
     label: 'ToBooks',
-    icon: 'images/favicon.png',
-    baseUrl: 'https://tobooks.netlify.app/tobooks-main/',
-    iframeUrl: 'https://tobooks.netlify.app/tobooks-main/',
+    icon: 'images/providers/tobooks.png',
+    baseUrl: 'https://tobooks.xin/',
+    iframeUrl: 'https://tobooks.xin/',
     authCheck: null
   },
   mubu: {
@@ -281,11 +281,24 @@ const getProvider = async () => {
 const setProvider = async (key) => {
   return new Promise((resolve) => {
     try {
-      chrome.storage?.local.set({ provider: key }, () => resolve());
+      chrome.storage?.local.set({ provider: key, currentProvider: key }, () => resolve());
     } catch (_) {
       resolve();
     }
   });
+};
+
+// Normalize provider URLs so renamed domains can be migrated from old stored values.
+const normalizeProviderUrl = (providerKey, url) => {
+  if (!url || typeof url !== 'string') return null;
+  if (providerKey !== 'tobooks') return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'tobooks.netlify.app') {
+      return 'https://tobooks.xin/';
+    }
+  } catch (_) {}
+  return url;
 };
 
 // Save and restore current URL for each provider
@@ -293,7 +306,7 @@ const saveProviderUrl = async (providerKey, url) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
     const urls = data?.providerUrls || {};
-    urls[providerKey] = url;
+    urls[providerKey] = normalizeProviderUrl(providerKey, url);
     await chrome.storage?.local.set({ providerUrls: urls });
   } catch (_) {}
 };
@@ -301,7 +314,14 @@ const saveProviderUrl = async (providerKey, url) => {
 const getProviderUrl = async (providerKey) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
-    return data?.providerUrls?.[providerKey] || null;
+    const saved = data?.providerUrls?.[providerKey] || null;
+    const normalized = normalizeProviderUrl(providerKey, saved);
+    if (saved && normalized && saved !== normalized) {
+      const urls = data?.providerUrls || {};
+      urls[providerKey] = normalized;
+      await chrome.storage?.local.set({ providerUrls: urls });
+    }
+    return normalized;
   } catch (_) {
     return null;
   }
@@ -1454,6 +1474,20 @@ const showOnlyFrame = (container, key) => {
 
 
 let __suppressNextFrameFocus = false; // when true, do not focus iframe/webview on switch (e.g., Tab cycling)
+let __providerFrameShortcutArmed = false;
+
+const armProviderFrameShortcut = () => {
+  __providerFrameShortcutArmed = true;
+  try {
+    chrome.runtime?.sendMessage({ type: 'AISB_SHORTCUT_TARGET', surface: 'sidepanel' });
+  } catch (_) {}
+};
+
+try {
+  window.addEventListener('blur', () => {
+    __providerFrameShortcutArmed = false;
+  }, true);
+} catch (_) {}
 
 const ensureFrame = async (container, key, provider) => {
   if (!cachedFrames[key]) {
@@ -1474,7 +1508,8 @@ const ensureFrame = async (container, key, provider) => {
         'geolocation',
         'camera',
         'microphone',
-        'display-capture'
+        'display-capture',
+        'storage-access'
       ].join('; ');
     } else {
       // webview specific attributes
@@ -1537,6 +1572,8 @@ const ensureFrame = async (container, key, provider) => {
         view.addEventListener('contentload', focusHandler);
       }
     }
+    try { view.addEventListener('focus', armProviderFrameShortcut, true); } catch (_) {}
+    try { view.addEventListener('pointerdown', armProviderFrameShortcut, true); } catch (_) {}
   }
   // hide message overlay if any
   const msg = document.getElementById('provider-msg');
@@ -2062,6 +2099,19 @@ const initializeBar = async () => {
       URL.revokeObjectURL(url);
     };
 
+    const openPrintDocument = (filename, content) => {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (!printWindow) {
+        URL.revokeObjectURL(url);
+        downloadFile(filename, content, 'text/html;charset=utf-8');
+        return false;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return true;
+    };
+
     const loadHistoryCount = async () => {
       try {
         const result = await chrome.storage.local.get('ai_chat_conversations');
@@ -2093,9 +2143,38 @@ const initializeBar = async () => {
       panel.style.display = 'none';
     });
 
+    const findProviderFrameBySource = (source) => {
+      for (const [key, frame] of Object.entries(cachedFrames)) {
+        try {
+          if (frame?.contentWindow === source) return { key, frame };
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const isTrustedProviderMessage = (event) => {
+      const match = findProviderFrameBySource(event.source);
+      if (!match) return false;
+
+      const expectedOrigins = new Set();
+      try {
+        const origin = cachedFrameMeta[match.key]?.origin;
+        if (origin) expectedOrigins.add(origin);
+      } catch (_) {}
+      try {
+        const currentUrl = currentUrlByProvider[match.key];
+        if (currentUrl) expectedOrigins.add(new URL(currentUrl).origin);
+      } catch (_) {}
+
+      return expectedOrigins.size === 0 || expectedOrigins.has(event.origin);
+    };
+
     // Handle export responses from iframe
     window.addEventListener('message', async (event) => {
       const data = event.data || {};
+      if (String(data.type || '').startsWith('AI_SIDEBAR_') && !isTrustedProviderMessage(event)) {
+        return;
+      }
       
       // Quick Export Response
       if (data.type === 'AI_SIDEBAR_EXPORT_RESPONSE') {
@@ -2103,8 +2182,18 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
-          updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          if (data.format === 'pdf' || data.format === 'original') {
+            const opened = openPrintDocument(result.filename, result.content);
+            updateStatus(
+              data.format === 'original'
+                ? (opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML')
+                : (opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML'),
+              'success'
+            );
+          } else {
+            downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
+            updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          }
         }
       }
 
@@ -2142,8 +2231,22 @@ const initializeBar = async () => {
       
       // Save to Library Response (from sidebar button)
       if (data.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE') {
+        const isSilent = Boolean(data.meta?.silent);
+        const isManualSave = !isSilent || Boolean(data.meta?.shortcut);
+        const sendShortcutAck = (payload) => {
+          if (!data.meta?.shortcut) return;
+          try {
+            event.source?.postMessage({
+              type: 'AI_SIDEBAR_SHORTCUT_SAVE_ACK',
+              ...payload
+            }, event.origin);
+          } catch (_) {}
+        };
         if (data.error) {
-          updateStatus(`Error: ${data.error}`, 'error');
+          const providerKey = String(data.meta?.provider || '');
+          if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+          if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
+          sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
           try {
             const convData = {
@@ -2153,14 +2256,39 @@ const initializeBar = async () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             };
+            const providerKey = String(convData.provider || data.meta?.provider || '');
+            if (providerKey) {
+              const state = getAutoSaveState(providerKey);
+              state.inFlight = false;
+              state.href = String(convData.url || state.href || '');
+              state.title = String(convData.title || state.title || '');
+
+              if (!isManualSave && !canAutoSaveConversation(providerKey, state.href, state.title)) {
+                return;
+              }
+
+              const fingerprint = buildAutoSaveFingerprint(convData);
+              if (!isManualSave && isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+                return;
+              }
+
+              state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
+              state.lastConversationId = String(convData.conversationId || '');
+              state.lastFingerprint = fingerprint;
+            }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              updateStatus(`✓ Saved to library`, 'success');
+              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
+              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
-              updateStatus('Storage not available', 'error');
+              if (!isSilent) updateStatus('Storage not available', 'error');
+              sendShortcutAck({ ok: false, error: 'Storage not available' });
             }
           } catch (err) {
-            updateStatus(`Error: ${err.message}`, 'error');
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+            if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
+            sendShortcutAck({ ok: false, error: err.message });
           }
         }
       }
@@ -2194,6 +2322,34 @@ const initializeBar = async () => {
     const getProviderSync = () => __currentProviderSync;
     updateProviderSync();
 
+    const getVisibleProviderFrame = () => {
+      const iframeContainer = document.getElementById('iframe');
+      return iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])') || null;
+    };
+
+    const showExporterPanelInCurrentFrame = async () => {
+      armProviderFrameShortcut();
+      const frame = getVisibleProviderFrame();
+      if (!frame || !frame.contentWindow) {
+        updateStatus('No active chat found.', 'error');
+        return;
+      }
+      frame.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*');
+    };
+
+    document.addEventListener('keydown', (e) => {
+      try {
+        if (!(e.metaKey || e.ctrlKey)) return;
+        if (e.shiftKey || e.altKey || e.key.toLowerCase() !== 's') return;
+        const target = e.target;
+        const tag = target?.tagName ? target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+        e.preventDefault();
+        e.stopPropagation();
+        showExporterPanelInCurrentFrame();
+      } catch (_) {}
+    }, true);
+
     const runExport = async (format) => {
       updateStatus(`Exporting as ${format}...`, 'info');
       try {
@@ -2218,6 +2374,8 @@ const initializeBar = async () => {
 
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
+    document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
+    document.getElementById('ep-print-original')?.addEventListener('click', () => runExport('original'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
@@ -2552,12 +2710,17 @@ const initializeBar = async () => {
         if (!granted) return;
       }
     } catch (_) {}
+
+    const providerUrl = (
+      currentUrlByProvider && currentUrlByProvider[currentProvider]
+    ) || await getProviderUrl(currentProvider);
     
     // Send message or inject script
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       try {
@@ -2569,7 +2732,8 @@ const initializeBar = async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, { 
               action: 'toggleParallelPanel',
-              provider: currentProvider 
+              provider: currentProvider,
+              providerUrl
             });
           } catch (e) {}
         }, 150);
@@ -2794,6 +2958,70 @@ const initializeBar = async () => {
 
 // (Global command message listener removed)
 
+const AUTO_SAVE_INTERVAL_MS = 12000;
+const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const autoSaveStateByProvider = Object.create(null);
+
+function buildAutoSaveFingerprint(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const messageCount = Number(conversation?.messageCount || messages.length || 0);
+  const stableKey = String(conversation?.conversationId || conversation?.url || '');
+  const lastMessage = messages[messages.length - 1] || null;
+  const lastRole = String(lastMessage?.role || '').trim();
+  const lastContent = String(lastMessage?.content || '').trim();
+  const lastTail = lastContent.slice(-120);
+  return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || ''}`;
+}
+
+function getAutoSaveState(provider) {
+  if (!autoSaveStateByProvider[provider]) {
+    autoSaveStateByProvider[provider] = {
+      timer: null,
+      inFlight: false,
+      title: '',
+      href: '',
+      lastMessageCount: 0,
+      lastConversationId: '',
+      lastFingerprint: ''
+    };
+  }
+  return autoSaveStateByProvider[provider];
+}
+
+function canAutoSaveConversation(provider, href, title) {
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') return false;
+  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') return false;
+  return (
+    window.AutoSync.isUsefulConversationTitle(title) &&
+    window.AutoSync.hasStableConversationUrl(href, provider)
+  );
+}
+
+function requestSilentSaveToLibrary(provider) {
+  const state = getAutoSaveState(provider);
+  if (state.inFlight) return;
+
+  const frame = cachedFrames[provider];
+  if (!frame || !frame.contentWindow) return;
+
+  state.inFlight = true;
+  frame.contentWindow.postMessage({
+    type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+    meta: {
+      silent: true,
+      provider
+    }
+  }, '*');
+}
+
+function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
+  const state = getAutoSaveState(provider);
+  clearTimeout(state.timer);
+
+  if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+  state.timer = setTimeout(() => requestSilentSaveToLibrary(provider), delay);
+}
+
 // Also close panel on Escape (backdrop version handles outside clicks)
 try {
   document.addEventListener('keydown', (e) => {
@@ -2808,6 +3036,19 @@ try {
     try {
       const data = event.data || {};
       if (!data || !data.type) return;
+      if (data.type === 'AISB_SHORTCUT_TARGET') {
+        let matched = false;
+        for (const el of Object.values(cachedFrames)) {
+          try {
+            if (el && el.contentWindow === event.source) {
+              matched = true;
+              break;
+            }
+          } catch (_) {}
+        }
+        if (matched) armProviderFrameShortcut();
+        return;
+      }
       if (data.type === 'ai-tab-cycle') {
         const dir = (data.dir === 'prev') ? -1 : 1;
         // When message comes from iframe, don't focus the frame after switching
@@ -2841,6 +3082,7 @@ try {
         }
       } catch (_) {}
       currentUrlByProvider[matchedKey] = data.href;
+      getAutoSaveState(matchedKey).href = data.href;
       // Save URL for restoration on next open
       saveProviderUrl(matchedKey, data.href);
 
@@ -2861,7 +3103,11 @@ try {
         }
       } catch (_) {}
       // Track last known title for this provider for better Add Current defaults
-      try { currentTitleByProvider[matchedKey] = data.title || ''; } catch (_) {}
+      try {
+        currentTitleByProvider[matchedKey] = data.title || '';
+        getAutoSaveState(matchedKey).title = data.title || '';
+        scheduleSilentSave(matchedKey);
+      } catch (_) {}
     }
   } catch (_) {}
 });
@@ -2906,6 +3152,19 @@ initializeBar();
       console.log('AutoSync: 同步服务器未运行，跳过自动同步', e);
     }
   }
+
+  setInterval(() => {
+    try {
+      const iframeContainer = document.getElementById('iframe');
+      const activeFrame = iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])');
+      const provider = activeFrame?.dataset?.provider;
+      if (!provider) return;
+
+      const state = getAutoSaveState(provider);
+      if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+      requestSilentSaveToLibrary(provider);
+    } catch (_) {}
+  }, AUTO_SAVE_INTERVAL_MS);
 })();
 
 // ============== 来自后台的消息与待处理队列 ==============
@@ -2937,7 +3196,21 @@ initializeBar();
 
   async function handlePendingFromStorage() {
     try {
-      const { aisbPendingInsert, aisbPendingScreenshot, aisbPendingNotify } = await chrome.storage?.local.get(['aisbPendingInsert','aisbPendingScreenshot','aisbPendingNotify']);
+      const {
+        aisbPendingExportPanel,
+        aisbPendingInsert,
+        aisbPendingScreenshot,
+        aisbPendingNotify
+      } = await chrome.storage?.local.get([
+        'aisbPendingExportPanel',
+        'aisbPendingInsert',
+        'aisbPendingScreenshot',
+        'aisbPendingNotify'
+      ]);
+      if (aisbPendingExportPanel) {
+        showExporterPanelInActiveFrame();
+        try { await chrome.storage?.local.remove(['aisbPendingExportPanel']); } catch (_) {}
+      }
       if (aisbPendingNotify && aisbPendingNotify.text) {
         toast(aisbPendingNotify.text, aisbPendingNotify.level || 'info');
         try { await chrome.storage?.local.remove(['aisbPendingNotify']); } catch (_) {}
@@ -2951,6 +3224,51 @@ initializeBar();
         try { await chrome.storage?.local.remove(['aisbPendingScreenshot']); } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  function showExporterPanelInActiveFrame() {
+    try {
+      const target = getActiveProviderFrame();
+      if (!target || !target.contentWindow) {
+        toast('未找到活动的 AI 面板。', 'warn');
+        return;
+      }
+      try { window.focus(); } catch (_) {}
+      try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
+      try { target.focus(); } catch (_) {}
+      try { target.contentWindow.focus(); } catch (_) {}
+      target.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+    } catch (e) {
+      toast('打开导出面板失败：' + String(e), 'error');
+    }
+  }
+
+  function isActiveProviderFrameFocused() {
+    try {
+      const target = getActiveProviderFrame();
+      return !!target && document.activeElement === target;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isEditableElement(element) {
+    try {
+      const tag = element?.tagName ? element.tagName.toLowerCase() : '';
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || !!element?.isContentEditable;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function shouldHandleSidePanelShortcut() {
+    try {
+      if (!document.hasFocus()) return false;
+      if (isEditableElement(document.activeElement)) return false;
+      return __providerFrameShortcutArmed && !!getActiveProviderFrame();
+    } catch (_) {
+      return false;
+    }
   }
 
   function routeInsertText(msg) {
@@ -3023,6 +3341,30 @@ initializeBar();
         }
         if (message.type === 'aisb.insert-text') {
           routeInsertText(message);
+          return;
+        }
+        if (message.type === 'AISB_SHOW_EXPORT_PANEL') {
+          showExporterPanelInActiveFrame();
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
+          const handled = isActiveProviderFrameFocused() || shouldHandleSidePanelShortcut();
+          if (handled) {
+            armProviderFrameShortcut();
+            const target = getActiveProviderFrame();
+            try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL') {
+          const target = getActiveProviderFrame();
+          const handled = !!target?.contentWindow;
+          if (handled) {
+            armProviderFrameShortcut();
+            try { target.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
           return;
         }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入
@@ -3333,6 +3675,7 @@ initializeBar();
   try {
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
+      const remaining = [];
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3345,13 +3688,15 @@ initializeBar();
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
+          } else {
+            remaining.push(item);
           }
         } catch (e) {
           console.error('[AI Sidebar] Failed to save queued item:', e);
+          remaining.push({ ...item, lastError: String(e), retryAt: Date.now() });
         }
       }
-      // Clear queue after processing
-      await chrome.storage.local.set({ __saveQueue: [] });
+      await chrome.storage.local.set({ __saveQueue: remaining });
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);
