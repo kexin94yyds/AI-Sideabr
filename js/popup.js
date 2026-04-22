@@ -2182,9 +2182,14 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          if (data.format === 'pdf') {
+          if (data.format === 'pdf' || data.format === 'original') {
             const opened = openPrintDocument(result.filename, result.content);
-            updateStatus(opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML', 'success');
+            updateStatus(
+              data.format === 'original'
+                ? (opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML')
+                : (opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML'),
+              'success'
+            );
           } else {
             downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
             updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
@@ -2370,6 +2375,7 @@ const initializeBar = async () => {
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
     document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
+    document.getElementById('ep-print-original')?.addEventListener('click', () => runExport('original'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
