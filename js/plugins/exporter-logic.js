@@ -750,11 +750,6 @@
       return;
     }
 
-    if (data.type === 'AISB_PREPARE_LIVE_ORIGINAL_PRINT') {
-      installLiveOriginalPrintStyles();
-      return;
-    }
-
     if (data.type === 'AI_SIDEBAR_SHORTCUT_SAVE_ACK') {
       const panel = document.getElementById(PANEL_ID);
       const statusEl = panel?.querySelector('.ep-status');
@@ -780,8 +775,6 @@
         result = window.exportChatToJSON();
       } else if (data.format === 'pdf') {
         result = window.exportChatToPrintableHTML();
-      } else if (data.format === 'original') {
-        result = await window.printLiveOriginalView();
       }
       
       if (result) {
@@ -1122,7 +1115,6 @@
         <button data-action="markdown">EXPORT MARKDOWN</button>
         <button data-action="json">EXPORT JSON</button>
         <button data-action="pdf">EXPORT PDF</button>
-        <button data-action="original">PRINT ORIGINAL VIEW</button>
       </div>
       <div class="ep-divider"></div>
       <div class="ep-section">
@@ -1210,17 +1202,6 @@
       }
     });
 
-    panel.querySelector('[data-action="original"]').addEventListener('click', async () => {
-      showStatus('Opening live print...', 'info');
-      const result = await window.printLiveOriginalView();
-      if (result) {
-        showStatus('✓ Live original print opened', 'success');
-        setTimeout(closePanel, 1500);
-      } else {
-        showStatus('Failed to capture original view', 'error');
-      }
-    });
-    
     panel.querySelector('[data-action="save"]').addEventListener('click', async () => {
       showStatus('Saving to library...', 'info');
       try {
