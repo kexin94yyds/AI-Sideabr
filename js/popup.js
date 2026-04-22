@@ -2099,6 +2099,19 @@ const initializeBar = async () => {
       URL.revokeObjectURL(url);
     };
 
+    const openPrintDocument = (filename, content) => {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (!printWindow) {
+        URL.revokeObjectURL(url);
+        downloadFile(filename, content, 'text/html;charset=utf-8');
+        return false;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return true;
+    };
+
     const loadHistoryCount = async () => {
       try {
         const result = await chrome.storage.local.get('ai_chat_conversations');
@@ -2169,8 +2182,13 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
-          updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          if (data.format === 'pdf') {
+            const opened = openPrintDocument(result.filename, result.content);
+            updateStatus(opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML', 'success');
+          } else {
+            downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
+            updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          }
         }
       }
 
@@ -2351,6 +2369,7 @@ const initializeBar = async () => {
 
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
+    document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
