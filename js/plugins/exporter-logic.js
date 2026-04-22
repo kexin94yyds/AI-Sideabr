@@ -362,6 +362,202 @@
     return { filename, content, data: jsonData };
   };
 
+  function escapePrintableHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function safeExportBaseName(value) {
+    return String(value || 'ai-chat')
+      .replace(/[\/\\?%*:|"<>]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 80) || 'ai-chat';
+  }
+
+  function formatMarkdownTextForPrint(value) {
+    const source = String(value || '').trim();
+    if (!source) return '';
+
+    const parts = [];
+    const fencePattern = /```([^\n`]*)\n([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+
+    const textToParagraphs = (text) => {
+      const normalized = String(text || '').trim();
+      if (!normalized) return '';
+      return normalized
+        .split(/\n{2,}/)
+        .map((block) => `<p>${escapePrintableHtml(block).replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    };
+
+    while ((match = fencePattern.exec(source)) !== null) {
+      parts.push(textToParagraphs(source.slice(lastIndex, match.index)));
+      const lang = String(match[1] || '').trim();
+      const code = String(match[2] || '').replace(/^\n+|\n+$/g, '');
+      parts.push(
+        `<pre><code>${lang ? `<span class="code-lang">${escapePrintableHtml(lang)}</span>\n` : ''}${escapePrintableHtml(code)}</code></pre>`
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    parts.push(textToParagraphs(source.slice(lastIndex)));
+    return parts.join('');
+  }
+
+  function buildPrintableChatHtml(conversation) {
+    const title = String(conversation?.title || 'AI Chat').trim() || 'AI Chat';
+    const provider = String(conversation?.provider || 'unknown').trim() || 'unknown';
+    const url = String(conversation?.url || '').trim();
+    const exportedAt = new Date().toLocaleString();
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+
+    const messageHtml = messages.map((message, index) => {
+      const role = String(message?.role || (index % 2 === 0 ? 'User' : 'Assistant')).trim() || 'Message';
+      const roleClass = /^user$/i.test(role) ? 'user' : 'assistant';
+      const body = formatMarkdownTextForPrint(message?.content);
+      if (!body) return '';
+      return `
+        <article class="message ${roleClass}">
+          <div class="role">${escapePrintableHtml(role)}</div>
+          <div class="body">${body}</div>
+        </article>`;
+    }).filter(Boolean).join('\n');
+
+    return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapePrintableHtml(title)} - PDF Export</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #1f2933;
+      background: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .print-help {
+      margin: 20px auto;
+      max-width: 840px;
+      padding: 12px 14px;
+      border: 1px solid #9ca3af;
+      color: #374151;
+      background: #f9fafb;
+    }
+    main {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      color: #111827;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    .meta {
+      margin: 0 0 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #d1d5db;
+      color: #4b5563;
+      font-size: 12px;
+    }
+    .meta div { margin: 3px 0; overflow-wrap: anywhere; }
+    .message {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border: 1px solid #d1d5db;
+      border-left-width: 4px;
+      background: #ffffff;
+    }
+    .message.user { border-left-color: #2563eb; }
+    .message.assistant { border-left-color: #059669; }
+    .role {
+      margin-bottom: 8px;
+      color: #111827;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    p { margin: 0 0 10px; }
+    p:last-child { margin-bottom: 0; }
+    pre {
+      margin: 12px 0;
+      padding: 12px;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      color: #111827;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+    .code-lang {
+      display: block;
+      margin-bottom: 6px;
+      color: #6b7280;
+      font-weight: 700;
+    }
+    @media print {
+      .print-help { display: none; }
+      main { max-width: none; padding: 0; }
+      .message { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-help">Use the browser print dialog and choose Save as PDF. This helper box will not appear in the PDF.</div>
+  <main>
+    <h1>${escapePrintableHtml(title)}</h1>
+    <section class="meta">
+      <div><strong>Provider:</strong> ${escapePrintableHtml(provider)}</div>
+      <div><strong>Exported:</strong> ${escapePrintableHtml(exportedAt)}</div>
+      <div><strong>Messages:</strong> ${messages.length}</div>
+      ${url ? `<div><strong>Source:</strong> ${escapePrintableHtml(url)}</div>` : ''}
+    </section>
+    <section class="conversation">
+      ${messageHtml || '<p>No messages captured.</p>'}
+    </section>
+  </main>
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        try { window.print(); } catch (_) {}
+      }, 350);
+    });
+  </script>
+</body>
+</html>`;
+  }
+
+  window.exportChatToPrintableHTML = function() {
+    const result = window.exportChatToMarkdown();
+    if (!result || !result.data) return null;
+
+    return {
+      filename: `${safeExportBaseName(result.data.title)}_pdf.html`,
+      content: buildPrintableChatHtml(result.data),
+      count: result.count,
+      data: result.data
+    };
+  };
+
   // ============================================================================
   // Communication Bridge for AI-Sidebar
   // ============================================================================
@@ -422,6 +618,8 @@
         result = window.exportChatToMarkdown();
       } else if (data.format === 'json') {
         result = window.exportChatToJSON();
+      } else if (data.format === 'pdf') {
+        result = window.exportChatToPrintableHTML();
       }
       
       if (result) {
@@ -761,6 +959,7 @@
         <div class="ep-section-title">QUICK EXPORT</div>
         <button data-action="markdown">EXPORT MARKDOWN</button>
         <button data-action="json">EXPORT JSON</button>
+        <button data-action="pdf">EXPORT PDF</button>
       </div>
       <div class="ep-divider"></div>
       <div class="ep-section">
@@ -801,6 +1000,19 @@
       a.click();
       URL.revokeObjectURL(url);
     };
+
+    const openPrintDocument = (filename, content) => {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (!printWindow) {
+        URL.revokeObjectURL(url);
+        downloadFile(filename, content, 'text/html;charset=utf-8');
+        return false;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return true;
+    };
     
     panel.querySelector('[data-action="markdown"]').addEventListener('click', () => {
       const result = window.exportChatToMarkdown();
@@ -818,6 +1030,17 @@
       if (result) {
         downloadFile(result.filename, result.content, 'application/json');
         showStatus(`✓ Exported as JSON`, 'success');
+        setTimeout(closePanel, 1500);
+      } else {
+        showStatus('Failed to capture chat data', 'error');
+      }
+    });
+
+    panel.querySelector('[data-action="pdf"]').addEventListener('click', () => {
+      const result = window.exportChatToPrintableHTML();
+      if (result) {
+        const opened = openPrintDocument(result.filename, result.content);
+        showStatus(opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML', 'success');
         setTimeout(closePanel, 1500);
       } else {
         showStatus('Failed to capture chat data', 'error');
