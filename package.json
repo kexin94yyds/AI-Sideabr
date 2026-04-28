@@ -12,7 +12,9 @@
     "native-host:install": "node scripts/install-native-host.cjs",
     "sync-server": "node scripts/sync-server.cjs",
     "sync": "node scripts/sync-server.cjs",
-    "package:webstore": "bash scripts/build-webstore-package.sh"
+    "package:webstore": "bash scripts/build-webstore-package.sh",
+    "video:dev": "remotion studio remotion/index.ts",
+    "video:render": "remotion render remotion/index.ts AiSidebarIntro out/ai-sidebar-intro.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.452",
