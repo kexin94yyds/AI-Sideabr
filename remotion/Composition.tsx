@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   AbsoluteFill,
+  Easing,
   interpolate,
-  spring,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
@@ -18,32 +18,27 @@ export const AiSidebarIntro: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
 
-  const titleProgress = spring({
-    frame,
-    fps,
-    config: {
-      damping: 18,
-      stiffness: 120,
-    },
-  });
+  const seconds = (time: number) => time * fps;
+  const enter = (start: number, duration: number) =>
+    interpolate(frame, [seconds(start), seconds(start + duration)], [0, 1], {
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    });
 
-  const panelProgress = spring({
-    frame: frame - 36,
-    fps,
-    config: {
-      damping: 20,
-      stiffness: 90,
-    },
-  });
+  const titleProgress = enter(0, 1.1);
+  const panelProgress = enter(1.2, 1.1);
 
-  const cursorX = interpolate(frame, [90, 190, 320, 430], [1120, 1525, 1280, 1510], {
+  const cursorX = interpolate(frame, [seconds(3), seconds(6.3), seconds(10.7), seconds(14.3)], [1120, 1525, 1280, 1510], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.45, 0, 0.55, 1),
   });
 
-  const cursorY = interpolate(frame, [90, 190, 320, 430], [296, 292, 466, 650], {
+  const cursorY = interpolate(frame, [seconds(3), seconds(6.3), seconds(10.7), seconds(14.3)], [296, 292, 466, 650], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
+    easing: Easing.bezier(0.45, 0, 0.55, 1),
   });
 
   return (
@@ -139,13 +134,7 @@ export const AiSidebarIntro: React.FC = () => {
             }}
           />
           {features.map((feature, index) => {
-            const itemProgress = spring({
-              frame: frame - 70 - index * 26,
-              fps,
-              config: {
-                damping: 18,
-              },
-            });
+            const itemProgress = enter(2.3 + index * 0.85, 0.8);
 
             return (
               <div
@@ -230,6 +219,7 @@ export const AiSidebarIntro: React.FC = () => {
           opacity: interpolate(frame, [70, 92, 490, 530], [0, 1, 1, 0], {
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
+            easing: Easing.bezier(0.45, 0, 0.55, 1),
           }),
         }}
       />
