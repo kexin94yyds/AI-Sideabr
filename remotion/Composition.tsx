@@ -219,7 +219,7 @@ export const AiSidebarIntro: React.FC = () => {
       </div>
 
       <FocusFrame from={4.6} to={8.8} left={1320} top={46} width={505} height={986} />
-      <FocusFrame from={8.6} to={12.8} left={1812} top={28} width={96} height={1018} />
+      <FocusFrame from={8.6} to={12.8} left={1656} top={28} width={104} height={1018} />
 
       <Caption
         from={4.8}
