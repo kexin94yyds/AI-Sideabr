@@ -327,6 +327,20 @@ const getProviderUrl = async (providerKey) => {
   }
 };
 
+const getActiveNotebookLMUrl = async () => {
+  try {
+    const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+    const activeUrl = tabs && tabs[0] && tabs[0].url;
+    if (!activeUrl) return null;
+    const parsed = new URL(activeUrl);
+    if (parsed.hostname !== 'notebooklm.google.com') return null;
+    if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
+    return parsed.href;
+  } catch (_) {
+    return null;
+  }
+};
+
 
 const getProviderOrder = async () => {
   return new Promise((resolve) => {
@@ -1538,7 +1552,12 @@ const ensureFrame = async (container, key, provider) => {
     // Try to restore last visited URL for this provider
     const savedUrl = await getProviderUrl(key);
     let urlToLoad = provider.iframeUrl;
-    if (savedUrl) {
+    const activeNotebookLMUrl = key === 'notebooklm' ? await getActiveNotebookLMUrl() : null;
+    if (activeNotebookLMUrl) {
+      urlToLoad = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'using active NotebookLM URL:', activeNotebookLMUrl);
+    } else if (savedUrl) {
       urlToLoad = savedUrl;
       dbg('ensureFrame:', key, 'restored URL:', savedUrl);
     }
@@ -1574,6 +1593,15 @@ const ensureFrame = async (container, key, provider) => {
     }
     try { view.addEventListener('focus', armProviderFrameShortcut, true); } catch (_) {}
     try { view.addEventListener('pointerdown', armProviderFrameShortcut, true); } catch (_) {}
+  }
+  if (key === 'notebooklm' && cachedFrames[key]) {
+    const activeNotebookLMUrl = await getActiveNotebookLMUrl();
+    if (activeNotebookLMUrl && cachedFrames[key].src !== activeNotebookLMUrl) {
+      cachedFrames[key].src = activeNotebookLMUrl;
+      currentUrlByProvider[key] = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'synced active NotebookLM URL:', activeNotebookLMUrl);
+    }
   }
   // hide message overlay if any
   const msg = document.getElementById('provider-msg');
