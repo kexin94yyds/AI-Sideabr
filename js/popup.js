@@ -329,13 +329,26 @@ const getProviderUrl = async (providerKey) => {
 
 const getActiveNotebookLMUrl = async () => {
   try {
-    const tabs = await chrome.tabs?.query({ active: true, currentWindow: true });
-    const activeUrl = tabs && tabs[0] && tabs[0].url;
-    if (!activeUrl) return null;
-    const parsed = new URL(activeUrl);
-    if (parsed.hostname !== 'notebooklm.google.com') return null;
-    if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
-    return parsed.href;
+    const isNotebookUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname !== 'notebooklm.google.com') return null;
+        if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
+        return parsed.href;
+      } catch (_) {
+        return null;
+      }
+    };
+    const activeTabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+    const activeUrl = isNotebookUrl(activeTabs && activeTabs[0] && activeTabs[0].url);
+    if (activeUrl) return activeUrl;
+
+    const currentWindowTabs = await chrome.tabs?.query({ currentWindow: true });
+    const notebookTabs = (currentWindowTabs || [])
+      .map((tab) => ({ index: Number(tab.index || 0), url: isNotebookUrl(tab.url) }))
+      .filter((tab) => !!tab.url)
+      .sort((a, b) => b.index - a.index);
+    return notebookTabs[0]?.url || null;
   } catch (_) {
     return null;
   }
