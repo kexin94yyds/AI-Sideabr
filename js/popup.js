@@ -1592,7 +1592,7 @@ const ensureFrame = async (container, key, provider) => {
       const origin = new URL(provider.baseUrl || provider.iframeUrl).origin;
       cachedFrameMeta[key] = { origin };
       // Initialize with initial URL as a fallback until content script reports
-      currentUrlByProvider[key] = provider.iframeUrl || provider.baseUrl || '';
+      currentUrlByProvider[key] = urlToLoad || provider.iframeUrl || provider.baseUrl || '';
     } catch (_) {
       cachedFrameMeta[key] = { origin: '' };
     }
