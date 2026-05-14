@@ -202,6 +202,7 @@ const AutoSync = (function() {
       if (provider === 'gemini') return /\/app\/(?:conversation\/)?[^/?#]+/.test(u.pathname);
       if (provider === 'deepseek') return /\/(sessions|s)\/[^/?#]+/.test(u.pathname);
       if (provider === 'claude') return /\/chat\/[\w-]+/i.test(u.pathname);
+      if (provider === 'notebooklm') return /\/notebook\/[^/?#]+/.test(u.pathname);
       return Boolean(u.pathname && u.pathname !== '/');
     } catch (_) {
       return false;
