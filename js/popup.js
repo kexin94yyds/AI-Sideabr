@@ -127,9 +127,9 @@ const PROVIDERS = {
   },
   tobooks: {
     label: 'ToBooks',
-    icon: 'images/favicon.png',
-    baseUrl: 'https://tobooks.netlify.app/tobooks-main/',
-    iframeUrl: 'https://tobooks.netlify.app/tobooks-main/',
+    icon: 'images/providers/tobooks.png',
+    baseUrl: 'https://tobooks.xin/',
+    iframeUrl: 'https://tobooks.xin/',
     authCheck: null
   },
   mubu: {
@@ -281,11 +281,24 @@ const getProvider = async () => {
 const setProvider = async (key) => {
   return new Promise((resolve) => {
     try {
-      chrome.storage?.local.set({ provider: key }, () => resolve());
+      chrome.storage?.local.set({ provider: key, currentProvider: key }, () => resolve());
     } catch (_) {
       resolve();
     }
   });
+};
+
+// Normalize provider URLs so renamed domains can be migrated from old stored values.
+const normalizeProviderUrl = (providerKey, url) => {
+  if (!url || typeof url !== 'string') return null;
+  if (providerKey !== 'tobooks') return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'tobooks.netlify.app') {
+      return 'https://tobooks.xin/';
+    }
+  } catch (_) {}
+  return url;
 };
 
 // Save and restore current URL for each provider
@@ -293,7 +306,7 @@ const saveProviderUrl = async (providerKey, url) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
     const urls = data?.providerUrls || {};
-    urls[providerKey] = url;
+    urls[providerKey] = normalizeProviderUrl(providerKey, url);
     await chrome.storage?.local.set({ providerUrls: urls });
   } catch (_) {}
 };
@@ -301,7 +314,41 @@ const saveProviderUrl = async (providerKey, url) => {
 const getProviderUrl = async (providerKey) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
-    return data?.providerUrls?.[providerKey] || null;
+    const saved = data?.providerUrls?.[providerKey] || null;
+    const normalized = normalizeProviderUrl(providerKey, saved);
+    if (saved && normalized && saved !== normalized) {
+      const urls = data?.providerUrls || {};
+      urls[providerKey] = normalized;
+      await chrome.storage?.local.set({ providerUrls: urls });
+    }
+    return normalized;
+  } catch (_) {
+    return null;
+  }
+};
+
+const getActiveNotebookLMUrl = async () => {
+  try {
+    const isNotebookUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname !== 'notebooklm.google.com') return null;
+        if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
+        return parsed.href;
+      } catch (_) {
+        return null;
+      }
+    };
+    const activeTabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+    const activeUrl = isNotebookUrl(activeTabs && activeTabs[0] && activeTabs[0].url);
+    if (activeUrl) return activeUrl;
+
+    const currentWindowTabs = await chrome.tabs?.query({ currentWindow: true });
+    const notebookTabs = (currentWindowTabs || [])
+      .map((tab) => ({ index: Number(tab.index || 0), url: isNotebookUrl(tab.url) }))
+      .filter((tab) => !!tab.url)
+      .sort((a, b) => b.index - a.index);
+    return notebookTabs[0]?.url || null;
   } catch (_) {
     return null;
   }
@@ -1454,6 +1501,20 @@ const showOnlyFrame = (container, key) => {
 
 
 let __suppressNextFrameFocus = false; // when true, do not focus iframe/webview on switch (e.g., Tab cycling)
+let __providerFrameShortcutArmed = false;
+
+const armProviderFrameShortcut = () => {
+  __providerFrameShortcutArmed = true;
+  try {
+    chrome.runtime?.sendMessage({ type: 'AISB_SHORTCUT_TARGET', surface: 'sidepanel' });
+  } catch (_) {}
+};
+
+try {
+  window.addEventListener('blur', () => {
+    __providerFrameShortcutArmed = false;
+  }, true);
+} catch (_) {}
 
 const ensureFrame = async (container, key, provider) => {
   if (!cachedFrames[key]) {
@@ -1474,7 +1535,8 @@ const ensureFrame = async (container, key, provider) => {
         'geolocation',
         'camera',
         'microphone',
-        'display-capture'
+        'display-capture',
+        'storage-access'
       ].join('; ');
     } else {
       // webview specific attributes
@@ -1503,7 +1565,12 @@ const ensureFrame = async (container, key, provider) => {
     // Try to restore last visited URL for this provider
     const savedUrl = await getProviderUrl(key);
     let urlToLoad = provider.iframeUrl;
-    if (savedUrl) {
+    const activeNotebookLMUrl = key === 'notebooklm' ? await getActiveNotebookLMUrl() : null;
+    if (activeNotebookLMUrl) {
+      urlToLoad = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'using active NotebookLM URL:', activeNotebookLMUrl);
+    } else if (savedUrl) {
       urlToLoad = savedUrl;
       dbg('ensureFrame:', key, 'restored URL:', savedUrl);
     }
@@ -1525,7 +1592,7 @@ const ensureFrame = async (container, key, provider) => {
       const origin = new URL(provider.baseUrl || provider.iframeUrl).origin;
       cachedFrameMeta[key] = { origin };
       // Initialize with initial URL as a fallback until content script reports
-      currentUrlByProvider[key] = provider.iframeUrl || provider.baseUrl || '';
+      currentUrlByProvider[key] = urlToLoad || provider.iframeUrl || provider.baseUrl || '';
     } catch (_) {
       cachedFrameMeta[key] = { origin: '' };
     }
@@ -1536,6 +1603,17 @@ const ensureFrame = async (container, key, provider) => {
       } else {
         view.addEventListener('contentload', focusHandler);
       }
+    }
+    try { view.addEventListener('focus', armProviderFrameShortcut, true); } catch (_) {}
+    try { view.addEventListener('pointerdown', armProviderFrameShortcut, true); } catch (_) {}
+  }
+  if (key === 'notebooklm' && cachedFrames[key]) {
+    const activeNotebookLMUrl = await getActiveNotebookLMUrl();
+    if (activeNotebookLMUrl && cachedFrames[key].src !== activeNotebookLMUrl) {
+      cachedFrames[key].src = activeNotebookLMUrl;
+      currentUrlByProvider[key] = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'synced active NotebookLM URL:', activeNotebookLMUrl);
     }
   }
   // hide message overlay if any
@@ -2062,6 +2140,19 @@ const initializeBar = async () => {
       URL.revokeObjectURL(url);
     };
 
+    const openPrintDocument = (filename, content) => {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (!printWindow) {
+        URL.revokeObjectURL(url);
+        downloadFile(filename, content, 'text/html;charset=utf-8');
+        return false;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return true;
+    };
+
     const loadHistoryCount = async () => {
       try {
         const result = await chrome.storage.local.get('ai_chat_conversations');
@@ -2093,9 +2184,38 @@ const initializeBar = async () => {
       panel.style.display = 'none';
     });
 
+    const findProviderFrameBySource = (source) => {
+      for (const [key, frame] of Object.entries(cachedFrames)) {
+        try {
+          if (frame?.contentWindow === source) return { key, frame };
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const isTrustedProviderMessage = (event) => {
+      const match = findProviderFrameBySource(event.source);
+      if (!match) return false;
+
+      const expectedOrigins = new Set();
+      try {
+        const origin = cachedFrameMeta[match.key]?.origin;
+        if (origin) expectedOrigins.add(origin);
+      } catch (_) {}
+      try {
+        const currentUrl = currentUrlByProvider[match.key];
+        if (currentUrl) expectedOrigins.add(new URL(currentUrl).origin);
+      } catch (_) {}
+
+      return expectedOrigins.size === 0 || expectedOrigins.has(event.origin);
+    };
+
     // Handle export responses from iframe
     window.addEventListener('message', async (event) => {
       const data = event.data || {};
+      if (String(data.type || '').startsWith('AI_SIDEBAR_') && !isTrustedProviderMessage(event)) {
+        return;
+      }
       
       // Quick Export Response
       if (data.type === 'AI_SIDEBAR_EXPORT_RESPONSE') {
@@ -2103,8 +2223,18 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
-          updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          if (data.format === 'pdf' || data.format === 'original') {
+            const opened = openPrintDocument(result.filename, result.content);
+            updateStatus(
+              data.format === 'original'
+                ? (opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML')
+                : (opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML'),
+              'success'
+            );
+          } else {
+            downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
+            updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          }
         }
       }
 
@@ -2142,8 +2272,28 @@ const initializeBar = async () => {
       
       // Save to Library Response (from sidebar button)
       if (data.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE') {
+        const isSilent = Boolean(data.meta?.silent);
+        const isManualSave = !isSilent || Boolean(data.meta?.shortcut);
+        const sendShortcutAck = (payload) => {
+          if (!data.meta?.shortcut) return;
+          try {
+            event.source?.postMessage({
+              type: 'AI_SIDEBAR_SHORTCUT_SAVE_ACK',
+              ...payload
+            }, event.origin);
+          } catch (_) {}
+        };
         if (data.error) {
-          updateStatus(`Error: ${data.error}`, 'error');
+          const providerKey = String(data.meta?.provider || '');
+          if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+          aisbAutosaveDebug('sidebar.save_response.error', {
+            provider: providerKey,
+            silent: isSilent,
+            shortcut: Boolean(data.meta?.shortcut),
+            error: data.error
+          }, `sidebar.save_response.error:${providerKey}:${data.error}`, 0);
+          if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
+          sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
           try {
             const convData = {
@@ -2153,14 +2303,73 @@ const initializeBar = async () => {
               createdAt: Date.now(),
               updatedAt: Date.now()
             };
+            const providerKey = String(convData.provider || data.meta?.provider || '');
+            aisbAutosaveDebug('sidebar.save_response.data', {
+              provider: providerKey,
+              silent: isSilent,
+              manual: isManualSave,
+              conversation: aisbConversationSummary(convData)
+            }, `sidebar.save_response.data:${providerKey}:${convData.conversationId || convData.url}`, 0);
+            if (providerKey) {
+              const state = getAutoSaveState(providerKey);
+              state.inFlight = false;
+              state.href = String(convData.url || state.href || '');
+              state.title = String(convData.title || state.title || '');
+
+              if (!isManualSave && !canAutoSaveConversation(providerKey, state.href, state.title)) {
+                aisbAutosaveDebug('sidebar.save_response.discarded', {
+                  provider: providerKey,
+                  reason: getAutoSaveReadiness(providerKey, state.href, state.title).reason,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.discarded:${providerKey}:${state.href}`, 0);
+                return;
+              }
+
+              const fingerprint = buildAutoSaveFingerprint(convData);
+              if (!isManualSave && isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+                aisbAutosaveDebug('sidebar.save_response.unchanged', {
+                  provider: providerKey,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.unchanged:${providerKey}:${fingerprint}`, 5000);
+                return;
+              }
+
+              state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
+              state.lastConversationId = String(convData.conversationId || '');
+              state.lastFingerprint = fingerprint;
+            }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              updateStatus(`✓ Saved to library`, 'success');
+              aisbAutosaveDebug('sidebar.save_response.stored', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.stored:${providerKey}:${convData.conversationId || convData.url}`, 0);
+              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
+              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
-              updateStatus('Storage not available', 'error');
+              aisbAutosaveDebug('sidebar.save_response.storage_missing', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.storage_missing:${providerKey}`, 0);
+              if (!isSilent) updateStatus('Storage not available', 'error');
+              sendShortcutAck({ ok: false, error: 'Storage not available' });
             }
           } catch (err) {
-            updateStatus(`Error: ${err.message}`, 'error');
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+            aisbAutosaveDebug('sidebar.save_response.exception', {
+              provider: providerKey,
+              silent: isSilent,
+              error: err?.message || String(err)
+            }, `sidebar.save_response.exception:${providerKey}:${err?.message || String(err)}`, 0);
+            if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
+            sendShortcutAck({ ok: false, error: err.message });
           }
         }
       }
@@ -2194,6 +2403,34 @@ const initializeBar = async () => {
     const getProviderSync = () => __currentProviderSync;
     updateProviderSync();
 
+    const getVisibleProviderFrame = () => {
+      const iframeContainer = document.getElementById('iframe');
+      return iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])') || null;
+    };
+
+    const showExporterPanelInCurrentFrame = async () => {
+      armProviderFrameShortcut();
+      const frame = getVisibleProviderFrame();
+      if (!frame || !frame.contentWindow) {
+        updateStatus('No active chat found.', 'error');
+        return;
+      }
+      frame.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*');
+    };
+
+    document.addEventListener('keydown', (e) => {
+      try {
+        if (!(e.metaKey || e.ctrlKey)) return;
+        if (e.shiftKey || e.altKey || e.key.toLowerCase() !== 's') return;
+        const target = e.target;
+        const tag = target?.tagName ? target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+        e.preventDefault();
+        e.stopPropagation();
+        showExporterPanelInCurrentFrame();
+      } catch (_) {}
+    }, true);
+
     const runExport = async (format) => {
       updateStatus(`Exporting as ${format}...`, 'info');
       try {
@@ -2218,6 +2455,8 @@ const initializeBar = async () => {
 
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
+    document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
+    document.getElementById('ep-print-original')?.addEventListener('click', () => runExport('original'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
@@ -2552,12 +2791,17 @@ const initializeBar = async () => {
         if (!granted) return;
       }
     } catch (_) {}
+
+    const providerUrl = (
+      currentUrlByProvider && currentUrlByProvider[currentProvider]
+    ) || await getProviderUrl(currentProvider);
     
     // Send message or inject script
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       try {
@@ -2569,7 +2813,8 @@ const initializeBar = async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, { 
               action: 'toggleParallelPanel',
-              provider: currentProvider 
+              provider: currentProvider,
+              providerUrl
             });
           } catch (e) {}
         }, 150);
@@ -2794,6 +3039,144 @@ const initializeBar = async () => {
 
 // (Global command message listener removed)
 
+const AUTO_SAVE_INTERVAL_MS = 12000;
+const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const AISB_AUTOSAVE_DEBUG = true;
+const AISB_DEBUG_THROTTLE_MS = 2000;
+const aisbDebugLastLogAt = Object.create(null);
+const autoSaveStateByProvider = Object.create(null);
+
+function aisbAutosaveDebug(scope, payload = {}, throttleKey = scope, throttleMs = AISB_DEBUG_THROTTLE_MS) {
+  if (!AISB_AUTOSAVE_DEBUG) return;
+  const now = Date.now();
+  const key = String(throttleKey || scope);
+  if (throttleMs > 0 && aisbDebugLastLogAt[key] && now - aisbDebugLastLogAt[key] < throttleMs) return;
+  aisbDebugLastLogAt[key] = now;
+  try {
+    console.info('[AISB autosave debug]', scope, payload);
+  } catch (_) {}
+}
+
+function aisbConversationSummary(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  return {
+    provider: String(conversation?.provider || ''),
+    title: String(conversation?.title || ''),
+    url: String(conversation?.url || ''),
+    conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+    messageCount: Number(conversation?.messageCount || messages.length || 0),
+    lastRole: String(messages[messages.length - 1]?.role || ''),
+    lastContentLength: String(messages[messages.length - 1]?.content || '').length
+  };
+}
+
+function buildAutoSaveFingerprint(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const messageCount = Number(conversation?.messageCount || messages.length || 0);
+  const stableKey = String(conversation?.conversationId || conversation?.url || '');
+  const lastMessage = messages[messages.length - 1] || null;
+  const lastRole = String(lastMessage?.role || '').trim();
+  const lastContent = String(lastMessage?.content || '').trim();
+  const lastTail = lastContent.slice(-120);
+  return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || ''}`;
+}
+
+function getAutoSaveState(provider) {
+  if (!autoSaveStateByProvider[provider]) {
+    autoSaveStateByProvider[provider] = {
+      timer: null,
+      inFlight: false,
+      title: '',
+      href: '',
+      lastMessageCount: 0,
+      lastConversationId: '',
+      lastFingerprint: ''
+    };
+  }
+  return autoSaveStateByProvider[provider];
+}
+
+function getAutoSaveReadiness(provider, href, title) {
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') {
+    return { ok: false, reason: 'missing_isUsefulConversationTitle' };
+  }
+  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') {
+    return { ok: false, reason: 'missing_hasStableConversationUrl' };
+  }
+  if (!window.AutoSync.isUsefulConversationTitle(title)) {
+    return { ok: false, reason: 'not_useful_title' };
+  }
+  if (!window.AutoSync.hasStableConversationUrl(href, provider)) {
+    return { ok: false, reason: 'unstable_url' };
+  }
+  return { ok: true, reason: 'ready' };
+}
+
+function canAutoSaveConversation(provider, href, title) {
+  return getAutoSaveReadiness(provider, href, title).ok;
+}
+
+function requestSilentSaveToLibrary(provider) {
+  const state = getAutoSaveState(provider);
+  if (state.inFlight) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'in_flight',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:in_flight:${provider}`, 2000);
+    return;
+  }
+
+  const frame = cachedFrames[provider];
+  if (!frame || !frame.contentWindow) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'missing_frame',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:missing_frame:${provider}`, 5000);
+    return;
+  }
+
+  state.inFlight = true;
+  aisbAutosaveDebug('sidebar.autosave.request', {
+    provider,
+    href: state.href,
+    title: state.title
+  }, `sidebar.request:${provider}:${state.href}`, 0);
+  frame.contentWindow.postMessage({
+    type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+    meta: {
+      silent: true,
+      provider
+    }
+  }, '*');
+}
+
+function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
+  const state = getAutoSaveState(provider);
+  clearTimeout(state.timer);
+
+  const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+  if (!readiness.ok) {
+    aisbAutosaveDebug('sidebar.autosave.schedule_skip', {
+      provider,
+      href: state.href,
+      title: state.title,
+      reason: readiness.reason
+    }, `sidebar.schedule_skip:${provider}:${readiness.reason}:${state.href}`, 5000);
+    return;
+  }
+  aisbAutosaveDebug('sidebar.autosave.scheduled', {
+    provider,
+    href: state.href,
+    title: state.title,
+    delay
+  }, `sidebar.scheduled:${provider}:${state.href}`, 3000);
+  state.timer = setTimeout(() => requestSilentSaveToLibrary(provider), delay);
+}
+
 // Also close panel on Escape (backdrop version handles outside clicks)
 try {
   document.addEventListener('keydown', (e) => {
@@ -2808,6 +3191,19 @@ try {
     try {
       const data = event.data || {};
       if (!data || !data.type) return;
+      if (data.type === 'AISB_SHORTCUT_TARGET') {
+        let matched = false;
+        for (const el of Object.values(cachedFrames)) {
+          try {
+            if (el && el.contentWindow === event.source) {
+              matched = true;
+              break;
+            }
+          } catch (_) {}
+        }
+        if (matched) armProviderFrameShortcut();
+        return;
+      }
       if (data.type === 'ai-tab-cycle') {
         const dir = (data.dir === 'prev') ? -1 : 1;
         // When message comes from iframe, don't focus the frame after switching
@@ -2818,51 +3214,62 @@ try {
       }
       if (data.type !== 'ai-url-changed') return;
 
-    // Find which provider frame this message came from by comparing contentWindow
-    let matchedKey = null;
-    for (const [key, el] of Object.entries(cachedFrames)) {
-      try {
-        if (el && el.contentWindow === event.source) {
-          matchedKey = key;
-          break;
-        }
-      } catch (_) {}
-    }
-    // No provider matched; ignore stray messages
-    if (!matchedKey) { return; }
-
-    // Update current URL for this provider
-    if (typeof data.href === 'string' && data.href) {
-      // Ignore Gemini internal utility frames to avoid polluting state
-      try {
-        const u = new URL(data.href);
-        if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
-          return;
-        }
-      } catch (_) {}
-      currentUrlByProvider[matchedKey] = data.href;
-      // Save URL for restoration on next open
-      saveProviderUrl(matchedKey, data.href);
-
-      // If this provider is currently visible, update the Open in Tab link
-      const openInTab = document.getElementById('openInTab');
-      const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
-      if (openInTab && visible) {
-        openInTab.dataset.url = data.href;
-        try { openInTab.title = data.href; } catch (_) {}
-        // 更新星号按钮状态
-        await updateStarButtonState();
+      // Find which provider frame this message came from by comparing contentWindow
+      let matchedKey = null;
+      for (const [key, el] of Object.entries(cachedFrames)) {
+        try {
+          if (el && el.contentWindow === event.source) {
+            matchedKey = key;
+            break;
+          }
+        } catch (_) {}
       }
+      // No provider matched; ignore stray messages
+      if (!matchedKey) { return; }
 
-      // Auto-save history for supported providers when a deep link is detected
-      try {
-        if (isDeepLink(matchedKey, data.href)) {
-          addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+      // Update current URL for this provider
+      if (typeof data.href === 'string' && data.href) {
+        // Ignore Gemini internal utility frames to avoid polluting state
+        try {
+          const u = new URL(data.href);
+          if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
+            return;
+          }
+        } catch (_) {}
+        currentUrlByProvider[matchedKey] = data.href;
+        getAutoSaveState(matchedKey).href = data.href;
+        aisbAutosaveDebug('sidebar.url_changed', {
+          provider: matchedKey,
+          href: data.href,
+          title: data.title || '',
+          eventOrigin: event.origin || ''
+        }, `sidebar.url_changed:${matchedKey}:${data.href}:${data.title || ''}`, 0);
+        // Save URL for restoration on next open
+        saveProviderUrl(matchedKey, data.href);
+
+        // If this provider is currently visible, update the Open in Tab link
+        const openInTab = document.getElementById('openInTab');
+        const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
+        if (openInTab && visible) {
+          openInTab.dataset.url = data.href;
+          try { openInTab.title = data.href; } catch (_) {}
+          // 更新星号按钮状态
+          await updateStarButtonState();
         }
-      } catch (_) {}
-      // Track last known title for this provider for better Add Current defaults
-      try { currentTitleByProvider[matchedKey] = data.title || ''; } catch (_) {}
-    }
+
+        // Auto-save history for supported providers when a deep link is detected
+        try {
+          if (isDeepLink(matchedKey, data.href)) {
+            addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+          }
+        } catch (_) {}
+        // Track last known title for this provider for better Add Current defaults
+        try {
+          currentTitleByProvider[matchedKey] = data.title || '';
+          getAutoSaveState(matchedKey).title = data.title || '';
+          scheduleSilentSave(matchedKey);
+        } catch (_) {}
+      }
   } catch (_) {}
 });
 
@@ -2906,6 +3313,28 @@ initializeBar();
       console.log('AutoSync: 同步服务器未运行，跳过自动同步', e);
     }
   }
+
+  setInterval(() => {
+    try {
+      const iframeContainer = document.getElementById('iframe');
+      const activeFrame = iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])');
+      const provider = activeFrame?.dataset?.provider;
+      if (!provider) return;
+
+      const state = getAutoSaveState(provider);
+      const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+      if (!readiness.ok) {
+        aisbAutosaveDebug('sidebar.interval_skip', {
+          provider,
+          href: state.href,
+          title: state.title,
+          reason: readiness.reason
+        }, `sidebar.interval_skip:${provider}:${readiness.reason}:${state.href}`, 10000);
+        return;
+      }
+      requestSilentSaveToLibrary(provider);
+    } catch (_) {}
+  }, AUTO_SAVE_INTERVAL_MS);
 })();
 
 // ============== 来自后台的消息与待处理队列 ==============
@@ -2937,7 +3366,21 @@ initializeBar();
 
   async function handlePendingFromStorage() {
     try {
-      const { aisbPendingInsert, aisbPendingScreenshot, aisbPendingNotify } = await chrome.storage?.local.get(['aisbPendingInsert','aisbPendingScreenshot','aisbPendingNotify']);
+      const {
+        aisbPendingExportPanel,
+        aisbPendingInsert,
+        aisbPendingScreenshot,
+        aisbPendingNotify
+      } = await chrome.storage?.local.get([
+        'aisbPendingExportPanel',
+        'aisbPendingInsert',
+        'aisbPendingScreenshot',
+        'aisbPendingNotify'
+      ]);
+      if (aisbPendingExportPanel) {
+        showExporterPanelInActiveFrame();
+        try { await chrome.storage?.local.remove(['aisbPendingExportPanel']); } catch (_) {}
+      }
       if (aisbPendingNotify && aisbPendingNotify.text) {
         toast(aisbPendingNotify.text, aisbPendingNotify.level || 'info');
         try { await chrome.storage?.local.remove(['aisbPendingNotify']); } catch (_) {}
@@ -2951,6 +3394,51 @@ initializeBar();
         try { await chrome.storage?.local.remove(['aisbPendingScreenshot']); } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  function showExporterPanelInActiveFrame() {
+    try {
+      const target = getActiveProviderFrame();
+      if (!target || !target.contentWindow) {
+        toast('未找到活动的 AI 面板。', 'warn');
+        return;
+      }
+      try { window.focus(); } catch (_) {}
+      try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
+      try { target.focus(); } catch (_) {}
+      try { target.contentWindow.focus(); } catch (_) {}
+      target.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+    } catch (e) {
+      toast('打开导出面板失败：' + String(e), 'error');
+    }
+  }
+
+  function isActiveProviderFrameFocused() {
+    try {
+      const target = getActiveProviderFrame();
+      return !!target && document.activeElement === target;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isEditableElement(element) {
+    try {
+      const tag = element?.tagName ? element.tagName.toLowerCase() : '';
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || !!element?.isContentEditable;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function shouldHandleSidePanelShortcut() {
+    try {
+      if (!document.hasFocus()) return false;
+      if (isEditableElement(document.activeElement)) return false;
+      return __providerFrameShortcutArmed && !!getActiveProviderFrame();
+    } catch (_) {
+      return false;
+    }
   }
 
   function routeInsertText(msg) {
@@ -3023,6 +3511,30 @@ initializeBar();
         }
         if (message.type === 'aisb.insert-text') {
           routeInsertText(message);
+          return;
+        }
+        if (message.type === 'AISB_SHOW_EXPORT_PANEL') {
+          showExporterPanelInActiveFrame();
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
+          const handled = isActiveProviderFrameFocused() || shouldHandleSidePanelShortcut();
+          if (handled) {
+            armProviderFrameShortcut();
+            const target = getActiveProviderFrame();
+            try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL') {
+          const target = getActiveProviderFrame();
+          const handled = !!target?.contentWindow;
+          if (handled) {
+            armProviderFrameShortcut();
+            try { target.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
           return;
         }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入
@@ -3333,6 +3845,7 @@ initializeBar();
   try {
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
+      const remaining = [];
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3345,13 +3858,15 @@ initializeBar();
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
+          } else {
+            remaining.push(item);
           }
         } catch (e) {
           console.error('[AI Sidebar] Failed to save queued item:', e);
+          remaining.push({ ...item, lastError: String(e), retryAt: Date.now() });
         }
       }
-      // Clear queue after processing
-      await chrome.storage.local.set({ __saveQueue: [] });
+      await chrome.storage.local.set({ __saveQueue: remaining });
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);
