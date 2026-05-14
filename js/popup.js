@@ -2286,6 +2286,12 @@ const initializeBar = async () => {
         if (data.error) {
           const providerKey = String(data.meta?.provider || '');
           if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+          aisbAutosaveDebug('sidebar.save_response.error', {
+            provider: providerKey,
+            silent: isSilent,
+            shortcut: Boolean(data.meta?.shortcut),
+            error: data.error
+          }, `sidebar.save_response.error:${providerKey}:${data.error}`, 0);
           if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
           sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
@@ -2298,6 +2304,12 @@ const initializeBar = async () => {
               updatedAt: Date.now()
             };
             const providerKey = String(convData.provider || data.meta?.provider || '');
+            aisbAutosaveDebug('sidebar.save_response.data', {
+              provider: providerKey,
+              silent: isSilent,
+              manual: isManualSave,
+              conversation: aisbConversationSummary(convData)
+            }, `sidebar.save_response.data:${providerKey}:${convData.conversationId || convData.url}`, 0);
             if (providerKey) {
               const state = getAutoSaveState(providerKey);
               state.inFlight = false;
@@ -2305,11 +2317,24 @@ const initializeBar = async () => {
               state.title = String(convData.title || state.title || '');
 
               if (!isManualSave && !canAutoSaveConversation(providerKey, state.href, state.title)) {
+                aisbAutosaveDebug('sidebar.save_response.discarded', {
+                  provider: providerKey,
+                  reason: getAutoSaveReadiness(providerKey, state.href, state.title).reason,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.discarded:${providerKey}:${state.href}`, 0);
                 return;
               }
 
               const fingerprint = buildAutoSaveFingerprint(convData);
               if (!isManualSave && isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+                aisbAutosaveDebug('sidebar.save_response.unchanged', {
+                  provider: providerKey,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.unchanged:${providerKey}:${fingerprint}`, 5000);
                 return;
               }
 
@@ -2319,15 +2344,30 @@ const initializeBar = async () => {
             }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
+              aisbAutosaveDebug('sidebar.save_response.stored', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.stored:${providerKey}:${convData.conversationId || convData.url}`, 0);
               if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
               sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
+              aisbAutosaveDebug('sidebar.save_response.storage_missing', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.storage_missing:${providerKey}`, 0);
               if (!isSilent) updateStatus('Storage not available', 'error');
               sendShortcutAck({ ok: false, error: 'Storage not available' });
             }
           } catch (err) {
             const providerKey = String(data.data?.provider || data.meta?.provider || '');
             if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+            aisbAutosaveDebug('sidebar.save_response.exception', {
+              provider: providerKey,
+              silent: isSilent,
+              error: err?.message || String(err)
+            }, `sidebar.save_response.exception:${providerKey}:${err?.message || String(err)}`, 0);
             if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
             sendShortcutAck({ ok: false, error: err.message });
           }
@@ -3001,7 +3041,34 @@ const initializeBar = async () => {
 
 const AUTO_SAVE_INTERVAL_MS = 12000;
 const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const AISB_AUTOSAVE_DEBUG = true;
+const AISB_DEBUG_THROTTLE_MS = 2000;
+const aisbDebugLastLogAt = Object.create(null);
 const autoSaveStateByProvider = Object.create(null);
+
+function aisbAutosaveDebug(scope, payload = {}, throttleKey = scope, throttleMs = AISB_DEBUG_THROTTLE_MS) {
+  if (!AISB_AUTOSAVE_DEBUG) return;
+  const now = Date.now();
+  const key = String(throttleKey || scope);
+  if (throttleMs > 0 && aisbDebugLastLogAt[key] && now - aisbDebugLastLogAt[key] < throttleMs) return;
+  aisbDebugLastLogAt[key] = now;
+  try {
+    console.info('[AISB autosave debug]', scope, payload);
+  } catch (_) {}
+}
+
+function aisbConversationSummary(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  return {
+    provider: String(conversation?.provider || ''),
+    title: String(conversation?.title || ''),
+    url: String(conversation?.url || ''),
+    conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+    messageCount: Number(conversation?.messageCount || messages.length || 0),
+    lastRole: String(messages[messages.length - 1]?.role || ''),
+    lastContentLength: String(messages[messages.length - 1]?.content || '').length
+  };
+}
 
 function buildAutoSaveFingerprint(conversation) {
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
@@ -3029,23 +3096,55 @@ function getAutoSaveState(provider) {
   return autoSaveStateByProvider[provider];
 }
 
+function getAutoSaveReadiness(provider, href, title) {
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') {
+    return { ok: false, reason: 'missing_isUsefulConversationTitle' };
+  }
+  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') {
+    return { ok: false, reason: 'missing_hasStableConversationUrl' };
+  }
+  if (!window.AutoSync.isUsefulConversationTitle(title)) {
+    return { ok: false, reason: 'not_useful_title' };
+  }
+  if (!window.AutoSync.hasStableConversationUrl(href, provider)) {
+    return { ok: false, reason: 'unstable_url' };
+  }
+  return { ok: true, reason: 'ready' };
+}
+
 function canAutoSaveConversation(provider, href, title) {
-  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') return false;
-  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') return false;
-  return (
-    window.AutoSync.isUsefulConversationTitle(title) &&
-    window.AutoSync.hasStableConversationUrl(href, provider)
-  );
+  return getAutoSaveReadiness(provider, href, title).ok;
 }
 
 function requestSilentSaveToLibrary(provider) {
   const state = getAutoSaveState(provider);
-  if (state.inFlight) return;
+  if (state.inFlight) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'in_flight',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:in_flight:${provider}`, 2000);
+    return;
+  }
 
   const frame = cachedFrames[provider];
-  if (!frame || !frame.contentWindow) return;
+  if (!frame || !frame.contentWindow) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'missing_frame',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:missing_frame:${provider}`, 5000);
+    return;
+  }
 
   state.inFlight = true;
+  aisbAutosaveDebug('sidebar.autosave.request', {
+    provider,
+    href: state.href,
+    title: state.title
+  }, `sidebar.request:${provider}:${state.href}`, 0);
   frame.contentWindow.postMessage({
     type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
     meta: {
@@ -3059,7 +3158,22 @@ function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
   const state = getAutoSaveState(provider);
   clearTimeout(state.timer);
 
-  if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+  const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+  if (!readiness.ok) {
+    aisbAutosaveDebug('sidebar.autosave.schedule_skip', {
+      provider,
+      href: state.href,
+      title: state.title,
+      reason: readiness.reason
+    }, `sidebar.schedule_skip:${provider}:${readiness.reason}:${state.href}`, 5000);
+    return;
+  }
+  aisbAutosaveDebug('sidebar.autosave.scheduled', {
+    provider,
+    href: state.href,
+    title: state.title,
+    delay
+  }, `sidebar.scheduled:${provider}:${state.href}`, 3000);
   state.timer = setTimeout(() => requestSilentSaveToLibrary(provider), delay);
 }
 
@@ -3100,56 +3214,62 @@ try {
       }
       if (data.type !== 'ai-url-changed') return;
 
-    // Find which provider frame this message came from by comparing contentWindow
-    let matchedKey = null;
-    for (const [key, el] of Object.entries(cachedFrames)) {
-      try {
-        if (el && el.contentWindow === event.source) {
-          matchedKey = key;
-          break;
-        }
-      } catch (_) {}
-    }
-    // No provider matched; ignore stray messages
-    if (!matchedKey) { return; }
-
-    // Update current URL for this provider
-    if (typeof data.href === 'string' && data.href) {
-      // Ignore Gemini internal utility frames to avoid polluting state
-      try {
-        const u = new URL(data.href);
-        if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
-          return;
-        }
-      } catch (_) {}
-      currentUrlByProvider[matchedKey] = data.href;
-      getAutoSaveState(matchedKey).href = data.href;
-      // Save URL for restoration on next open
-      saveProviderUrl(matchedKey, data.href);
-
-      // If this provider is currently visible, update the Open in Tab link
-      const openInTab = document.getElementById('openInTab');
-      const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
-      if (openInTab && visible) {
-        openInTab.dataset.url = data.href;
-        try { openInTab.title = data.href; } catch (_) {}
-        // 更新星号按钮状态
-        await updateStarButtonState();
+      // Find which provider frame this message came from by comparing contentWindow
+      let matchedKey = null;
+      for (const [key, el] of Object.entries(cachedFrames)) {
+        try {
+          if (el && el.contentWindow === event.source) {
+            matchedKey = key;
+            break;
+          }
+        } catch (_) {}
       }
+      // No provider matched; ignore stray messages
+      if (!matchedKey) { return; }
 
-      // Auto-save history for supported providers when a deep link is detected
-      try {
-        if (isDeepLink(matchedKey, data.href)) {
-          addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+      // Update current URL for this provider
+      if (typeof data.href === 'string' && data.href) {
+        // Ignore Gemini internal utility frames to avoid polluting state
+        try {
+          const u = new URL(data.href);
+          if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
+            return;
+          }
+        } catch (_) {}
+        currentUrlByProvider[matchedKey] = data.href;
+        getAutoSaveState(matchedKey).href = data.href;
+        aisbAutosaveDebug('sidebar.url_changed', {
+          provider: matchedKey,
+          href: data.href,
+          title: data.title || '',
+          eventOrigin: event.origin || ''
+        }, `sidebar.url_changed:${matchedKey}:${data.href}:${data.title || ''}`, 0);
+        // Save URL for restoration on next open
+        saveProviderUrl(matchedKey, data.href);
+
+        // If this provider is currently visible, update the Open in Tab link
+        const openInTab = document.getElementById('openInTab');
+        const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
+        if (openInTab && visible) {
+          openInTab.dataset.url = data.href;
+          try { openInTab.title = data.href; } catch (_) {}
+          // 更新星号按钮状态
+          await updateStarButtonState();
         }
-      } catch (_) {}
-      // Track last known title for this provider for better Add Current defaults
-      try {
-        currentTitleByProvider[matchedKey] = data.title || '';
-        getAutoSaveState(matchedKey).title = data.title || '';
-        scheduleSilentSave(matchedKey);
-      } catch (_) {}
-    }
+
+        // Auto-save history for supported providers when a deep link is detected
+        try {
+          if (isDeepLink(matchedKey, data.href)) {
+            addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+          }
+        } catch (_) {}
+        // Track last known title for this provider for better Add Current defaults
+        try {
+          currentTitleByProvider[matchedKey] = data.title || '';
+          getAutoSaveState(matchedKey).title = data.title || '';
+          scheduleSilentSave(matchedKey);
+        } catch (_) {}
+      }
   } catch (_) {}
 });
 
@@ -3202,7 +3322,16 @@ initializeBar();
       if (!provider) return;
 
       const state = getAutoSaveState(provider);
-      if (!canAutoSaveConversation(provider, state.href, state.title)) return;
+      const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+      if (!readiness.ok) {
+        aisbAutosaveDebug('sidebar.interval_skip', {
+          provider,
+          href: state.href,
+          title: state.title,
+          reason: readiness.reason
+        }, `sidebar.interval_skip:${provider}:${readiness.reason}:${state.href}`, 10000);
+        return;
+      }
       requestSilentSaveToLibrary(provider);
     } catch (_) {}
   }, AUTO_SAVE_INTERVAL_MS);

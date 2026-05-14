@@ -38,6 +38,27 @@ const DNR_CONFIG = {
 
 const NATIVE_HOST_NAME = 'com.aisidebar.bridge';
 let lastShortcutTarget = { surface: '', tabId: null, at: 0 };
+const AISB_AUTOSAVE_DEBUG = true;
+
+function aisbAutosaveDebug(scope, payload = {}) {
+  if (!AISB_AUTOSAVE_DEBUG) return;
+  try {
+    console.info('[AISB autosave debug]', scope, payload);
+  } catch (_) {}
+}
+
+function aisbConversationSummary(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  return {
+    provider: String(conversation?.provider || ''),
+    title: String(conversation?.title || ''),
+    url: String(conversation?.url || ''),
+    conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+    messageCount: Number(conversation?.messageCount || messages.length || 0),
+    lastRole: String(messages[messages.length - 1]?.role || ''),
+    lastContentLength: String(messages[messages.length - 1]?.content || '').length
+  };
+}
 
 // 生成DNR规则的工厂函数
 function createDnrRules() {
@@ -196,10 +217,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return;
       }
       if (msg && msg.type === 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE') {
+        aisbAutosaveDebug('background.native_sync.start', {
+          project: msg.project,
+          conversation: aisbConversationSummary(msg.conversation)
+        });
         const result = await chrome.runtime.sendNativeMessage(NATIVE_HOST_NAME, {
           type: 'syncConversation',
           project: msg.project,
           conversation: msg.conversation
+        });
+        aisbAutosaveDebug('background.native_sync.result', {
+          success: result?.success,
+          baseDir: result?.baseDir,
+          baseDirSource: result?.baseDirSource,
+          outputPath: result?.filePath || result?.path || '',
+          error: result?.error || '',
+          conversation: aisbConversationSummary(msg.conversation)
         });
         if (!result || result.success === false) {
           throw new Error(result?.error || 'Native host failed');

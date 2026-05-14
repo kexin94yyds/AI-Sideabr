@@ -1,6 +1,64 @@
 (function() {
   'use strict';
 
+  const AISB_AUTOSAVE_DEBUG = true;
+  const AISB_DEBUG_THROTTLE_MS = 2000;
+  const aisbDebugLastLogAt = Object.create(null);
+
+  function aisbAutosaveDebug(scope, payload = {}, throttleKey = scope, throttleMs = AISB_DEBUG_THROTTLE_MS) {
+    if (!AISB_AUTOSAVE_DEBUG) return;
+    const now = Date.now();
+    const key = String(throttleKey || scope);
+    if (throttleMs > 0 && aisbDebugLastLogAt[key] && now - aisbDebugLastLogAt[key] < throttleMs) return;
+    aisbDebugLastLogAt[key] = now;
+    try {
+      console.info('[AISB autosave debug]', scope, payload);
+    } catch (_) {}
+  }
+
+  function aisbConversationSummary(conversation) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    return {
+      provider: String(conversation?.provider || ''),
+      title: String(conversation?.title || ''),
+      url: String(conversation?.url || ''),
+      conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+      messageCount: Number(conversation?.messageCount || messages.length || 0),
+      lastRole: String(messages[messages.length - 1]?.role || ''),
+      lastContentLength: String(messages[messages.length - 1]?.content || '').length
+    };
+  }
+
+  function aisbParagraphBreakCount(value) {
+    const text = String(value || '');
+    return (text.match(/\n\s*\n/g) || []).length;
+  }
+
+  function aisbElementTextLength(el) {
+    return String(el?.innerText || el?.textContent || '').trim().length;
+  }
+
+  function aisbElementDiagnostics(el) {
+    if (!el) return null;
+    let paragraphNodes = 0;
+    let listNodes = 0;
+    let candidateContentNodes = 0;
+    try {
+      paragraphNodes = el.querySelectorAll('p, [role="paragraph"], [class*="paragraph"], [class*="Paragraph"]').length;
+      listNodes = el.querySelectorAll('li, ul, ol').length;
+      candidateContentNodes = el.querySelectorAll('.markdown, .prose, .ds-markdown, .query-content, .model-response-text, [class*="message-content"]').length;
+    } catch (_) {}
+
+    return {
+      tag: String(el.tagName || ''),
+      className: typeof el.className === 'string' ? el.className.slice(0, 120) : '',
+      textLength: aisbElementTextLength(el),
+      paragraphNodes,
+      listNodes,
+      candidateContentNodes
+    };
+  }
+
   // ============================================================================
   // Robust Markdown Extraction (Recursive & Whitespace-Aware)
   // ============================================================================
@@ -232,6 +290,14 @@
     let messages = [];
     
     console.log(`[AI Chat Exporter] Provider: ${provider}, ConversationId: ${conversationId}`);
+    aisbAutosaveDebug('export.start', {
+      provider,
+      host,
+      path: window.location.pathname,
+      href: url,
+      documentTitle: document.title,
+      conversationIdPresent: Boolean(conversationId)
+    }, `export.start:${provider}:${window.location.pathname}`);
     
     // 1. Title Extraction
     const getTitle = () => {
@@ -281,6 +347,11 @@
     });
     
     console.log(`[AI Chat Exporter] Found ${blocks.length} potential message blocks`);
+    aisbAutosaveDebug('export.blocks', {
+      provider,
+      totalElements: all.length,
+      candidateBlocks: blocks.length
+    }, `export.blocks:${provider}:${blocks.length}`);
 
     // 3. Process
     blocks.forEach((el, i) => {
@@ -289,10 +360,20 @@
       const content = extractMarkdownFromElement(contentEl).trim();
       
       console.log(`[Block ${i}] Tag: ${el.tagName}, Role: ${role}, Content length: ${content.length}`);
+      if (provider === 'notebooklm') {
+        aisbAutosaveDebug('export.notebooklm.block_paragraphs', {
+          index: i,
+          role,
+          block: aisbElementDiagnostics(el),
+          contentEl: aisbElementDiagnostics(contentEl),
+          extractedLength: content.length,
+          extractedParagraphBreaks: aisbParagraphBreakCount(content)
+        }, `export.notebooklm.block_paragraphs:${i}:${content.length}`, 0);
+      }
       
       if (content && content.length > 2) {
         messages.push({ role, content });
-        console.log(`  ✓ Added: ${content.substring(0, 50)}...`);
+        console.log('  ✓ Added message:', { role, contentLength: content.length });
       }
     });
     
@@ -317,7 +398,36 @@
 
     if (final.length === 0) {
       console.error('[AI Chat Exporter] FAILED. Platform:', host, 'DOM Size:', all.length);
+      aisbAutosaveDebug('export.failed_empty_messages', {
+        provider,
+        host,
+        href: url,
+        title,
+        totalElements: all.length,
+        candidateBlocks: blocks.length,
+        rawMessages: messages.length
+      }, `export.empty:${provider}:${blocks.length}`, 0);
       return null;
+    }
+
+    aisbAutosaveDebug('export.success', {
+      provider,
+      title,
+      href: url,
+      conversationIdPresent: Boolean(conversationId),
+      messageCount: final.length
+    }, `export.success:${provider}:${conversationId || url}:${final.length}`, 500);
+    if (provider === 'notebooklm') {
+      aisbAutosaveDebug('export.notebooklm.final_paragraphs', {
+        title,
+        href: url,
+        messages: final.map((message, index) => ({
+          index,
+          role: message.role,
+          contentLength: String(message.content || '').length,
+          paragraphBreaks: aisbParagraphBreakCount(message.content)
+        }))
+      }, `export.notebooklm.final_paragraphs:${conversationId || url}:${final.length}`, 0);
     }
 
     // Generate Markdown content
@@ -1403,9 +1513,21 @@
           project: PROJECT_NAME
         }
       });
+      aisbAutosaveDebug('content.native_sync.response', {
+        responseOk: response?.ok,
+        resultSuccess: response?.result?.success,
+        baseDir: response?.result?.baseDir,
+        baseDirSource: response?.result?.baseDirSource,
+        error: response?.error || response?.result?.error || '',
+        conversation: aisbConversationSummary(conversation)
+      }, `content.native_sync:${conversation?.provider}:${conversation?.conversationId || conversation?.url}`, 0);
       return response?.ok !== false && response?.result?.success !== false;
     } catch (error) {
       console.warn('[Exporter] native mirror sync failed:', error);
+      aisbAutosaveDebug('content.native_sync.failed', {
+        error: error?.message || String(error),
+        conversation: aisbConversationSummary(conversation)
+      }, `content.native_sync.failed:${conversation?.provider}:${conversation?.conversationId || conversation?.url}`, 0);
       return false;
     }
   }
@@ -1446,37 +1568,84 @@
     return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || title || ''}`;
   }
 
+  function getCurrentPageAutoSaveReadiness(provider, href, title) {
+    if (window.top !== window) return { ok: false, reason: 'not_top_window' };
+    if (typeof window.saveConversation !== 'function') return { ok: false, reason: 'missing_saveConversation' };
+    if (!isUsefulConversationTitle(title)) return { ok: false, reason: 'not_useful_title' };
+    if (!hasStableConversationUrl(href, provider)) return { ok: false, reason: 'unstable_url' };
+    return { ok: true, reason: 'ready' };
+  }
+
   function canAutoSaveCurrentPage(provider, href, title) {
-    if (window.top !== window) return false;
-    if (typeof window.saveConversation !== 'function') return false;
-    return isUsefulConversationTitle(title) && hasStableConversationUrl(href, provider);
+    return getCurrentPageAutoSaveReadiness(provider, href, title).ok;
   }
 
   async function autoSaveCurrentConversation(force = false) {
-    if (window.top !== window) return { ok: false, reason: 'not_top_window' };
-    if (pageAutoSaveState.inFlight) return { ok: false, reason: 'in_flight' };
+    if (window.top !== window) {
+      aisbAutosaveDebug('content.autosave.skip', {
+        reason: 'not_top_window',
+        href: window.location.href,
+        title: document.title
+      }, `content.autosave.skip:not_top_window:${window.location.hostname}`, 5000);
+      return { ok: false, reason: 'not_top_window' };
+    }
+    if (pageAutoSaveState.inFlight) {
+      aisbAutosaveDebug('content.autosave.skip', {
+        reason: 'in_flight',
+        href: pageAutoSaveState.href || window.location.href,
+        title: pageAutoSaveState.title || document.title
+      }, `content.autosave.skip:in_flight:${window.location.hostname}`, 2000);
+      return { ok: false, reason: 'in_flight' };
+    }
 
     const provider = detectProvider(window.location.hostname);
     const href = pageAutoSaveState.href || window.location.href;
     const title = pageAutoSaveState.title || document.title;
-    if (!canAutoSaveCurrentPage(provider, href, title)) {
-      return { ok: false, reason: 'conversation_not_ready' };
+    const readiness = getCurrentPageAutoSaveReadiness(provider, href, title);
+    if (!readiness.ok) {
+      aisbAutosaveDebug('content.autosave.not_ready', {
+        provider,
+        href,
+        title,
+        reason: readiness.reason
+      }, `content.autosave.not_ready:${provider}:${readiness.reason}:${href}`, 5000);
+      return { ok: false, reason: 'conversation_not_ready', detail: readiness.reason };
     }
 
     pageAutoSaveState.inFlight = true;
     try {
       const result = window.exportChatToMarkdown();
-      if (!result?.data) return { ok: false, reason: 'export_failed' };
+      if (!result?.data) {
+        aisbAutosaveDebug('content.autosave.export_failed', {
+          provider,
+          href,
+          title
+        }, `content.autosave.export_failed:${provider}:${href}`, 0);
+        return { ok: false, reason: 'export_failed' };
+      }
 
       const fingerprint = buildConversationFingerprint(result.data, href, title);
       if (!force && fingerprint === pageAutoSaveState.lastFingerprint) {
+        aisbAutosaveDebug('content.autosave.unchanged', {
+          provider,
+          href,
+          title,
+          conversation: aisbConversationSummary(result.data)
+        }, `content.autosave.unchanged:${provider}:${fingerprint}`, 5000);
         return { ok: false, reason: 'unchanged' };
       }
 
       await window.saveConversation(result.data);
-      await syncSavedConversationToNativeHost(result.data);
+      const mirrored = await syncSavedConversationToNativeHost(result.data);
       pageAutoSaveState.lastFingerprint = fingerprint;
-      return { ok: true, fingerprint };
+      aisbAutosaveDebug('content.autosave.saved', {
+        provider,
+        href,
+        title,
+        mirrored,
+        conversation: aisbConversationSummary(result.data)
+      }, `content.autosave.saved:${provider}:${fingerprint}`, 0);
+      return { ok: true, fingerprint, mirrored };
     } finally {
       pageAutoSaveState.inFlight = false;
     }
@@ -1489,7 +1658,23 @@
     const provider = detectProvider(window.location.hostname);
     const href = pageAutoSaveState.href || window.location.href;
     const title = pageAutoSaveState.title || document.title;
-    if (!canAutoSaveCurrentPage(provider, href, title)) return;
+    const readiness = getCurrentPageAutoSaveReadiness(provider, href, title);
+    if (!readiness.ok) {
+      aisbAutosaveDebug('content.autosave.schedule_skip', {
+        provider,
+        href,
+        title,
+        reason: readiness.reason
+      }, `content.autosave.schedule_skip:${provider}:${readiness.reason}:${href}`, 5000);
+      return;
+    }
+
+    aisbAutosaveDebug('content.autosave.scheduled', {
+      provider,
+      href,
+      title,
+      delay
+    }, `content.autosave.scheduled:${provider}:${href}`, 3000);
 
     pageAutoSaveState.timer = setTimeout(() => {
       autoSaveCurrentConversation().catch((error) => {
