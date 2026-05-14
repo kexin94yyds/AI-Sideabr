@@ -2285,7 +2285,7 @@ const initializeBar = async () => {
         };
         if (data.error) {
           const providerKey = String(data.meta?.provider || '');
-          if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+          if (providerKey) settleAutoSaveRequest(providerKey);
           aisbAutosaveDebug('sidebar.save_response.error', {
             provider: providerKey,
             silent: isSilent,
@@ -2311,8 +2311,7 @@ const initializeBar = async () => {
               conversation: aisbConversationSummary(convData)
             }, `sidebar.save_response.data:${providerKey}:${convData.conversationId || convData.url}`, 0);
             if (providerKey) {
-              const state = getAutoSaveState(providerKey);
-              state.inFlight = false;
+              const state = settleAutoSaveRequest(providerKey);
               state.href = String(convData.url || state.href || '');
               state.title = String(convData.title || state.title || '');
 
@@ -2362,7 +2361,7 @@ const initializeBar = async () => {
             }
           } catch (err) {
             const providerKey = String(data.data?.provider || data.meta?.provider || '');
-            if (providerKey) getAutoSaveState(providerKey).inFlight = false;
+            if (providerKey) settleAutoSaveRequest(providerKey);
             aisbAutosaveDebug('sidebar.save_response.exception', {
               provider: providerKey,
               silent: isSilent,
@@ -3041,6 +3040,7 @@ const initializeBar = async () => {
 
 const AUTO_SAVE_INTERVAL_MS = 12000;
 const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const AUTO_SAVE_RESPONSE_TIMEOUT_MS = 10000;
 const AISB_AUTOSAVE_DEBUG = true;
 const AISB_DEBUG_THROTTLE_MS = 2000;
 const aisbDebugLastLogAt = Object.create(null);
@@ -3090,10 +3090,22 @@ function getAutoSaveState(provider) {
       href: '',
       lastMessageCount: 0,
       lastConversationId: '',
-      lastFingerprint: ''
+      lastFingerprint: '',
+      requestToken: 0,
+      responseTimeout: null
     };
   }
   return autoSaveStateByProvider[provider];
+}
+
+function settleAutoSaveRequest(provider) {
+  const state = getAutoSaveState(provider);
+  state.inFlight = false;
+  if (state.responseTimeout) {
+    clearTimeout(state.responseTimeout);
+    state.responseTimeout = null;
+  }
+  return state;
 }
 
 function getAutoSaveReadiness(provider, href, title) {
@@ -3140,18 +3152,46 @@ function requestSilentSaveToLibrary(provider) {
   }
 
   state.inFlight = true;
+  state.requestToken = Number(state.requestToken || 0) + 1;
+  const requestToken = state.requestToken;
+  if (state.responseTimeout) {
+    clearTimeout(state.responseTimeout);
+  }
+  state.responseTimeout = setTimeout(() => {
+    const latest = getAutoSaveState(provider);
+    if (!latest.inFlight || latest.requestToken !== requestToken) return;
+    latest.inFlight = false;
+    latest.responseTimeout = null;
+    aisbAutosaveDebug('sidebar.autosave.timeout', {
+      provider,
+      href: latest.href,
+      title: latest.title,
+      timeoutMs: AUTO_SAVE_RESPONSE_TIMEOUT_MS
+    }, `sidebar.autosave.timeout:${provider}:${latest.href}`, 0);
+  }, AUTO_SAVE_RESPONSE_TIMEOUT_MS);
+
   aisbAutosaveDebug('sidebar.autosave.request', {
     provider,
     href: state.href,
     title: state.title
   }, `sidebar.request:${provider}:${state.href}`, 0);
-  frame.contentWindow.postMessage({
-    type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
-    meta: {
-      silent: true,
-      provider
-    }
-  }, '*');
+  try {
+    frame.contentWindow.postMessage({
+      type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+      meta: {
+        silent: true,
+        provider
+      }
+    }, '*');
+  } catch (error) {
+    settleAutoSaveRequest(provider);
+    aisbAutosaveDebug('sidebar.autosave.post_failed', {
+      provider,
+      href: state.href,
+      title: state.title,
+      error: error?.message || String(error)
+    }, `sidebar.autosave.post_failed:${provider}:${state.href}`, 0);
+  }
 }
 
 function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
