@@ -2296,22 +2296,27 @@ const initializeBar = async () => {
           sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
           try {
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            const state = providerKey ? settleAutoSaveRequest(providerKey) : null;
+            const resolvedMeta = resolveConversationSaveMetadata(providerKey, data.data, data.meta, state);
             const convData = {
               ...data.data,
+              url: resolvedMeta.url || data.data.url,
+              title: resolvedMeta.title || data.data.title,
               content: data.content,
               timestamp: Date.now(),
               createdAt: Date.now(),
               updatedAt: Date.now()
             };
-            const providerKey = String(convData.provider || data.meta?.provider || '');
             aisbAutosaveDebug('sidebar.save_response.data', {
               provider: providerKey,
               silent: isSilent,
               manual: isManualSave,
+              urlSource: resolvedMeta.urlSource,
+              titleSource: resolvedMeta.titleSource,
               conversation: aisbConversationSummary(convData)
             }, `sidebar.save_response.data:${providerKey}:${convData.conversationId || convData.url}`, 0);
             if (providerKey) {
-              const state = settleAutoSaveRequest(providerKey);
               state.href = String(convData.url || state.href || '');
               state.title = String(convData.title || state.title || '');
 
@@ -2470,8 +2475,10 @@ const initializeBar = async () => {
         }
 
         // Request export data from iframe, then save locally
+        const state = getAutoSaveState(provider);
         frame.contentWindow.postMessage({
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST'
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+          meta: buildSaveRequestMeta(provider, state)
         }, '*');
       } catch (err) {
         updateStatus(`Error: ${err.message}`, 'error');
@@ -3128,6 +3135,59 @@ function canAutoSaveConversation(provider, href, title) {
   return getAutoSaveReadiness(provider, href, title).ok;
 }
 
+function isStableAutoSaveUrl(provider, href) {
+  const value = String(href || '').trim();
+  if (!value || typeof window.AutoSync?.hasStableConversationUrl !== 'function') return false;
+  return window.AutoSync.hasStableConversationUrl(value, provider);
+}
+
+function isUsefulAutoSaveTitle(title) {
+  const value = String(title || '').trim();
+  if (!value) return false;
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') return value.length >= 4;
+  return window.AutoSync.isUsefulConversationTitle(value);
+}
+
+function buildSaveRequestMeta(provider, state, extra = {}) {
+  return {
+    provider,
+    href: String(currentUrlByProvider[provider] || state?.href || ''),
+    title: String(currentTitleByProvider[provider] || state?.title || ''),
+    ...extra
+  };
+}
+
+function resolveConversationSaveMetadata(provider, exportedConversation, requestMeta, state) {
+  const exportedUrl = String(exportedConversation?.url || '').trim();
+  const metaUrl = String(requestMeta?.href || '').trim();
+  const stateUrl = String(state?.href || '').trim();
+  const urlCandidates = [
+    { source: 'exported', value: exportedUrl },
+    { source: 'request_meta', value: metaUrl },
+    { source: 'sidebar_state', value: stateUrl }
+  ];
+  const stableUrl = urlCandidates.find((candidate) => isStableAutoSaveUrl(provider, candidate.value));
+  const fallbackUrl = urlCandidates.find((candidate) => candidate.value) || { source: 'none', value: '' };
+
+  const exportedTitle = String(exportedConversation?.title || '').trim();
+  const metaTitle = String(requestMeta?.title || '').trim();
+  const stateTitle = String(state?.title || '').trim();
+  const titleCandidates = [
+    { source: 'exported', value: exportedTitle },
+    { source: 'request_meta', value: metaTitle },
+    { source: 'sidebar_state', value: stateTitle }
+  ];
+  const usefulTitle = titleCandidates.find((candidate) => isUsefulAutoSaveTitle(candidate.value));
+  const fallbackTitle = titleCandidates.find((candidate) => candidate.value) || { source: 'none', value: '' };
+
+  return {
+    url: (stableUrl || fallbackUrl).value,
+    urlSource: (stableUrl || fallbackUrl).source,
+    title: (usefulTitle || fallbackTitle).value,
+    titleSource: (usefulTitle || fallbackTitle).source
+  };
+}
+
 function requestSilentSaveToLibrary(provider) {
   const state = getAutoSaveState(provider);
   if (state.inFlight) {
@@ -3178,10 +3238,7 @@ function requestSilentSaveToLibrary(provider) {
   try {
     frame.contentWindow.postMessage({
       type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
-      meta: {
-        silent: true,
-        provider
-      }
+      meta: buildSaveRequestMeta(provider, state, { silent: true })
     }, '*');
   } catch (error) {
     settleAutoSaveRequest(provider);

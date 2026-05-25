@@ -144,6 +144,26 @@ function findExistingConversationFile(baseDir, dayDir, blockId, legacyTitle) {
   return findExistingConversationFileInDir(dayDir, blockId, legacyTitle);
 }
 
+function countConversationBlocks(content) {
+  return (String(content || '').match(/<!-- AI_SIDEBAR_BLOCK:[^:]+:START -->/g) || []).length;
+}
+
+function ensureMarkdownDocumentHeader(content, documentTitle) {
+  const header = `# ${documentTitle}`;
+  const value = String(content || '');
+  if (!value.trim()) return `${header}\n\n`;
+  if (/^# .*(?:\r?\n|$)/.test(value)) {
+    return value.replace(/^# .*(?:\r?\n|$)/, `${header}\n`);
+  }
+  return `${header}\n\n${value.trimStart()}`;
+}
+
+function shouldRenameConversationFile(existingContent, currentPath, desiredPath) {
+  if (!currentPath || !desiredPath || currentPath === desiredPath) return false;
+  if (fs.existsSync(desiredPath)) return false;
+  return countConversationBlocks(existingContent) <= 1;
+}
+
 function formatConversationMessages(messages) {
   return (Array.isArray(messages) ? messages : [])
     .map((message) => {
@@ -270,7 +290,8 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
   const { blockId, content } = buildConversationBlock(projectName, conversation);
   const existingFilePath = findExistingConversationFile(baseDir, dayDir, blockId, documentTitle);
   const projectFileName = `${documentTitle}.md`;
-  const filePath = existingFilePath || path.join(dayDir, projectFileName);
+  const desiredFilePath = path.join(dayDir, projectFileName);
+  let filePath = existingFilePath || desiredFilePath;
   const escapedBlockId = blockId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const blockPattern = new RegExp(`<!-- AI_SIDEBAR_BLOCK:${escapedBlockId}:START -->[\\s\\S]*?<!-- AI_SIDEBAR_BLOCK:${escapedBlockId}:END -->`, 'g');
 
@@ -281,16 +302,17 @@ function upsertConversationMarkdown(projectName, conversation, options = {}) {
     existing = fs.readFileSync(filePath, 'utf8');
   }
 
-  const header = `# ${documentTitle}\n\n`;
+  if (existingFilePath && shouldRenameConversationFile(existing, filePath, desiredFilePath)) {
+    fs.renameSync(filePath, desiredFilePath);
+    filePath = desiredFilePath;
+  }
+
   if (!existing.trim()) {
-    fs.writeFileSync(filePath, `${header}${content}\n`, 'utf8');
+    fs.writeFileSync(filePath, `${ensureMarkdownDocumentHeader('', documentTitle)}${content}\n`, 'utf8');
     return { filePath, dateKey, blockId, created: true, updated: false };
   }
 
-  let nextContent = existing;
-  if (!existing.startsWith('# ')) {
-    nextContent = `${header}${existing.trimStart()}`;
-  }
+  let nextContent = ensureMarkdownDocumentHeader(existing, documentTitle);
 
   if (blockPattern.test(nextContent)) {
     nextContent = nextContent.replace(blockPattern, content);
