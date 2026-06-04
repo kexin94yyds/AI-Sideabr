@@ -2053,7 +2053,9 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   const tabsContainer = document.getElementById('provider-tabs');
   if (!tabsContainer) return;
 
-  const collapsed = await getTabsCollapsed();
+  const storedCollapsed = await getTabsCollapsed();
+  const hoverExpanded = tabsContainer.classList.contains('hover-expanded');
+  const collapsed = storedCollapsed && !hoverExpanded;
   tabsContainer.classList.toggle('collapsed', collapsed);
 
   // Clear and rebuild
@@ -2067,11 +2069,12 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   toggle.innerHTML = collapsed ? '«' : '»';
   toggle.title = collapsed ? 'Expand' : 'Collapse';
   toggle.onclick = async () => {
+    tabsContainer.classList.remove('hover-expanded');
     tabsContainer.classList.toggle('collapsed');
     const nowCollapsed = tabsContainer.classList.contains('collapsed');
     toggle.innerHTML = nowCollapsed ? '«' : '»';
     toggle.title = nowCollapsed ? 'Expand' : 'Collapse';
-    await chrome.storage?.local.set({ tabsCollapsed: nowCollapsed });
+    await setTabsCollapsed(nowCollapsed);
     // Re-render to update UI spacing
     renderProviderTabs(currentProviderKey, overrides);
   };
@@ -2254,6 +2257,13 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   });
   tabsContainer.appendChild(addButton);
 
+  const activeProviderButton = tabsContainer.querySelector('button.active[data-provider-id]');
+  if (activeProviderButton && !tabsContainer.classList.contains('collapsed')) {
+    setTimeout(() => {
+      try { activeProviderButton.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (_) {}
+    }, 0);
+  }
+
   // 展开时：使用 sticky 置顶（CSS 负责），不覆盖第一个图标
 
   if (typeof window.__aisbUpdateLeftSidebar === 'function') {
@@ -2303,6 +2313,7 @@ const initializeBar = async () => {
         expandTimer = null;
         if (tabs.classList.contains('collapsed')) {
           tabs.classList.remove('collapsed');
+          tabs.classList.add('hover-expanded');
           const toggle = tabs.querySelector('.tabs-toggle');
           if (toggle) { toggle.innerHTML = '»'; toggle.title = 'Collapse'; }
         }
@@ -2317,6 +2328,7 @@ const initializeBar = async () => {
         collapseTimer = null;
         if (!tabs.classList.contains('collapsed')) {
           tabs.classList.add('collapsed');
+          tabs.classList.remove('hover-expanded');
           const toggle = tabs.querySelector('.tabs-toggle');
           if (toggle) { toggle.innerHTML = '«'; toggle.title = 'Expand'; }
         }
