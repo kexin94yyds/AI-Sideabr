@@ -227,7 +227,13 @@ async function loadCustomProviders() {
   });
 }
 async function saveCustomProviders(list) {
-  try { chrome.storage?.local.set({ customProviders: list }); } catch (_) {}
+  return new Promise((resolve) => {
+    try {
+      chrome.storage?.local.set({ customProviders: list }, () => resolve());
+    } catch (_) {
+      resolve();
+    }
+  });
 }
 
 // No built-in prompt overlay
@@ -258,6 +264,62 @@ const effectiveConfig = (baseMap, key, overrides) => {
   if (key === 'perplexity') merged.useWebview = false;
   return merged;
 };
+
+// Request host permission for a provider URL and add the matching DNR rule.
+const ensureAccessFor = (url) => {
+  let origin = null;
+  try { origin = new URL(url).origin; } catch (_) {}
+  if (!origin) return Promise.resolve(false);
+  const pattern = origin + '/*';
+  const addHostRule = () => new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'ai-add-host', origin }, (res) => {
+        try {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+        } catch (_) {}
+        resolve(res?.ok !== false);
+      });
+    } catch (_) {
+      resolve(false);
+    }
+  });
+
+  return new Promise((resolve) => {
+    try {
+      if (chrome.permissions && chrome.permissions.contains) {
+        chrome.permissions.contains({ origins: [pattern] }, async (hasPermission) => {
+          if (hasPermission) {
+            resolve(await addHostRule());
+            return;
+          }
+          if (chrome.permissions.request) {
+            chrome.permissions.request({ origins: [pattern] }, async (granted) => {
+              resolve(granted ? await addHostRule() : false);
+            });
+            return;
+          }
+          resolve(await addHostRule());
+        });
+        return;
+      }
+
+      if (chrome.permissions && chrome.permissions.request) {
+        chrome.permissions.request({ origins: [pattern] }, async (granted) => {
+          resolve(granted ? await addHostRule() : false);
+        });
+        return;
+      }
+
+      addHostRule().then(resolve);
+    } catch (_) {
+      addHostRule().then(resolve);
+    }
+  });
+};
+
 const clearOverride = async (key) => {
   try {
     const all = await getOverrides();
@@ -374,7 +436,332 @@ const getProviderOrder = async () => {
 };
 
 const saveProviderOrder = async (order) => {
-  try { chrome.storage?.local.set({ providerOrder: order }); } catch (_) {}
+  return new Promise((resolve) => {
+    try {
+      chrome.storage?.local.set({ providerOrder: order }, () => resolve());
+    } catch (_) {
+      resolve();
+    }
+  });
+};
+
+const normalizeCustomProviderUrl = (raw) => {
+  const value = String(raw || '').trim();
+  if (!value) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const parsed = new URL(withScheme);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return parsed.href;
+  } catch (_) {
+    return null;
+  }
+};
+
+const getCustomProviderIconUrl = (url) => {
+  try {
+    const origin = new URL(url).origin;
+    return `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(origin)}&sz=64`;
+  } catch (_) {
+    return '';
+  }
+};
+
+const normalizeCustomProviderConfig = (provider) => {
+  if (!provider || !provider.key) return null;
+  const url = provider.baseUrl || provider.iframeUrl || '';
+  return {
+    ...provider,
+    icon: provider.icon || getCustomProviderIconUrl(url),
+    isCustom: true
+  };
+};
+
+const makeCustomProviderKey = (label, url, customProviders = []) => {
+  const taken = new Set([
+    ...Object.keys(PROVIDERS),
+    ...customProviders.map((p) => p && p.key).filter(Boolean)
+  ]);
+  let seed = '';
+  try { seed = new URL(url).hostname.replace(/^www\./i, ''); } catch (_) {}
+  const slug = String(seed || label || 'ai')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+  const base = `custom_${slug || Date.now()}`;
+  let key = base;
+  let suffix = 2;
+  while (taken.has(key)) {
+    key = `${base}_${suffix}`;
+    suffix += 1;
+  }
+  return key;
+};
+
+const createCustomProvider = async ({ label, url }) => {
+  const cleanLabel = String(label || '').trim();
+  const cleanUrl = normalizeCustomProviderUrl(url);
+  if (!cleanLabel) throw new Error('请输入 AI 名称');
+  if (!cleanUrl) throw new Error('请输入有效的网址');
+
+  const customProviders = await loadCustomProviders();
+  const provider = {
+    key: makeCustomProviderKey(cleanLabel, cleanUrl, customProviders),
+    label: cleanLabel,
+    icon: getCustomProviderIconUrl(cleanUrl),
+    baseUrl: cleanUrl,
+    iframeUrl: cleanUrl,
+    authCheck: null,
+    isCustom: true
+  };
+
+  const accessReady = await ensureAccessFor(provider.baseUrl);
+  if (!accessReady) throw new Error('未获得该网站访问权限，无法添加');
+
+  await saveCustomProviders([...customProviders, provider]);
+
+  const providerOrder = await getProviderOrder();
+  if (!providerOrder.includes(provider.key)) {
+    await saveProviderOrder([...providerOrder, provider.key]);
+  }
+
+  return provider;
+};
+
+const removeHostAccessFor = (url) => {
+  let origin = null;
+  try { origin = new URL(url).origin; } catch (_) {}
+  if (!origin) return;
+  try { chrome.runtime.sendMessage({ type: 'ai-remove-host', origin }); } catch (_) {}
+};
+
+const getUrlOrigin = (url) => {
+  try { return new URL(url).origin; } catch (_) { return ''; }
+};
+
+const deleteCustomProvider = async (key) => {
+  const customProviders = await loadCustomProviders();
+  const target = customProviders.find((provider) => provider && provider.key === key);
+  if (!target) return { deleted: false, nextKey: await getProvider(), wasCurrent: false };
+
+  const remainingCustomProviders = customProviders.filter((provider) => provider && provider.key !== key);
+  await saveCustomProviders(remainingCustomProviders);
+
+  const providerOrder = await getProviderOrder();
+  const nextOrder = providerOrder.filter((providerKey) => providerKey !== key);
+  await saveProviderOrder(nextOrder);
+
+  try {
+    const data = await chrome.storage?.local.get(['providerUrls', 'aiProviderOverrides']);
+    const providerUrls = data?.providerUrls || {};
+    const aiProviderOverrides = data?.aiProviderOverrides || {};
+    if (providerUrls[key]) delete providerUrls[key];
+    if (aiProviderOverrides[key]) delete aiProviderOverrides[key];
+    await chrome.storage?.local.set({ providerUrls, aiProviderOverrides });
+  } catch (_) {}
+
+  try {
+    if (cachedFrames[key]) cachedFrames[key].remove();
+    delete cachedFrames[key];
+    delete cachedFrameMeta[key];
+    delete currentUrlByProvider[key];
+  } catch (_) {}
+
+  const targetOrigin = getUrlOrigin(target.baseUrl || target.iframeUrl);
+  const stillUsesOrigin = remainingCustomProviders.some((provider) => (
+    getUrlOrigin(provider?.baseUrl || provider?.iframeUrl) === targetOrigin
+  ));
+  if (targetOrigin && !stillUsesOrigin) {
+    removeHostAccessFor(target.baseUrl || target.iframeUrl);
+  }
+
+  const current = await getProvider();
+  const remainingMap = { ...PROVIDERS };
+  remainingCustomProviders.forEach((provider) => {
+    const normalized = normalizeCustomProviderConfig(provider);
+    if (normalized) remainingMap[normalized.key] = normalized;
+  });
+  const nextKey = current === key
+    ? (nextOrder.find((providerKey) => remainingMap[providerKey]) || 'chatgpt')
+    : current;
+
+  if (current === key) {
+    await setProvider(nextKey);
+  }
+
+  return { deleted: true, nextKey, wasCurrent: current === key };
+};
+
+const closeProviderContextMenu = () => {
+  try { document.getElementById('providerContextMenu')?.remove(); } catch (_) {}
+};
+
+const showProviderContextMenu = (event, key, cfg, currentProviderKey, overrides) => {
+  if (!cfg?.isCustom) return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeProviderContextMenu();
+
+  const menu = document.createElement('div');
+  menu.id = 'providerContextMenu';
+  menu.className = 'provider-context-menu';
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'provider-context-delete';
+  deleteButton.textContent = `删除 ${cfg.label || 'AI'}`;
+  menu.appendChild(deleteButton);
+
+  const close = () => {
+    menu.remove();
+    document.removeEventListener('click', close, true);
+    document.removeEventListener('keydown', onKeydown, true);
+  };
+  const onKeydown = (keyboardEvent) => {
+    if (keyboardEvent.key === 'Escape') close();
+  };
+
+  deleteButton.addEventListener('click', async () => {
+    const result = await deleteCustomProvider(key);
+    close();
+
+    const overridesNow = overrides || await getOverrides();
+    await renderProviderTabs(result.nextKey || currentProviderKey, overridesNow);
+
+    if (result.wasCurrent) {
+      const container = document.getElementById('iframe');
+      const openInTab = document.getElementById('openInTab');
+      const customProviders = await loadCustomProviders();
+      const allProviders = { ...PROVIDERS };
+      customProviders.forEach((provider) => {
+        const normalized = normalizeCustomProviderConfig(provider);
+        if (normalized) allProviders[normalized.key] = normalized;
+      });
+      const nextProvider = effectiveConfig(allProviders, result.nextKey, overridesNow) || PROVIDERS.chatgpt;
+      if (openInTab && nextProvider) {
+        const preferred = (currentUrlByProvider && currentUrlByProvider[result.nextKey]) || nextProvider.baseUrl;
+        openInTab.dataset.url = preferred;
+        try { openInTab.title = preferred; } catch (_) {}
+      }
+      if (container && nextProvider) {
+        try { await ensureAccessFor(nextProvider.baseUrl || nextProvider.iframeUrl || ''); } catch (_) {}
+        if (nextProvider.authCheck) {
+          const auth = await nextProvider.authCheck();
+          if (auth.state === 'authorized') {
+            await ensureFrame(container, result.nextKey, nextProvider);
+          } else {
+            renderMessage(container, auth.message || 'Please login.');
+          }
+        } else {
+          await ensureFrame(container, result.nextKey, nextProvider);
+        }
+      }
+      await updateStarButtonState();
+    }
+  });
+
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  const left = Math.min(event.clientX, window.innerWidth - rect.width - 8);
+  const top = Math.min(event.clientY, window.innerHeight - rect.height - 8);
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${Math.max(8, top)}px`;
+
+  setTimeout(() => document.addEventListener('click', close, true), 0);
+  document.addEventListener('keydown', onKeydown, true);
+};
+
+const showAddProviderModal = (currentProviderKey, overrides = null) => {
+  const existing = document.getElementById('addProviderModal');
+  if (existing) {
+    existing.querySelector('input[name="label"]')?.focus();
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'addProviderModal';
+  modal.className = 'add-provider-modal';
+  modal.innerHTML = `
+    <div class="add-provider-backdrop" data-close="true"></div>
+    <div class="add-provider-dialog" role="dialog" aria-modal="true" aria-labelledby="addProviderTitle">
+      <div class="add-provider-header">
+        <h2 id="addProviderTitle">添加 AI</h2>
+        <button class="add-provider-close" type="button" aria-label="关闭" data-close="true">×</button>
+      </div>
+      <form class="add-provider-form">
+        <label class="add-provider-field">
+          <span>名称</span>
+          <input name="label" type="text" placeholder="例如：Poe" autocomplete="off" required>
+        </label>
+        <label class="add-provider-field">
+          <span>网址</span>
+          <input name="url" type="url" placeholder="https://poe.com" autocomplete="off" required>
+        </label>
+        <div class="add-provider-error" role="alert"></div>
+        <div class="add-provider-actions">
+          <button class="add-provider-cancel" type="button" data-close="true">取消</button>
+          <button class="add-provider-save" type="submit">添加</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const close = () => {
+    modal.remove();
+    document.removeEventListener('keydown', onKeydown, true);
+  };
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') close();
+  };
+
+  modal.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target && target.getAttribute && target.getAttribute('data-close') === 'true') {
+      close();
+    }
+  });
+
+  const form = modal.querySelector('.add-provider-form');
+  const errorEl = modal.querySelector('.add-provider-error');
+  const saveBtn = modal.querySelector('.add-provider-save');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (errorEl) errorEl.textContent = '';
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      const formData = new FormData(form);
+      const provider = await createCustomProvider({
+        label: formData.get('label'),
+        url: formData.get('url')
+      });
+      const overridesNow = overrides || await getOverrides();
+      const allProviders = { ...PROVIDERS, [provider.key]: provider };
+      const config = effectiveConfig(allProviders, provider.key, overridesNow);
+      const container = document.getElementById('iframe');
+      const openInTab = document.getElementById('openInTab');
+
+      await setProvider(provider.key);
+      if (openInTab) {
+        openInTab.dataset.url = provider.baseUrl;
+        try { openInTab.title = provider.baseUrl; } catch (_) {}
+      }
+      if (container) {
+        await ensureFrame(container, provider.key, config);
+      }
+      await renderProviderTabs(provider.key, overridesNow);
+      await updateStarButtonState();
+      close();
+    } catch (err) {
+      if (errorEl) errorEl.textContent = err?.message || '添加失败，请检查名称和网址';
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener('keydown', onKeydown, true);
+  document.body.appendChild(modal);
+  setTimeout(() => modal.querySelector('input[name="label"]')?.focus(), 0);
 };
 
 // Star shortcut key management
@@ -979,7 +1366,10 @@ blockquote{border-left:4px solid #ddd;margin:0;padding-left:16px;color:#666;}</s
           const overrides = await getOverrides();
           const customProviders = await loadCustomProviders();
           const ALL = { ...PROVIDERS };
-          (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+          (customProviders || []).forEach((c) => {
+            const normalized = normalizeCustomProviderConfig(c);
+            if (normalized) ALL[normalized.key] = normalized;
+          });
           
           // Switch to the provider if specified, otherwise stay on current
           if (providerKey && ALL[providerKey]) {
@@ -1322,7 +1712,10 @@ async function renderFavoritesPanel() {
           const overrides = await getOverrides();
           const customProviders = await loadCustomProviders();
           const ALL = { ...PROVIDERS };
-          (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+          (customProviders || []).forEach((c) => {
+            const normalized = normalizeCustomProviderConfig(c);
+            if (normalized) ALL[normalized.key] = normalized;
+          });
           
           // Switch to the provider if specified, otherwise stay on current
           if (providerKey && ALL[providerKey]) {
@@ -1692,8 +2085,10 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   const customProviders = await loadCustomProviders();
   const ALL = { ...PROVIDERS };
   customProviders.forEach((c) => { 
-    ALL[c.key] = c; 
-    if (!providerOrder.includes(c.key)) providerOrder.push(c.key); 
+    const normalized = normalizeCustomProviderConfig(c);
+    if (!normalized) return;
+    ALL[normalized.key] = normalized;
+    if (!providerOrder.includes(normalized.key)) providerOrder.push(normalized.key);
   });
 
   // --- DnD 辅助函数 ---
@@ -1762,7 +2157,13 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
         try { openInTab.title = preferred; } catch (_) {}
       }
       // ensure DNR + host permissions for selected origin
-      try { (typeof ensureAccessFor === 'function') && ensureAccessFor(p.baseUrl); } catch(_) {}
+      let accessReady = true;
+      try { accessReady = await ensureAccessFor(p.baseUrl); } catch(_) { accessReady = false; }
+      if (!accessReady && p.isCustom) {
+        renderMessage(container, '未获得该网站访问权限，无法在侧栏加载。请重新添加并允许访问，或点击 Open in Tab 使用。');
+        renderProviderTabs(key, overrides);
+        return;
+      }
 
       if (p.authCheck) {
         const auth = await p.authCheck();
@@ -1779,6 +2180,10 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
       renderProviderTabs(key, overrides);
       // 更新星号按钮状态
       await updateStarButtonState();
+    });
+
+    button.addEventListener('contextmenu', (event) => {
+      showProviderContextMenu(event, key, cfg, currentProviderKey, overrides);
     });
 
     tabsContainer.appendChild(button);
@@ -1835,6 +2240,20 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
     });
   });
 
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'provider-add-button';
+  addButton.title = '添加 AI';
+  addButton.setAttribute('aria-label', '添加 AI');
+  addButton.draggable = false;
+  addButton.textContent = '+';
+  addButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    showAddProviderModal(currentProviderKey, overrides);
+  });
+  tabsContainer.appendChild(addButton);
+
   // 展开时：使用 sticky 置顶（CSS 负责），不覆盖第一个图标
 
   if (typeof window.__aisbUpdateLeftSidebar === 'function') {
@@ -1848,10 +2267,20 @@ const initializeBar = async () => {
 
   const currentProviderKey = await getProvider();
   const overrides = await getOverrides();
-  const mergedCurrent = effectiveConfig(PROVIDERS, currentProviderKey, overrides) || (PROVIDERS[currentProviderKey] || PROVIDERS.chatgpt);
+  const customProviders = await loadCustomProviders();
+  const allProviders = { ...PROVIDERS };
+  (customProviders || []).forEach((provider) => {
+    const normalized = normalizeCustomProviderConfig(provider);
+    if (normalized) allProviders[normalized.key] = normalized;
+  });
+  const activeProviderKey = allProviders[currentProviderKey] ? currentProviderKey : 'chatgpt';
+  if (activeProviderKey !== currentProviderKey) {
+    await setProvider(activeProviderKey);
+  }
+  const mergedCurrent = effectiveConfig(allProviders, activeProviderKey, overrides) || allProviders[activeProviderKey] || PROVIDERS.chatgpt;
 
   // 渲染右侧导航栏
-  await renderProviderTabs(currentProviderKey, overrides);
+  await renderProviderTabs(activeProviderKey, overrides);
 
   // Provider tabs hover auto-collapse
   (() => {
@@ -1922,32 +2351,16 @@ const initializeBar = async () => {
       tabsVisible = false;
     }
 
-    buildLeftSidebar(currentProviderKey);
+    buildLeftSidebar(activeProviderKey);
 
     window.__aisbUpdateLeftSidebar = buildLeftSidebar;
   })();
-
-  // helper: request host permission for a provider URL and add DNR rule
-  const ensureAccessFor = (url) => {
-    let origin = null;
-    try { origin = new URL(url).origin; } catch (_) {}
-    if (!origin) return;
-    try {
-      if (chrome.permissions && chrome.permissions.request) {
-        chrome.permissions.request({ origins: [origin + '/*'] }, () => {
-          try { chrome.runtime.sendMessage({ type: 'ai-add-host', origin }); } catch (_) {}
-        });
-      } else {
-        try { chrome.runtime.sendMessage({ type: 'ai-add-host', origin }); } catch (_) {}
-      }
-    } catch (_) {}
-  };
 
   // The rest of this function is now handled by renderProviderTabs
   // No need to build a separate list of providers here.
 
   if (openInTab) {
-    const preferred = currentUrlByProvider[currentProviderKey] || mergedCurrent.baseUrl;
+    const preferred = currentUrlByProvider[activeProviderKey] || mergedCurrent.baseUrl;
     openInTab.dataset.url = preferred;
     try { openInTab.title = preferred; } catch (_) {}
     // 初始化星号按钮状态
@@ -2848,7 +3261,7 @@ const initializeBar = async () => {
     }
   } catch (_) {}
 
-  try { (typeof ensureAccessFor === 'function') && ensureAccessFor(mergedCurrent.baseUrl); } catch(_) {}
+  try { await ensureAccessFor(mergedCurrent.baseUrl); } catch(_) {}
 
   // Helper: cycle provider by direction (-1 prev, +1 next)
   const cycleProvider = async (dir) => {
@@ -2866,7 +3279,10 @@ const initializeBar = async () => {
       const overridesNow = await getOverrides();
       const customProviders = await loadCustomProviders();
       const ALL = { ...PROVIDERS };
-      (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+      (customProviders || []).forEach((c) => {
+        const normalized = normalizeCustomProviderConfig(c);
+        if (normalized) ALL[normalized.key] = normalized;
+      });
       const p = effectiveConfig(ALL, nextKey, overridesNow);
       await setProvider(nextKey);
       if (openInTab) {
@@ -2874,10 +3290,7 @@ const initializeBar = async () => {
         openInTab.dataset.url = preferred;
         try { openInTab.title = preferred; } catch (_) {}
       }
-      try {
-        const origin = new URL(p.baseUrl || p.iframeUrl || '').origin;
-        if (origin) chrome.runtime.sendMessage({ type: 'ai-add-host', origin });
-      } catch (_) {}
+      try { await ensureAccessFor(p.baseUrl || p.iframeUrl || ''); } catch (_) {}
       // Avoid focusing inside the frame so Tab stays captured by the panel
       __suppressNextFrameFocus = true;
       if (p.authCheck) {
@@ -3031,12 +3444,12 @@ const initializeBar = async () => {
   if (mergedCurrent.authCheck) {
     const auth = await mergedCurrent.authCheck();
     if (auth.state === 'authorized') {
-      await ensureFrame(container, currentProviderKey, mergedCurrent);
+      await ensureFrame(container, activeProviderKey, mergedCurrent);
     } else {
       renderMessage(container, auth.message || 'Please login.');
     }
   } else {
-    await ensureFrame(container, currentProviderKey, mergedCurrent);
+    await ensureFrame(container, activeProviderKey, mergedCurrent);
   }
 
   // removed keyboard command & navigation for menu
