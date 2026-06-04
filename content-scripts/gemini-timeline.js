@@ -16285,7 +16285,7 @@
 
   // ../aisb-gemini/src/pages/content/timeline/index.ts
   function isGeminiConversationRoute(pathname = location.pathname) {
-    return /^\/(?:u\/\d+\/)?(app|gem)(\/|$)/.test(pathname);
+    return /^\/(?:u\/\d+\/)?(?:app|gem)\/[^/]+(?:\/|$)/.test(pathname);
   }
   var timelineManagerInstance = null;
   var currentUrl = location.href;

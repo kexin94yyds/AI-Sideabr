@@ -127,9 +127,9 @@ const PROVIDERS = {
   },
   tobooks: {
     label: 'ToBooks',
-    icon: 'images/favicon.png',
-    baseUrl: 'https://tobooks.netlify.app/tobooks-main/',
-    iframeUrl: 'https://tobooks.netlify.app/tobooks-main/',
+    icon: 'images/providers/tobooks.png',
+    baseUrl: 'https://tobooks.xin/',
+    iframeUrl: 'https://tobooks.xin/',
     authCheck: null
   },
   mubu: {
@@ -227,7 +227,13 @@ async function loadCustomProviders() {
   });
 }
 async function saveCustomProviders(list) {
-  try { chrome.storage?.local.set({ customProviders: list }); } catch (_) {}
+  return new Promise((resolve) => {
+    try {
+      chrome.storage?.local.set({ customProviders: list }, () => resolve());
+    } catch (_) {
+      resolve();
+    }
+  });
 }
 
 // No built-in prompt overlay
@@ -258,6 +264,62 @@ const effectiveConfig = (baseMap, key, overrides) => {
   if (key === 'perplexity') merged.useWebview = false;
   return merged;
 };
+
+// Request host permission for a provider URL and add the matching DNR rule.
+const ensureAccessFor = (url) => {
+  let origin = null;
+  try { origin = new URL(url).origin; } catch (_) {}
+  if (!origin) return Promise.resolve(false);
+  const pattern = origin + '/*';
+  const addHostRule = () => new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'ai-add-host', origin }, (res) => {
+        try {
+          if (chrome.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+        } catch (_) {}
+        resolve(res?.ok !== false);
+      });
+    } catch (_) {
+      resolve(false);
+    }
+  });
+
+  return new Promise((resolve) => {
+    try {
+      if (chrome.permissions && chrome.permissions.contains) {
+        chrome.permissions.contains({ origins: [pattern] }, async (hasPermission) => {
+          if (hasPermission) {
+            resolve(await addHostRule());
+            return;
+          }
+          if (chrome.permissions.request) {
+            chrome.permissions.request({ origins: [pattern] }, async (granted) => {
+              resolve(granted ? await addHostRule() : false);
+            });
+            return;
+          }
+          resolve(await addHostRule());
+        });
+        return;
+      }
+
+      if (chrome.permissions && chrome.permissions.request) {
+        chrome.permissions.request({ origins: [pattern] }, async (granted) => {
+          resolve(granted ? await addHostRule() : false);
+        });
+        return;
+      }
+
+      addHostRule().then(resolve);
+    } catch (_) {
+      addHostRule().then(resolve);
+    }
+  });
+};
+
 const clearOverride = async (key) => {
   try {
     const all = await getOverrides();
@@ -281,11 +343,24 @@ const getProvider = async () => {
 const setProvider = async (key) => {
   return new Promise((resolve) => {
     try {
-      chrome.storage?.local.set({ provider: key }, () => resolve());
+      chrome.storage?.local.set({ provider: key, currentProvider: key }, () => resolve());
     } catch (_) {
       resolve();
     }
   });
+};
+
+// Normalize provider URLs so renamed domains can be migrated from old stored values.
+const normalizeProviderUrl = (providerKey, url) => {
+  if (!url || typeof url !== 'string') return null;
+  if (providerKey !== 'tobooks') return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === 'tobooks.netlify.app') {
+      return 'https://tobooks.xin/';
+    }
+  } catch (_) {}
+  return url;
 };
 
 // Save and restore current URL for each provider
@@ -293,7 +368,7 @@ const saveProviderUrl = async (providerKey, url) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
     const urls = data?.providerUrls || {};
-    urls[providerKey] = url;
+    urls[providerKey] = normalizeProviderUrl(providerKey, url);
     await chrome.storage?.local.set({ providerUrls: urls });
   } catch (_) {}
 };
@@ -301,7 +376,41 @@ const saveProviderUrl = async (providerKey, url) => {
 const getProviderUrl = async (providerKey) => {
   try {
     const data = await chrome.storage?.local.get(['providerUrls']);
-    return data?.providerUrls?.[providerKey] || null;
+    const saved = data?.providerUrls?.[providerKey] || null;
+    const normalized = normalizeProviderUrl(providerKey, saved);
+    if (saved && normalized && saved !== normalized) {
+      const urls = data?.providerUrls || {};
+      urls[providerKey] = normalized;
+      await chrome.storage?.local.set({ providerUrls: urls });
+    }
+    return normalized;
+  } catch (_) {
+    return null;
+  }
+};
+
+const getActiveNotebookLMUrl = async () => {
+  try {
+    const isNotebookUrl = (url) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.hostname !== 'notebooklm.google.com') return null;
+        if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
+        return parsed.href;
+      } catch (_) {
+        return null;
+      }
+    };
+    const activeTabs = await chrome.tabs?.query({ active: true, currentWindow: true });
+    const activeUrl = isNotebookUrl(activeTabs && activeTabs[0] && activeTabs[0].url);
+    if (activeUrl) return activeUrl;
+
+    const currentWindowTabs = await chrome.tabs?.query({ currentWindow: true });
+    const notebookTabs = (currentWindowTabs || [])
+      .map((tab) => ({ index: Number(tab.index || 0), url: isNotebookUrl(tab.url) }))
+      .filter((tab) => !!tab.url)
+      .sort((a, b) => b.index - a.index);
+    return notebookTabs[0]?.url || null;
   } catch (_) {
     return null;
   }
@@ -327,7 +436,332 @@ const getProviderOrder = async () => {
 };
 
 const saveProviderOrder = async (order) => {
-  try { chrome.storage?.local.set({ providerOrder: order }); } catch (_) {}
+  return new Promise((resolve) => {
+    try {
+      chrome.storage?.local.set({ providerOrder: order }, () => resolve());
+    } catch (_) {
+      resolve();
+    }
+  });
+};
+
+const normalizeCustomProviderUrl = (raw) => {
+  const value = String(raw || '').trim();
+  if (!value) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    const parsed = new URL(withScheme);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    return parsed.href;
+  } catch (_) {
+    return null;
+  }
+};
+
+const getCustomProviderIconUrl = (url) => {
+  try {
+    const origin = new URL(url).origin;
+    return `https://www.google.com/s2/favicons?domain_url=${encodeURIComponent(origin)}&sz=64`;
+  } catch (_) {
+    return '';
+  }
+};
+
+const normalizeCustomProviderConfig = (provider) => {
+  if (!provider || !provider.key) return null;
+  const url = provider.baseUrl || provider.iframeUrl || '';
+  return {
+    ...provider,
+    icon: provider.icon || getCustomProviderIconUrl(url),
+    isCustom: true
+  };
+};
+
+const makeCustomProviderKey = (label, url, customProviders = []) => {
+  const taken = new Set([
+    ...Object.keys(PROVIDERS),
+    ...customProviders.map((p) => p && p.key).filter(Boolean)
+  ]);
+  let seed = '';
+  try { seed = new URL(url).hostname.replace(/^www\./i, ''); } catch (_) {}
+  const slug = String(seed || label || 'ai')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+  const base = `custom_${slug || Date.now()}`;
+  let key = base;
+  let suffix = 2;
+  while (taken.has(key)) {
+    key = `${base}_${suffix}`;
+    suffix += 1;
+  }
+  return key;
+};
+
+const createCustomProvider = async ({ label, url }) => {
+  const cleanLabel = String(label || '').trim();
+  const cleanUrl = normalizeCustomProviderUrl(url);
+  if (!cleanLabel) throw new Error('请输入 AI 名称');
+  if (!cleanUrl) throw new Error('请输入有效的网址');
+
+  const customProviders = await loadCustomProviders();
+  const provider = {
+    key: makeCustomProviderKey(cleanLabel, cleanUrl, customProviders),
+    label: cleanLabel,
+    icon: getCustomProviderIconUrl(cleanUrl),
+    baseUrl: cleanUrl,
+    iframeUrl: cleanUrl,
+    authCheck: null,
+    isCustom: true
+  };
+
+  const accessReady = await ensureAccessFor(provider.baseUrl);
+  if (!accessReady) throw new Error('未获得该网站访问权限，无法添加');
+
+  await saveCustomProviders([...customProviders, provider]);
+
+  const providerOrder = await getProviderOrder();
+  if (!providerOrder.includes(provider.key)) {
+    await saveProviderOrder([...providerOrder, provider.key]);
+  }
+
+  return provider;
+};
+
+const removeHostAccessFor = (url) => {
+  let origin = null;
+  try { origin = new URL(url).origin; } catch (_) {}
+  if (!origin) return;
+  try { chrome.runtime.sendMessage({ type: 'ai-remove-host', origin }); } catch (_) {}
+};
+
+const getUrlOrigin = (url) => {
+  try { return new URL(url).origin; } catch (_) { return ''; }
+};
+
+const deleteCustomProvider = async (key) => {
+  const customProviders = await loadCustomProviders();
+  const target = customProviders.find((provider) => provider && provider.key === key);
+  if (!target) return { deleted: false, nextKey: await getProvider(), wasCurrent: false };
+
+  const remainingCustomProviders = customProviders.filter((provider) => provider && provider.key !== key);
+  await saveCustomProviders(remainingCustomProviders);
+
+  const providerOrder = await getProviderOrder();
+  const nextOrder = providerOrder.filter((providerKey) => providerKey !== key);
+  await saveProviderOrder(nextOrder);
+
+  try {
+    const data = await chrome.storage?.local.get(['providerUrls', 'aiProviderOverrides']);
+    const providerUrls = data?.providerUrls || {};
+    const aiProviderOverrides = data?.aiProviderOverrides || {};
+    if (providerUrls[key]) delete providerUrls[key];
+    if (aiProviderOverrides[key]) delete aiProviderOverrides[key];
+    await chrome.storage?.local.set({ providerUrls, aiProviderOverrides });
+  } catch (_) {}
+
+  try {
+    if (cachedFrames[key]) cachedFrames[key].remove();
+    delete cachedFrames[key];
+    delete cachedFrameMeta[key];
+    delete currentUrlByProvider[key];
+  } catch (_) {}
+
+  const targetOrigin = getUrlOrigin(target.baseUrl || target.iframeUrl);
+  const stillUsesOrigin = remainingCustomProviders.some((provider) => (
+    getUrlOrigin(provider?.baseUrl || provider?.iframeUrl) === targetOrigin
+  ));
+  if (targetOrigin && !stillUsesOrigin) {
+    removeHostAccessFor(target.baseUrl || target.iframeUrl);
+  }
+
+  const current = await getProvider();
+  const remainingMap = { ...PROVIDERS };
+  remainingCustomProviders.forEach((provider) => {
+    const normalized = normalizeCustomProviderConfig(provider);
+    if (normalized) remainingMap[normalized.key] = normalized;
+  });
+  const nextKey = current === key
+    ? (nextOrder.find((providerKey) => remainingMap[providerKey]) || 'chatgpt')
+    : current;
+
+  if (current === key) {
+    await setProvider(nextKey);
+  }
+
+  return { deleted: true, nextKey, wasCurrent: current === key };
+};
+
+const closeProviderContextMenu = () => {
+  try { document.getElementById('providerContextMenu')?.remove(); } catch (_) {}
+};
+
+const showProviderContextMenu = (event, key, cfg, currentProviderKey, overrides) => {
+  if (!cfg?.isCustom) return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeProviderContextMenu();
+
+  const menu = document.createElement('div');
+  menu.id = 'providerContextMenu';
+  menu.className = 'provider-context-menu';
+  const deleteButton = document.createElement('button');
+  deleteButton.type = 'button';
+  deleteButton.className = 'provider-context-delete';
+  deleteButton.textContent = `删除 ${cfg.label || 'AI'}`;
+  menu.appendChild(deleteButton);
+
+  const close = () => {
+    menu.remove();
+    document.removeEventListener('click', close, true);
+    document.removeEventListener('keydown', onKeydown, true);
+  };
+  const onKeydown = (keyboardEvent) => {
+    if (keyboardEvent.key === 'Escape') close();
+  };
+
+  deleteButton.addEventListener('click', async () => {
+    const result = await deleteCustomProvider(key);
+    close();
+
+    const overridesNow = overrides || await getOverrides();
+    await renderProviderTabs(result.nextKey || currentProviderKey, overridesNow);
+
+    if (result.wasCurrent) {
+      const container = document.getElementById('iframe');
+      const openInTab = document.getElementById('openInTab');
+      const customProviders = await loadCustomProviders();
+      const allProviders = { ...PROVIDERS };
+      customProviders.forEach((provider) => {
+        const normalized = normalizeCustomProviderConfig(provider);
+        if (normalized) allProviders[normalized.key] = normalized;
+      });
+      const nextProvider = effectiveConfig(allProviders, result.nextKey, overridesNow) || PROVIDERS.chatgpt;
+      if (openInTab && nextProvider) {
+        const preferred = (currentUrlByProvider && currentUrlByProvider[result.nextKey]) || nextProvider.baseUrl;
+        openInTab.dataset.url = preferred;
+        try { openInTab.title = preferred; } catch (_) {}
+      }
+      if (container && nextProvider) {
+        try { await ensureAccessFor(nextProvider.baseUrl || nextProvider.iframeUrl || ''); } catch (_) {}
+        if (nextProvider.authCheck) {
+          const auth = await nextProvider.authCheck();
+          if (auth.state === 'authorized') {
+            await ensureFrame(container, result.nextKey, nextProvider);
+          } else {
+            renderMessage(container, auth.message || 'Please login.');
+          }
+        } else {
+          await ensureFrame(container, result.nextKey, nextProvider);
+        }
+      }
+      await updateStarButtonState();
+    }
+  });
+
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  const left = Math.min(event.clientX, window.innerWidth - rect.width - 8);
+  const top = Math.min(event.clientY, window.innerHeight - rect.height - 8);
+  menu.style.left = `${Math.max(8, left)}px`;
+  menu.style.top = `${Math.max(8, top)}px`;
+
+  setTimeout(() => document.addEventListener('click', close, true), 0);
+  document.addEventListener('keydown', onKeydown, true);
+};
+
+const showAddProviderModal = (currentProviderKey, overrides = null) => {
+  const existing = document.getElementById('addProviderModal');
+  if (existing) {
+    existing.querySelector('input[name="label"]')?.focus();
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'addProviderModal';
+  modal.className = 'add-provider-modal';
+  modal.innerHTML = `
+    <div class="add-provider-backdrop" data-close="true"></div>
+    <div class="add-provider-dialog" role="dialog" aria-modal="true" aria-labelledby="addProviderTitle">
+      <div class="add-provider-header">
+        <h2 id="addProviderTitle">添加 AI</h2>
+        <button class="add-provider-close" type="button" aria-label="关闭" data-close="true">×</button>
+      </div>
+      <form class="add-provider-form">
+        <label class="add-provider-field">
+          <span>名称</span>
+          <input name="label" type="text" placeholder="例如：Poe" autocomplete="off" required>
+        </label>
+        <label class="add-provider-field">
+          <span>网址</span>
+          <input name="url" type="url" placeholder="https://poe.com" autocomplete="off" required>
+        </label>
+        <div class="add-provider-error" role="alert"></div>
+        <div class="add-provider-actions">
+          <button class="add-provider-cancel" type="button" data-close="true">取消</button>
+          <button class="add-provider-save" type="submit">添加</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const close = () => {
+    modal.remove();
+    document.removeEventListener('keydown', onKeydown, true);
+  };
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') close();
+  };
+
+  modal.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target && target.getAttribute && target.getAttribute('data-close') === 'true') {
+      close();
+    }
+  });
+
+  const form = modal.querySelector('.add-provider-form');
+  const errorEl = modal.querySelector('.add-provider-error');
+  const saveBtn = modal.querySelector('.add-provider-save');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (errorEl) errorEl.textContent = '';
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      const formData = new FormData(form);
+      const provider = await createCustomProvider({
+        label: formData.get('label'),
+        url: formData.get('url')
+      });
+      const overridesNow = overrides || await getOverrides();
+      const allProviders = { ...PROVIDERS, [provider.key]: provider };
+      const config = effectiveConfig(allProviders, provider.key, overridesNow);
+      const container = document.getElementById('iframe');
+      const openInTab = document.getElementById('openInTab');
+
+      await setProvider(provider.key);
+      if (openInTab) {
+        openInTab.dataset.url = provider.baseUrl;
+        try { openInTab.title = provider.baseUrl; } catch (_) {}
+      }
+      if (container) {
+        await ensureFrame(container, provider.key, config);
+      }
+      await renderProviderTabs(provider.key, overridesNow);
+      await updateStarButtonState();
+      close();
+    } catch (err) {
+      if (errorEl) errorEl.textContent = err?.message || '添加失败，请检查名称和网址';
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  });
+
+  document.addEventListener('keydown', onKeydown, true);
+  document.body.appendChild(modal);
+  setTimeout(() => modal.querySelector('input[name="label"]')?.focus(), 0);
 };
 
 // Star shortcut key management
@@ -932,7 +1366,10 @@ blockquote{border-left:4px solid #ddd;margin:0;padding-left:16px;color:#666;}</s
           const overrides = await getOverrides();
           const customProviders = await loadCustomProviders();
           const ALL = { ...PROVIDERS };
-          (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+          (customProviders || []).forEach((c) => {
+            const normalized = normalizeCustomProviderConfig(c);
+            if (normalized) ALL[normalized.key] = normalized;
+          });
           
           // Switch to the provider if specified, otherwise stay on current
           if (providerKey && ALL[providerKey]) {
@@ -1275,7 +1712,10 @@ async function renderFavoritesPanel() {
           const overrides = await getOverrides();
           const customProviders = await loadCustomProviders();
           const ALL = { ...PROVIDERS };
-          (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+          (customProviders || []).forEach((c) => {
+            const normalized = normalizeCustomProviderConfig(c);
+            if (normalized) ALL[normalized.key] = normalized;
+          });
           
           // Switch to the provider if specified, otherwise stay on current
           if (providerKey && ALL[providerKey]) {
@@ -1454,6 +1894,20 @@ const showOnlyFrame = (container, key) => {
 
 
 let __suppressNextFrameFocus = false; // when true, do not focus iframe/webview on switch (e.g., Tab cycling)
+let __providerFrameShortcutArmed = false;
+
+const armProviderFrameShortcut = () => {
+  __providerFrameShortcutArmed = true;
+  try {
+    chrome.runtime?.sendMessage({ type: 'AISB_SHORTCUT_TARGET', surface: 'sidepanel' });
+  } catch (_) {}
+};
+
+try {
+  window.addEventListener('blur', () => {
+    __providerFrameShortcutArmed = false;
+  }, true);
+} catch (_) {}
 
 const ensureFrame = async (container, key, provider) => {
   if (!cachedFrames[key]) {
@@ -1474,7 +1928,8 @@ const ensureFrame = async (container, key, provider) => {
         'geolocation',
         'camera',
         'microphone',
-        'display-capture'
+        'display-capture',
+        'storage-access'
       ].join('; ');
     } else {
       // webview specific attributes
@@ -1503,7 +1958,12 @@ const ensureFrame = async (container, key, provider) => {
     // Try to restore last visited URL for this provider
     const savedUrl = await getProviderUrl(key);
     let urlToLoad = provider.iframeUrl;
-    if (savedUrl) {
+    const activeNotebookLMUrl = key === 'notebooklm' ? await getActiveNotebookLMUrl() : null;
+    if (activeNotebookLMUrl) {
+      urlToLoad = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'using active NotebookLM URL:', activeNotebookLMUrl);
+    } else if (savedUrl) {
       urlToLoad = savedUrl;
       dbg('ensureFrame:', key, 'restored URL:', savedUrl);
     }
@@ -1525,7 +1985,7 @@ const ensureFrame = async (container, key, provider) => {
       const origin = new URL(provider.baseUrl || provider.iframeUrl).origin;
       cachedFrameMeta[key] = { origin };
       // Initialize with initial URL as a fallback until content script reports
-      currentUrlByProvider[key] = provider.iframeUrl || provider.baseUrl || '';
+      currentUrlByProvider[key] = urlToLoad || provider.iframeUrl || provider.baseUrl || '';
     } catch (_) {
       cachedFrameMeta[key] = { origin: '' };
     }
@@ -1536,6 +1996,17 @@ const ensureFrame = async (container, key, provider) => {
       } else {
         view.addEventListener('contentload', focusHandler);
       }
+    }
+    try { view.addEventListener('focus', armProviderFrameShortcut, true); } catch (_) {}
+    try { view.addEventListener('pointerdown', armProviderFrameShortcut, true); } catch (_) {}
+  }
+  if (key === 'notebooklm' && cachedFrames[key]) {
+    const activeNotebookLMUrl = await getActiveNotebookLMUrl();
+    if (activeNotebookLMUrl && cachedFrames[key].src !== activeNotebookLMUrl) {
+      cachedFrames[key].src = activeNotebookLMUrl;
+      currentUrlByProvider[key] = activeNotebookLMUrl;
+      saveProviderUrl(key, activeNotebookLMUrl);
+      dbg('ensureFrame:', key, 'synced active NotebookLM URL:', activeNotebookLMUrl);
     }
   }
   // hide message overlay if any
@@ -1582,7 +2053,9 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   const tabsContainer = document.getElementById('provider-tabs');
   if (!tabsContainer) return;
 
-  const collapsed = await getTabsCollapsed();
+  const storedCollapsed = await getTabsCollapsed();
+  const hoverExpanded = tabsContainer.classList.contains('hover-expanded');
+  const collapsed = storedCollapsed && !hoverExpanded;
   tabsContainer.classList.toggle('collapsed', collapsed);
 
   // Clear and rebuild
@@ -1596,11 +2069,12 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   toggle.innerHTML = collapsed ? '«' : '»';
   toggle.title = collapsed ? 'Expand' : 'Collapse';
   toggle.onclick = async () => {
+    tabsContainer.classList.remove('hover-expanded');
     tabsContainer.classList.toggle('collapsed');
     const nowCollapsed = tabsContainer.classList.contains('collapsed');
     toggle.innerHTML = nowCollapsed ? '«' : '»';
     toggle.title = nowCollapsed ? 'Expand' : 'Collapse';
-    await chrome.storage?.local.set({ tabsCollapsed: nowCollapsed });
+    await setTabsCollapsed(nowCollapsed);
     // Re-render to update UI spacing
     renderProviderTabs(currentProviderKey, overrides);
   };
@@ -1614,8 +2088,10 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
   const customProviders = await loadCustomProviders();
   const ALL = { ...PROVIDERS };
   customProviders.forEach((c) => { 
-    ALL[c.key] = c; 
-    if (!providerOrder.includes(c.key)) providerOrder.push(c.key); 
+    const normalized = normalizeCustomProviderConfig(c);
+    if (!normalized) return;
+    ALL[normalized.key] = normalized;
+    if (!providerOrder.includes(normalized.key)) providerOrder.push(normalized.key);
   });
 
   // --- DnD 辅助函数 ---
@@ -1684,7 +2160,13 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
         try { openInTab.title = preferred; } catch (_) {}
       }
       // ensure DNR + host permissions for selected origin
-      try { (typeof ensureAccessFor === 'function') && ensureAccessFor(p.baseUrl); } catch(_) {}
+      let accessReady = true;
+      try { accessReady = await ensureAccessFor(p.baseUrl); } catch(_) { accessReady = false; }
+      if (!accessReady && p.isCustom) {
+        renderMessage(container, '未获得该网站访问权限，无法在侧栏加载。请重新添加并允许访问，或点击 Open in Tab 使用。');
+        renderProviderTabs(key, overrides);
+        return;
+      }
 
       if (p.authCheck) {
         const auth = await p.authCheck();
@@ -1701,6 +2183,10 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
       renderProviderTabs(key, overrides);
       // 更新星号按钮状态
       await updateStarButtonState();
+    });
+
+    button.addEventListener('contextmenu', (event) => {
+      showProviderContextMenu(event, key, cfg, currentProviderKey, overrides);
     });
 
     tabsContainer.appendChild(button);
@@ -1757,6 +2243,27 @@ const renderProviderTabs = async (currentProviderKey, overrides = null) => {
     });
   });
 
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'provider-add-button';
+  addButton.title = '添加 AI';
+  addButton.setAttribute('aria-label', '添加 AI');
+  addButton.draggable = false;
+  addButton.textContent = '+';
+  addButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    showAddProviderModal(currentProviderKey, overrides);
+  });
+  tabsContainer.appendChild(addButton);
+
+  const activeProviderButton = tabsContainer.querySelector('button.active[data-provider-id]');
+  if (activeProviderButton && !tabsContainer.classList.contains('collapsed')) {
+    setTimeout(() => {
+      try { activeProviderButton.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (_) {}
+    }, 0);
+  }
+
   // 展开时：使用 sticky 置顶（CSS 负责），不覆盖第一个图标
 
   if (typeof window.__aisbUpdateLeftSidebar === 'function') {
@@ -1770,10 +2277,20 @@ const initializeBar = async () => {
 
   const currentProviderKey = await getProvider();
   const overrides = await getOverrides();
-  const mergedCurrent = effectiveConfig(PROVIDERS, currentProviderKey, overrides) || (PROVIDERS[currentProviderKey] || PROVIDERS.chatgpt);
+  const customProviders = await loadCustomProviders();
+  const allProviders = { ...PROVIDERS };
+  (customProviders || []).forEach((provider) => {
+    const normalized = normalizeCustomProviderConfig(provider);
+    if (normalized) allProviders[normalized.key] = normalized;
+  });
+  const activeProviderKey = allProviders[currentProviderKey] ? currentProviderKey : 'chatgpt';
+  if (activeProviderKey !== currentProviderKey) {
+    await setProvider(activeProviderKey);
+  }
+  const mergedCurrent = effectiveConfig(allProviders, activeProviderKey, overrides) || allProviders[activeProviderKey] || PROVIDERS.chatgpt;
 
   // 渲染右侧导航栏
-  await renderProviderTabs(currentProviderKey, overrides);
+  await renderProviderTabs(activeProviderKey, overrides);
 
   // Provider tabs hover auto-collapse
   (() => {
@@ -1796,6 +2313,7 @@ const initializeBar = async () => {
         expandTimer = null;
         if (tabs.classList.contains('collapsed')) {
           tabs.classList.remove('collapsed');
+          tabs.classList.add('hover-expanded');
           const toggle = tabs.querySelector('.tabs-toggle');
           if (toggle) { toggle.innerHTML = '»'; toggle.title = 'Collapse'; }
         }
@@ -1810,6 +2328,7 @@ const initializeBar = async () => {
         collapseTimer = null;
         if (!tabs.classList.contains('collapsed')) {
           tabs.classList.add('collapsed');
+          tabs.classList.remove('hover-expanded');
           const toggle = tabs.querySelector('.tabs-toggle');
           if (toggle) { toggle.innerHTML = '«'; toggle.title = 'Expand'; }
         }
@@ -1844,32 +2363,16 @@ const initializeBar = async () => {
       tabsVisible = false;
     }
 
-    buildLeftSidebar(currentProviderKey);
+    buildLeftSidebar(activeProviderKey);
 
     window.__aisbUpdateLeftSidebar = buildLeftSidebar;
   })();
-
-  // helper: request host permission for a provider URL and add DNR rule
-  const ensureAccessFor = (url) => {
-    let origin = null;
-    try { origin = new URL(url).origin; } catch (_) {}
-    if (!origin) return;
-    try {
-      if (chrome.permissions && chrome.permissions.request) {
-        chrome.permissions.request({ origins: [origin + '/*'] }, () => {
-          try { chrome.runtime.sendMessage({ type: 'ai-add-host', origin }); } catch (_) {}
-        });
-      } else {
-        try { chrome.runtime.sendMessage({ type: 'ai-add-host', origin }); } catch (_) {}
-      }
-    } catch (_) {}
-  };
 
   // The rest of this function is now handled by renderProviderTabs
   // No need to build a separate list of providers here.
 
   if (openInTab) {
-    const preferred = currentUrlByProvider[currentProviderKey] || mergedCurrent.baseUrl;
+    const preferred = currentUrlByProvider[activeProviderKey] || mergedCurrent.baseUrl;
     openInTab.dataset.url = preferred;
     try { openInTab.title = preferred; } catch (_) {}
     // 初始化星号按钮状态
@@ -2062,6 +2565,19 @@ const initializeBar = async () => {
       URL.revokeObjectURL(url);
     };
 
+    const openPrintDocument = (filename, content) => {
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      if (!printWindow) {
+        URL.revokeObjectURL(url);
+        downloadFile(filename, content, 'text/html;charset=utf-8');
+        return false;
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      return true;
+    };
+
     const loadHistoryCount = async () => {
       try {
         const result = await chrome.storage.local.get('ai_chat_conversations');
@@ -2093,9 +2609,38 @@ const initializeBar = async () => {
       panel.style.display = 'none';
     });
 
+    const findProviderFrameBySource = (source) => {
+      for (const [key, frame] of Object.entries(cachedFrames)) {
+        try {
+          if (frame?.contentWindow === source) return { key, frame };
+        } catch (_) {}
+      }
+      return null;
+    };
+
+    const isTrustedProviderMessage = (event) => {
+      const match = findProviderFrameBySource(event.source);
+      if (!match) return false;
+
+      const expectedOrigins = new Set();
+      try {
+        const origin = cachedFrameMeta[match.key]?.origin;
+        if (origin) expectedOrigins.add(origin);
+      } catch (_) {}
+      try {
+        const currentUrl = currentUrlByProvider[match.key];
+        if (currentUrl) expectedOrigins.add(new URL(currentUrl).origin);
+      } catch (_) {}
+
+      return expectedOrigins.size === 0 || expectedOrigins.has(event.origin);
+    };
+
     // Handle export responses from iframe
     window.addEventListener('message', async (event) => {
       const data = event.data || {};
+      if (String(data.type || '').startsWith('AI_SIDEBAR_') && !isTrustedProviderMessage(event)) {
+        return;
+      }
       
       // Quick Export Response
       if (data.type === 'AI_SIDEBAR_EXPORT_RESPONSE') {
@@ -2103,8 +2648,18 @@ const initializeBar = async () => {
           updateStatus(`Error: ${data.error}`, 'error');
         } else if (data.result) {
           const result = data.result;
-          downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
-          updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          if (data.format === 'pdf' || data.format === 'original') {
+            const opened = openPrintDocument(result.filename, result.content);
+            updateStatus(
+              data.format === 'original'
+                ? (opened ? '✓ Original view print opened' : '✓ Downloaded original view HTML')
+                : (opened ? '✓ Print dialog opened' : '✓ Downloaded print-ready HTML'),
+              'success'
+            );
+          } else {
+            downloadFile(result.filename, result.content, data.format === 'markdown' ? 'text/markdown' : 'application/json');
+            updateStatus(`✓ Exported ${result.count || result.data?.messageCount} messages`, 'success');
+          }
         }
       }
 
@@ -2142,25 +2697,108 @@ const initializeBar = async () => {
       
       // Save to Library Response (from sidebar button)
       if (data.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE') {
+        const isSilent = Boolean(data.meta?.silent);
+        const isManualSave = !isSilent || Boolean(data.meta?.shortcut);
+        const sendShortcutAck = (payload) => {
+          if (!data.meta?.shortcut) return;
+          try {
+            event.source?.postMessage({
+              type: 'AI_SIDEBAR_SHORTCUT_SAVE_ACK',
+              ...payload
+            }, event.origin);
+          } catch (_) {}
+        };
         if (data.error) {
-          updateStatus(`Error: ${data.error}`, 'error');
+          const providerKey = String(data.meta?.provider || '');
+          if (providerKey) settleAutoSaveRequest(providerKey);
+          aisbAutosaveDebug('sidebar.save_response.error', {
+            provider: providerKey,
+            silent: isSilent,
+            shortcut: Boolean(data.meta?.shortcut),
+            error: data.error
+          }, `sidebar.save_response.error:${providerKey}:${data.error}`, 0);
+          if (!isSilent) updateStatus(`Error: ${data.error}`, 'error');
+          sendShortcutAck({ ok: false, error: data.error });
         } else if (data.data) {
           try {
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            const state = providerKey ? settleAutoSaveRequest(providerKey) : null;
+            const resolvedMeta = resolveConversationSaveMetadata(providerKey, data.data, data.meta, state);
             const convData = {
               ...data.data,
+              url: resolvedMeta.url || data.data.url,
+              title: resolvedMeta.title || data.data.title,
               content: data.content,
               timestamp: Date.now(),
               createdAt: Date.now(),
               updatedAt: Date.now()
             };
+            aisbAutosaveDebug('sidebar.save_response.data', {
+              provider: providerKey,
+              silent: isSilent,
+              manual: isManualSave,
+              urlSource: resolvedMeta.urlSource,
+              titleSource: resolvedMeta.titleSource,
+              conversation: aisbConversationSummary(convData)
+            }, `sidebar.save_response.data:${providerKey}:${convData.conversationId || convData.url}`, 0);
+            if (providerKey) {
+              state.href = String(convData.url || state.href || '');
+              state.title = String(convData.title || state.title || '');
+
+              if (!isManualSave && !canAutoSaveConversation(providerKey, state.href, state.title)) {
+                aisbAutosaveDebug('sidebar.save_response.discarded', {
+                  provider: providerKey,
+                  reason: getAutoSaveReadiness(providerKey, state.href, state.title).reason,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.discarded:${providerKey}:${state.href}`, 0);
+                return;
+              }
+
+              const fingerprint = buildAutoSaveFingerprint(convData);
+              if (!isManualSave && isSilent && fingerprint && fingerprint === state.lastFingerprint) {
+                aisbAutosaveDebug('sidebar.save_response.unchanged', {
+                  provider: providerKey,
+                  href: state.href,
+                  title: state.title,
+                  conversation: aisbConversationSummary(convData)
+                }, `sidebar.save_response.unchanged:${providerKey}:${fingerprint}`, 5000);
+                return;
+              }
+
+              state.lastMessageCount = Number(convData.messageCount || convData.messages?.length || 0);
+              state.lastConversationId = String(convData.conversationId || '');
+              state.lastFingerprint = fingerprint;
+            }
             if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
               await window.ChatHistoryDB.saveConversation(convData);
-              updateStatus(`✓ Saved to library`, 'success');
+              aisbAutosaveDebug('sidebar.save_response.stored', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.stored:${providerKey}:${convData.conversationId || convData.url}`, 0);
+              if (!isSilent) updateStatus(`✓ Saved to library`, 'success');
+              sendShortcutAck({ ok: true, status: 'history_saved_folder_queued' });
             } else {
-              updateStatus('Storage not available', 'error');
+              aisbAutosaveDebug('sidebar.save_response.storage_missing', {
+                provider: providerKey,
+                silent: isSilent,
+                conversation: aisbConversationSummary(convData)
+              }, `sidebar.save_response.storage_missing:${providerKey}`, 0);
+              if (!isSilent) updateStatus('Storage not available', 'error');
+              sendShortcutAck({ ok: false, error: 'Storage not available' });
             }
           } catch (err) {
-            updateStatus(`Error: ${err.message}`, 'error');
+            const providerKey = String(data.data?.provider || data.meta?.provider || '');
+            if (providerKey) settleAutoSaveRequest(providerKey);
+            aisbAutosaveDebug('sidebar.save_response.exception', {
+              provider: providerKey,
+              silent: isSilent,
+              error: err?.message || String(err)
+            }, `sidebar.save_response.exception:${providerKey}:${err?.message || String(err)}`, 0);
+            if (!isSilent) updateStatus(`Error: ${err.message}`, 'error');
+            sendShortcutAck({ ok: false, error: err.message });
           }
         }
       }
@@ -2194,6 +2832,34 @@ const initializeBar = async () => {
     const getProviderSync = () => __currentProviderSync;
     updateProviderSync();
 
+    const getVisibleProviderFrame = () => {
+      const iframeContainer = document.getElementById('iframe');
+      return iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])') || null;
+    };
+
+    const showExporterPanelInCurrentFrame = async () => {
+      armProviderFrameShortcut();
+      const frame = getVisibleProviderFrame();
+      if (!frame || !frame.contentWindow) {
+        updateStatus('No active chat found.', 'error');
+        return;
+      }
+      frame.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*');
+    };
+
+    document.addEventListener('keydown', (e) => {
+      try {
+        if (!(e.metaKey || e.ctrlKey)) return;
+        if (e.shiftKey || e.altKey || e.key.toLowerCase() !== 's') return;
+        const target = e.target;
+        const tag = target?.tagName ? target.tagName.toLowerCase() : '';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable) return;
+        e.preventDefault();
+        e.stopPropagation();
+        showExporterPanelInCurrentFrame();
+      } catch (_) {}
+    }, true);
+
     const runExport = async (format) => {
       updateStatus(`Exporting as ${format}...`, 'info');
       try {
@@ -2218,6 +2884,8 @@ const initializeBar = async () => {
 
     document.getElementById('ep-export-markdown')?.addEventListener('click', () => runExport('markdown'));
     document.getElementById('ep-export-json')?.addEventListener('click', () => runExport('json'));
+    document.getElementById('ep-export-pdf')?.addEventListener('click', () => runExport('pdf'));
+    document.getElementById('ep-print-original')?.addEventListener('click', () => runExport('original'));
     
     // Save to Library button in sidebar
     document.getElementById('ep-save-to-library')?.addEventListener('click', async () => {
@@ -2232,8 +2900,10 @@ const initializeBar = async () => {
         }
 
         // Request export data from iframe, then save locally
+        const state = getAutoSaveState(provider);
         frame.contentWindow.postMessage({
-          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST'
+          type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+          meta: buildSaveRequestMeta(provider, state)
         }, '*');
       } catch (err) {
         updateStatus(`Error: ${err.message}`, 'error');
@@ -2552,12 +3222,17 @@ const initializeBar = async () => {
         if (!granted) return;
       }
     } catch (_) {}
+
+    const providerUrl = (
+      currentUrlByProvider && currentUrlByProvider[currentProvider]
+    ) || await getProviderUrl(currentProvider);
     
     // Send message or inject script
     try {
       await chrome.tabs.sendMessage(tab.id, { 
         action: 'toggleParallelPanel',
-        provider: currentProvider 
+        provider: currentProvider,
+        providerUrl
       });
     } catch (_) {
       try {
@@ -2569,7 +3244,8 @@ const initializeBar = async () => {
           try {
             await chrome.tabs.sendMessage(tab.id, { 
               action: 'toggleParallelPanel',
-              provider: currentProvider 
+              provider: currentProvider,
+              providerUrl
             });
           } catch (e) {}
         }, 150);
@@ -2597,7 +3273,7 @@ const initializeBar = async () => {
     }
   } catch (_) {}
 
-  try { (typeof ensureAccessFor === 'function') && ensureAccessFor(mergedCurrent.baseUrl); } catch(_) {}
+  try { await ensureAccessFor(mergedCurrent.baseUrl); } catch(_) {}
 
   // Helper: cycle provider by direction (-1 prev, +1 next)
   const cycleProvider = async (dir) => {
@@ -2615,7 +3291,10 @@ const initializeBar = async () => {
       const overridesNow = await getOverrides();
       const customProviders = await loadCustomProviders();
       const ALL = { ...PROVIDERS };
-      (customProviders || []).forEach((c) => { ALL[c.key] = c; });
+      (customProviders || []).forEach((c) => {
+        const normalized = normalizeCustomProviderConfig(c);
+        if (normalized) ALL[normalized.key] = normalized;
+      });
       const p = effectiveConfig(ALL, nextKey, overridesNow);
       await setProvider(nextKey);
       if (openInTab) {
@@ -2623,10 +3302,7 @@ const initializeBar = async () => {
         openInTab.dataset.url = preferred;
         try { openInTab.title = preferred; } catch (_) {}
       }
-      try {
-        const origin = new URL(p.baseUrl || p.iframeUrl || '').origin;
-        if (origin) chrome.runtime.sendMessage({ type: 'ai-add-host', origin });
-      } catch (_) {}
+      try { await ensureAccessFor(p.baseUrl || p.iframeUrl || ''); } catch (_) {}
       // Avoid focusing inside the frame so Tab stays captured by the panel
       __suppressNextFrameFocus = true;
       if (p.authCheck) {
@@ -2780,12 +3456,12 @@ const initializeBar = async () => {
   if (mergedCurrent.authCheck) {
     const auth = await mergedCurrent.authCheck();
     if (auth.state === 'authorized') {
-      await ensureFrame(container, currentProviderKey, mergedCurrent);
+      await ensureFrame(container, activeProviderKey, mergedCurrent);
     } else {
       renderMessage(container, auth.message || 'Please login.');
     }
   } else {
-    await ensureFrame(container, currentProviderKey, mergedCurrent);
+    await ensureFrame(container, activeProviderKey, mergedCurrent);
   }
 
   // removed keyboard command & navigation for menu
@@ -2793,6 +3469,235 @@ const initializeBar = async () => {
 };
 
 // (Global command message listener removed)
+
+const AUTO_SAVE_INTERVAL_MS = 12000;
+const AUTO_SAVE_DEBOUNCE_MS = 1800;
+const AUTO_SAVE_RESPONSE_TIMEOUT_MS = 10000;
+const AISB_AUTOSAVE_DEBUG = true;
+const AISB_DEBUG_THROTTLE_MS = 2000;
+const aisbDebugLastLogAt = Object.create(null);
+const autoSaveStateByProvider = Object.create(null);
+
+function aisbAutosaveDebug(scope, payload = {}, throttleKey = scope, throttleMs = AISB_DEBUG_THROTTLE_MS) {
+  if (!AISB_AUTOSAVE_DEBUG) return;
+  const now = Date.now();
+  const key = String(throttleKey || scope);
+  if (throttleMs > 0 && aisbDebugLastLogAt[key] && now - aisbDebugLastLogAt[key] < throttleMs) return;
+  aisbDebugLastLogAt[key] = now;
+  try {
+    console.info('[AISB autosave debug]', scope, payload);
+  } catch (_) {}
+}
+
+function aisbConversationSummary(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  return {
+    provider: String(conversation?.provider || ''),
+    title: String(conversation?.title || ''),
+    url: String(conversation?.url || ''),
+    conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+    messageCount: Number(conversation?.messageCount || messages.length || 0),
+    lastRole: String(messages[messages.length - 1]?.role || ''),
+    lastContentLength: String(messages[messages.length - 1]?.content || '').length
+  };
+}
+
+function buildAutoSaveFingerprint(conversation) {
+  const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+  const messageCount = Number(conversation?.messageCount || messages.length || 0);
+  const stableKey = String(conversation?.conversationId || conversation?.url || '');
+  const lastMessage = messages[messages.length - 1] || null;
+  const lastRole = String(lastMessage?.role || '').trim();
+  const lastContent = String(lastMessage?.content || '').trim();
+  const lastTail = lastContent.slice(-120);
+  return `${stableKey}|${messageCount}|${lastRole}|${lastContent.length}|${lastTail}|${conversation?.title || ''}`;
+}
+
+function getAutoSaveState(provider) {
+  if (!autoSaveStateByProvider[provider]) {
+    autoSaveStateByProvider[provider] = {
+      timer: null,
+      inFlight: false,
+      title: '',
+      href: '',
+      lastMessageCount: 0,
+      lastConversationId: '',
+      lastFingerprint: '',
+      requestToken: 0,
+      responseTimeout: null
+    };
+  }
+  return autoSaveStateByProvider[provider];
+}
+
+function settleAutoSaveRequest(provider) {
+  const state = getAutoSaveState(provider);
+  state.inFlight = false;
+  if (state.responseTimeout) {
+    clearTimeout(state.responseTimeout);
+    state.responseTimeout = null;
+  }
+  return state;
+}
+
+function getAutoSaveReadiness(provider, href, title) {
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') {
+    return { ok: false, reason: 'missing_isUsefulConversationTitle' };
+  }
+  if (typeof window.AutoSync?.hasStableConversationUrl !== 'function') {
+    return { ok: false, reason: 'missing_hasStableConversationUrl' };
+  }
+  if (!window.AutoSync.isUsefulConversationTitle(title)) {
+    return { ok: false, reason: 'not_useful_title' };
+  }
+  if (!window.AutoSync.hasStableConversationUrl(href, provider)) {
+    return { ok: false, reason: 'unstable_url' };
+  }
+  return { ok: true, reason: 'ready' };
+}
+
+function canAutoSaveConversation(provider, href, title) {
+  return getAutoSaveReadiness(provider, href, title).ok;
+}
+
+function isStableAutoSaveUrl(provider, href) {
+  const value = String(href || '').trim();
+  if (!value || typeof window.AutoSync?.hasStableConversationUrl !== 'function') return false;
+  return window.AutoSync.hasStableConversationUrl(value, provider);
+}
+
+function isUsefulAutoSaveTitle(title) {
+  const value = String(title || '').trim();
+  if (!value) return false;
+  if (typeof window.AutoSync?.isUsefulConversationTitle !== 'function') return value.length >= 4;
+  return window.AutoSync.isUsefulConversationTitle(value);
+}
+
+function buildSaveRequestMeta(provider, state, extra = {}) {
+  return {
+    provider,
+    href: String(currentUrlByProvider[provider] || state?.href || ''),
+    title: String(currentTitleByProvider[provider] || state?.title || ''),
+    ...extra
+  };
+}
+
+function resolveConversationSaveMetadata(provider, exportedConversation, requestMeta, state) {
+  const exportedUrl = String(exportedConversation?.url || '').trim();
+  const metaUrl = String(requestMeta?.href || '').trim();
+  const stateUrl = String(state?.href || '').trim();
+  const urlCandidates = [
+    { source: 'exported', value: exportedUrl },
+    { source: 'request_meta', value: metaUrl },
+    { source: 'sidebar_state', value: stateUrl }
+  ];
+  const stableUrl = urlCandidates.find((candidate) => isStableAutoSaveUrl(provider, candidate.value));
+  const fallbackUrl = urlCandidates.find((candidate) => candidate.value) || { source: 'none', value: '' };
+
+  const exportedTitle = String(exportedConversation?.title || '').trim();
+  const metaTitle = String(requestMeta?.title || '').trim();
+  const stateTitle = String(state?.title || '').trim();
+  const titleCandidates = [
+    { source: 'exported', value: exportedTitle },
+    { source: 'request_meta', value: metaTitle },
+    { source: 'sidebar_state', value: stateTitle }
+  ];
+  const usefulTitle = titleCandidates.find((candidate) => isUsefulAutoSaveTitle(candidate.value));
+  const fallbackTitle = titleCandidates.find((candidate) => candidate.value) || { source: 'none', value: '' };
+
+  return {
+    url: (stableUrl || fallbackUrl).value,
+    urlSource: (stableUrl || fallbackUrl).source,
+    title: (usefulTitle || fallbackTitle).value,
+    titleSource: (usefulTitle || fallbackTitle).source
+  };
+}
+
+function requestSilentSaveToLibrary(provider) {
+  const state = getAutoSaveState(provider);
+  if (state.inFlight) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'in_flight',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:in_flight:${provider}`, 2000);
+    return;
+  }
+
+  const frame = cachedFrames[provider];
+  if (!frame || !frame.contentWindow) {
+    aisbAutosaveDebug('sidebar.autosave.request_skip', {
+      provider,
+      reason: 'missing_frame',
+      href: state.href,
+      title: state.title
+    }, `sidebar.request_skip:missing_frame:${provider}`, 5000);
+    return;
+  }
+
+  state.inFlight = true;
+  state.requestToken = Number(state.requestToken || 0) + 1;
+  const requestToken = state.requestToken;
+  if (state.responseTimeout) {
+    clearTimeout(state.responseTimeout);
+  }
+  state.responseTimeout = setTimeout(() => {
+    const latest = getAutoSaveState(provider);
+    if (!latest.inFlight || latest.requestToken !== requestToken) return;
+    latest.inFlight = false;
+    latest.responseTimeout = null;
+    aisbAutosaveDebug('sidebar.autosave.timeout', {
+      provider,
+      href: latest.href,
+      title: latest.title,
+      timeoutMs: AUTO_SAVE_RESPONSE_TIMEOUT_MS
+    }, `sidebar.autosave.timeout:${provider}:${latest.href}`, 0);
+  }, AUTO_SAVE_RESPONSE_TIMEOUT_MS);
+
+  aisbAutosaveDebug('sidebar.autosave.request', {
+    provider,
+    href: state.href,
+    title: state.title
+  }, `sidebar.request:${provider}:${state.href}`, 0);
+  try {
+    frame.contentWindow.postMessage({
+      type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+      meta: buildSaveRequestMeta(provider, state, { silent: true })
+    }, '*');
+  } catch (error) {
+    settleAutoSaveRequest(provider);
+    aisbAutosaveDebug('sidebar.autosave.post_failed', {
+      provider,
+      href: state.href,
+      title: state.title,
+      error: error?.message || String(error)
+    }, `sidebar.autosave.post_failed:${provider}:${state.href}`, 0);
+  }
+}
+
+function scheduleSilentSave(provider, delay = AUTO_SAVE_DEBOUNCE_MS) {
+  const state = getAutoSaveState(provider);
+  clearTimeout(state.timer);
+
+  const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+  if (!readiness.ok) {
+    aisbAutosaveDebug('sidebar.autosave.schedule_skip', {
+      provider,
+      href: state.href,
+      title: state.title,
+      reason: readiness.reason
+    }, `sidebar.schedule_skip:${provider}:${readiness.reason}:${state.href}`, 5000);
+    return;
+  }
+  aisbAutosaveDebug('sidebar.autosave.scheduled', {
+    provider,
+    href: state.href,
+    title: state.title,
+    delay
+  }, `sidebar.scheduled:${provider}:${state.href}`, 3000);
+  state.timer = setTimeout(() => requestSilentSaveToLibrary(provider), delay);
+}
 
 // Also close panel on Escape (backdrop version handles outside clicks)
 try {
@@ -2808,6 +3713,19 @@ try {
     try {
       const data = event.data || {};
       if (!data || !data.type) return;
+      if (data.type === 'AISB_SHORTCUT_TARGET') {
+        let matched = false;
+        for (const el of Object.values(cachedFrames)) {
+          try {
+            if (el && el.contentWindow === event.source) {
+              matched = true;
+              break;
+            }
+          } catch (_) {}
+        }
+        if (matched) armProviderFrameShortcut();
+        return;
+      }
       if (data.type === 'ai-tab-cycle') {
         const dir = (data.dir === 'prev') ? -1 : 1;
         // When message comes from iframe, don't focus the frame after switching
@@ -2818,51 +3736,62 @@ try {
       }
       if (data.type !== 'ai-url-changed') return;
 
-    // Find which provider frame this message came from by comparing contentWindow
-    let matchedKey = null;
-    for (const [key, el] of Object.entries(cachedFrames)) {
-      try {
-        if (el && el.contentWindow === event.source) {
-          matchedKey = key;
-          break;
-        }
-      } catch (_) {}
-    }
-    // No provider matched; ignore stray messages
-    if (!matchedKey) { return; }
-
-    // Update current URL for this provider
-    if (typeof data.href === 'string' && data.href) {
-      // Ignore Gemini internal utility frames to avoid polluting state
-      try {
-        const u = new URL(data.href);
-        if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
-          return;
-        }
-      } catch (_) {}
-      currentUrlByProvider[matchedKey] = data.href;
-      // Save URL for restoration on next open
-      saveProviderUrl(matchedKey, data.href);
-
-      // If this provider is currently visible, update the Open in Tab link
-      const openInTab = document.getElementById('openInTab');
-      const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
-      if (openInTab && visible) {
-        openInTab.dataset.url = data.href;
-        try { openInTab.title = data.href; } catch (_) {}
-        // 更新星号按钮状态
-        await updateStarButtonState();
+      // Find which provider frame this message came from by comparing contentWindow
+      let matchedKey = null;
+      for (const [key, el] of Object.entries(cachedFrames)) {
+        try {
+          if (el && el.contentWindow === event.source) {
+            matchedKey = key;
+            break;
+          }
+        } catch (_) {}
       }
+      // No provider matched; ignore stray messages
+      if (!matchedKey) { return; }
 
-      // Auto-save history for supported providers when a deep link is detected
-      try {
-        if (isDeepLink(matchedKey, data.href)) {
-          addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+      // Update current URL for this provider
+      if (typeof data.href === 'string' && data.href) {
+        // Ignore Gemini internal utility frames to avoid polluting state
+        try {
+          const u = new URL(data.href);
+          if (u.hostname === 'gemini.google.com' && (u.pathname === '/_/' || u.pathname.startsWith('/_/'))) {
+            return;
+          }
+        } catch (_) {}
+        currentUrlByProvider[matchedKey] = data.href;
+        getAutoSaveState(matchedKey).href = data.href;
+        aisbAutosaveDebug('sidebar.url_changed', {
+          provider: matchedKey,
+          href: data.href,
+          title: data.title || '',
+          eventOrigin: event.origin || ''
+        }, `sidebar.url_changed:${matchedKey}:${data.href}:${data.title || ''}`, 0);
+        // Save URL for restoration on next open
+        saveProviderUrl(matchedKey, data.href);
+
+        // If this provider is currently visible, update the Open in Tab link
+        const openInTab = document.getElementById('openInTab');
+        const visible = (cachedFrames[matchedKey] && cachedFrames[matchedKey].style.display !== 'none');
+        if (openInTab && visible) {
+          openInTab.dataset.url = data.href;
+          try { openInTab.title = data.href; } catch (_) {}
+          // 更新星号按钮状态
+          await updateStarButtonState();
         }
-      } catch (_) {}
-      // Track last known title for this provider for better Add Current defaults
-      try { currentTitleByProvider[matchedKey] = data.title || ''; } catch (_) {}
-    }
+
+        // Auto-save history for supported providers when a deep link is detected
+        try {
+          if (isDeepLink(matchedKey, data.href)) {
+            addHistory({ url: data.href, provider: matchedKey, title: data.title || '' });
+          }
+        } catch (_) {}
+        // Track last known title for this provider for better Add Current defaults
+        try {
+          currentTitleByProvider[matchedKey] = data.title || '';
+          getAutoSaveState(matchedKey).title = data.title || '';
+          scheduleSilentSave(matchedKey);
+        } catch (_) {}
+      }
   } catch (_) {}
 });
 
@@ -2906,6 +3835,28 @@ initializeBar();
       console.log('AutoSync: 同步服务器未运行，跳过自动同步', e);
     }
   }
+
+  setInterval(() => {
+    try {
+      const iframeContainer = document.getElementById('iframe');
+      const activeFrame = iframeContainer?.querySelector('[data-provider]:not([style*="display: none"])');
+      const provider = activeFrame?.dataset?.provider;
+      if (!provider) return;
+
+      const state = getAutoSaveState(provider);
+      const readiness = getAutoSaveReadiness(provider, state.href, state.title);
+      if (!readiness.ok) {
+        aisbAutosaveDebug('sidebar.interval_skip', {
+          provider,
+          href: state.href,
+          title: state.title,
+          reason: readiness.reason
+        }, `sidebar.interval_skip:${provider}:${readiness.reason}:${state.href}`, 10000);
+        return;
+      }
+      requestSilentSaveToLibrary(provider);
+    } catch (_) {}
+  }, AUTO_SAVE_INTERVAL_MS);
 })();
 
 // ============== 来自后台的消息与待处理队列 ==============
@@ -2937,7 +3888,21 @@ initializeBar();
 
   async function handlePendingFromStorage() {
     try {
-      const { aisbPendingInsert, aisbPendingScreenshot, aisbPendingNotify } = await chrome.storage?.local.get(['aisbPendingInsert','aisbPendingScreenshot','aisbPendingNotify']);
+      const {
+        aisbPendingExportPanel,
+        aisbPendingInsert,
+        aisbPendingScreenshot,
+        aisbPendingNotify
+      } = await chrome.storage?.local.get([
+        'aisbPendingExportPanel',
+        'aisbPendingInsert',
+        'aisbPendingScreenshot',
+        'aisbPendingNotify'
+      ]);
+      if (aisbPendingExportPanel) {
+        showExporterPanelInActiveFrame();
+        try { await chrome.storage?.local.remove(['aisbPendingExportPanel']); } catch (_) {}
+      }
       if (aisbPendingNotify && aisbPendingNotify.text) {
         toast(aisbPendingNotify.text, aisbPendingNotify.level || 'info');
         try { await chrome.storage?.local.remove(['aisbPendingNotify']); } catch (_) {}
@@ -2951,6 +3916,51 @@ initializeBar();
         try { await chrome.storage?.local.remove(['aisbPendingScreenshot']); } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  function showExporterPanelInActiveFrame() {
+    try {
+      const target = getActiveProviderFrame();
+      if (!target || !target.contentWindow) {
+        toast('未找到活动的 AI 面板。', 'warn');
+        return;
+      }
+      try { window.focus(); } catch (_) {}
+      try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
+      try { target.focus(); } catch (_) {}
+      try { target.contentWindow.focus(); } catch (_) {}
+      target.contentWindow.postMessage({ type: 'AISB_SHOW_EXPORT_PANEL' }, '*');
+    } catch (e) {
+      toast('打开导出面板失败：' + String(e), 'error');
+    }
+  }
+
+  function isActiveProviderFrameFocused() {
+    try {
+      const target = getActiveProviderFrame();
+      return !!target && document.activeElement === target;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isEditableElement(element) {
+    try {
+      const tag = element?.tagName ? element.tagName.toLowerCase() : '';
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || !!element?.isContentEditable;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function shouldHandleSidePanelShortcut() {
+    try {
+      if (!document.hasFocus()) return false;
+      if (isEditableElement(document.activeElement)) return false;
+      return __providerFrameShortcutArmed && !!getActiveProviderFrame();
+    } catch (_) {
+      return false;
+    }
   }
 
   function routeInsertText(msg) {
@@ -3023,6 +4033,30 @@ initializeBar();
         }
         if (message.type === 'aisb.insert-text') {
           routeInsertText(message);
+          return;
+        }
+        if (message.type === 'AISB_SHOW_EXPORT_PANEL') {
+          showExporterPanelInActiveFrame();
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_IF_FOCUSED') {
+          const handled = isActiveProviderFrameFocused() || shouldHandleSidePanelShortcut();
+          if (handled) {
+            armProviderFrameShortcut();
+            const target = getActiveProviderFrame();
+            try { target?.contentWindow?.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
+          return;
+        }
+        if (message.type === 'AISB_SHORTCUT_SAVE_TOGGLE_SIDE_PANEL') {
+          const target = getActiveProviderFrame();
+          const handled = !!target?.contentWindow;
+          if (handled) {
+            armProviderFrameShortcut();
+            try { target.contentWindow.postMessage({ type: 'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL' }, '*'); } catch (_) {}
+          }
+          try { sendResponse({ handled }); } catch (_) {}
           return;
         }
         // 当后台未能从左侧活动页读取到选区时，请求右侧当前 iframe 自行上报选区并注入
@@ -3333,6 +4367,7 @@ initializeBar();
   try {
     const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
     if (__saveQueue && __saveQueue.length > 0) {
+      const remaining = [];
       for (const item of __saveQueue) {
         try {
           const convData = {
@@ -3345,13 +4380,15 @@ initializeBar();
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
+          } else {
+            remaining.push(item);
           }
         } catch (e) {
           console.error('[AI Sidebar] Failed to save queued item:', e);
+          remaining.push({ ...item, lastError: String(e), retryAt: Date.now() });
         }
       }
-      // Clear queue after processing
-      await chrome.storage.local.set({ __saveQueue: [] });
+      await chrome.storage.local.set({ __saveQueue: remaining });
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);

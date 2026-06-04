@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Sidebar",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "A Chrome extension that brings your favorite AI web assistants directly to your browser's side panel",
   "permissions": [
     "sidePanel",
@@ -10,6 +10,7 @@
     "tabs",
     "activeTab",
     "storage",
+    "nativeMessaging",
     "cookies",
     "scripting",
     "contextMenus"
@@ -80,7 +81,7 @@
     "https://mubu.com/*",
     "https://*.mubu.com/*",
     "https://excalidraw.com/*",
-    "https://tobooks.netlify.app/*",
+    "https://tobooks.xin/*",
     "https://kimi.moonshot.cn/*",
     "https://*.moonshot.cn/*",
     "https://v0.dev/*",
@@ -136,7 +137,7 @@
         "https://mubu.com/*",
         "https://*.mubu.com/*",
         "https://excalidraw.com/*",
-        "https://tobooks.netlify.app/*",
+        "https://tobooks.xin/*",
         "https://kimi.moonshot.cn/*",
         "https://*.moonshot.cn/*",
         "https://v0.dev/*",

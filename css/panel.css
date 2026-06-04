@@ -835,6 +835,27 @@ html {
   font-size: 14px;
 }
 
+#provider-tabs .provider-add-button {
+  margin-top: auto;
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  border: 1px dashed #c4ccd8;
+  background: #ffffff;
+  color: #334155;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+  opacity: 0.9;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+#provider-tabs .provider-add-button:hover {
+  border-color: #4285f4;
+  background: #eef5ff;
+  color: #1d4ed8;
+}
+
 /* 拖拽中与插入位置指示 */
 #provider-tabs button.dragging {
   opacity: 0.75;
@@ -869,6 +890,7 @@ html {
   z-index: 100001;
 }
 #provider-tabs.collapsed button[data-provider-id] { display: none; }
+#provider-tabs.collapsed .provider-add-button { display: none; }
 #provider-tabs.collapsed .tabs-header {
   position: absolute;
   top: 10px;
@@ -898,6 +920,162 @@ html {
 /* Ensure the toggle remains clickable above the toolbar when collapsed */
 #provider-tabs.collapsed .tabs-header {
   z-index: 100002;
+}
+
+.provider-context-menu {
+  position: fixed;
+  z-index: 100030;
+  min-width: 132px;
+  padding: 6px;
+  border: 1px solid #d7dce5;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.provider-context-menu button {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.provider-context-menu button:hover {
+  background: #fef2f2;
+}
+
+.add-provider-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100020;
+}
+
+.add-provider-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+}
+
+.add-provider-dialog {
+  position: relative;
+  width: min(340px, calc(100vw - 32px));
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+  z-index: 100021;
+}
+
+.add-provider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.add-provider-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.add-provider-close {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.add-provider-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.add-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.add-provider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.add-provider-field input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d7dce5;
+  border-radius: 7px;
+  color: #111827;
+  font-size: 14px;
+  outline: none;
+}
+
+.add-provider-field input:focus {
+  border-color: #4285f4;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.14);
+}
+
+.add-provider-error {
+  min-height: 18px;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.add-provider-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.add-provider-cancel,
+.add-provider-save {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.add-provider-cancel {
+  border: 1px solid #d7dce5;
+  background: #ffffff;
+  color: #374151;
+}
+
+.add-provider-save {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.add-provider-save:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 /* Keyboard Shortcuts Settings Modal */

@@ -13,10 +13,41 @@ const AutoSync = (function() {
   const SYNC_SERVER_URL = 'http://localhost:3456';
   const HISTORY_KEY = 'aiLinkHistory';
   const FAVORITES_KEY = 'aiFavoriteLinks';
+  const PROJECT_NAME = 'AI-Sidebar';
+  const NATIVE_HOST_RECHECK_INTERVAL = 30000;
 
   let isServerAvailable = false;
   let lastCheckTime = 0;
   const CHECK_INTERVAL = 30000; // 30秒检查一次服务器状态
+  let nativeHostAvailable = null;
+  let lastNativeHostCheck = 0;
+  const AISB_AUTOSAVE_DEBUG = true;
+  const AISB_DEBUG_THROTTLE_MS = 2000;
+  const aisbDebugLastLogAt = Object.create(null);
+
+  function aisbAutosaveDebug(scope, payload = {}, throttleKey = scope, throttleMs = AISB_DEBUG_THROTTLE_MS) {
+    if (!AISB_AUTOSAVE_DEBUG) return;
+    const now = Date.now();
+    const key = String(throttleKey || scope);
+    if (throttleMs > 0 && aisbDebugLastLogAt[key] && now - aisbDebugLastLogAt[key] < throttleMs) return;
+    aisbDebugLastLogAt[key] = now;
+    try {
+      console.info('[AISB autosave debug]', scope, payload);
+    } catch (_) {}
+  }
+
+  function aisbConversationSummary(conversation) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    return {
+      provider: String(conversation?.provider || ''),
+      title: String(conversation?.title || ''),
+      url: String(conversation?.url || ''),
+      conversationIdPresent: Boolean(String(conversation?.conversationId || '').trim()),
+      messageCount: Number(conversation?.messageCount || messages.length || 0),
+      lastRole: String(messages[messages.length - 1]?.role || ''),
+      lastContentLength: String(messages[messages.length - 1]?.content || '').length
+    };
+  }
 
   /**
    * 检查同步服务器是否可用
@@ -68,6 +99,50 @@ const AutoSync = (function() {
     }
   }
 
+  async function sendToNativeHost(message) {
+    const now = Date.now();
+    if (nativeHostAvailable === false && now - lastNativeHostCheck < NATIVE_HOST_RECHECK_INTERVAL) {
+      return { success: false, reason: 'native_host_unavailable' };
+    }
+
+    try {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        aisbAutosaveDebug('autosync.native.skip', {
+          reason: 'native_host_unsupported',
+          type: message?.type || ''
+        }, 'autosync.native.skip:unsupported', 5000);
+        return { success: false, reason: 'native_host_unsupported' };
+      }
+
+      const response = await chrome.runtime.sendMessage(message);
+      lastNativeHostCheck = now;
+      aisbAutosaveDebug('autosync.native.response', {
+        type: message?.type || '',
+        ok: response?.ok,
+        resultSuccess: response?.result?.success,
+        baseDir: response?.result?.baseDir,
+        baseDirSource: response?.result?.baseDirSource,
+        error: response?.error || response?.result?.error || ''
+      }, `autosync.native.response:${message?.type || ''}`, 0);
+
+      if (!response?.ok) {
+        nativeHostAvailable = false;
+        return { success: false, error: response?.error || 'native_host_unavailable' };
+      }
+
+      nativeHostAvailable = true;
+      return { success: true, ...(response.result || {}) };
+    } catch (error) {
+      nativeHostAvailable = false;
+      lastNativeHostCheck = now;
+      aisbAutosaveDebug('autosync.native.exception', {
+        type: message?.type || '',
+        error: error?.message || String(error)
+      }, `autosync.native.exception:${message?.type || ''}:${error?.message || String(error)}`, 0);
+      return { success: false, error: error.message || String(error) };
+    }
+  }
+
   // 从同步服务器获取当前的数据（history/favorites）
   async function fetchRemoteData(name) {
     try {
@@ -107,6 +182,105 @@ const AutoSync = (function() {
     addAll(remoteList);
     addAll(localList);
     return Array.from(map.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
+  }
+
+  function isUsefulConversationTitle(title) {
+    const value = String(title || '').trim();
+    if (!value) return false;
+
+    const normalized = value.toLowerCase();
+    if (normalized.length < 4) return false;
+    if (/^(new\s*chat|chatgpt|gemini|deepseek|claude|ai|conversation with gemini)$/i.test(normalized)) return false;
+    if (/^(新聊天|新对话|最近|recent)$/i.test(value)) return false;
+    return true;
+  }
+
+  function hasStableConversationUrl(url, provider) {
+    try {
+      const u = new URL(String(url || ''));
+      if (provider === 'chatgpt') return /\/c\/[\w-]+/i.test(u.pathname);
+      if (provider === 'gemini') return /\/app\/(?:conversation\/)?[^/?#]+/.test(u.pathname);
+      if (provider === 'deepseek') return /\/(sessions|s)\/[^/?#]+/.test(u.pathname);
+      if (provider === 'claude') return /\/chat\/[\w-]+/i.test(u.pathname);
+      if (provider === 'notebooklm') return /\/notebook\/[^/?#]+/.test(u.pathname);
+      return Boolean(u.pathname && u.pathname !== '/');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isConversationReadyForMirror(conversation) {
+    if (!conversation || !Array.isArray(conversation.messages) || conversation.messages.length === 0) return false;
+    if (!hasStableConversationIdentity(conversation)) return false;
+    return true;
+  }
+
+  function hasStableConversationIdentity(conversation) {
+    const conversationId = String(conversation?.conversationId || '').trim();
+    if (conversationId) return true;
+    return hasStableConversationUrl(conversation?.url, conversation?.provider);
+  }
+
+  async function syncConversation(conversation) {
+    try {
+      aisbAutosaveDebug('autosync.conversation.start', {
+        conversation: aisbConversationSummary(conversation)
+      }, `autosync.conversation.start:${conversation?.conversationId || conversation?.url || conversation?.title}`, 0);
+      if (!isConversationReadyForMirror(conversation)) {
+        aisbAutosaveDebug('autosync.conversation.not_ready', {
+          hasMessages: Array.isArray(conversation?.messages) && conversation.messages.length > 0,
+          hasIdentity: hasStableConversationIdentity(conversation),
+          conversation: aisbConversationSummary(conversation)
+        }, `autosync.conversation.not_ready:${conversation?.provider}:${conversation?.url || conversation?.title}`, 0);
+        return { success: false, reason: 'conversation_not_ready' };
+      }
+
+      const nativeResult = await sendToNativeHost({
+        type: 'AI_SIDEBAR_SYNC_CONVERSATION_NATIVE',
+        project: PROJECT_NAME,
+        conversation: {
+          ...conversation,
+          project: PROJECT_NAME
+        }
+      });
+
+      if (nativeResult.success) {
+        aisbAutosaveDebug('autosync.conversation.native_success', {
+          result: nativeResult,
+          conversation: aisbConversationSummary(conversation)
+        }, `autosync.conversation.native_success:${conversation?.conversationId || conversation?.url}`, 0);
+        return { ...nativeResult, transport: 'native-host' };
+      }
+
+      const available = await checkServerAvailability();
+      if (!available) {
+        aisbAutosaveDebug('autosync.conversation.server_unavailable', {
+          nativeResult,
+          conversation: aisbConversationSummary(conversation)
+        }, `autosync.conversation.server_unavailable:${conversation?.conversationId || conversation?.url}`, 0);
+        return { success: false, reason: 'server_unavailable' };
+      }
+
+      const serverResult = await sendToServer('/sync/conversations', {
+        project: PROJECT_NAME,
+        conversation: {
+          ...conversation,
+          project: PROJECT_NAME
+        }
+      });
+      aisbAutosaveDebug('autosync.conversation.server_result', {
+        result: serverResult,
+        conversation: aisbConversationSummary(conversation)
+      }, `autosync.conversation.server_result:${conversation?.conversationId || conversation?.url}`, 0);
+      return serverResult;
+    } catch (error) {
+      console.warn('AutoSync: Conversation 同步失败:', error.message || error);
+      aisbAutosaveDebug('autosync.conversation.exception', {
+        error: error?.message || String(error),
+        conversation: aisbConversationSummary(conversation)
+      }, `autosync.conversation.exception:${conversation?.conversationId || conversation?.url}:${error?.message || String(error)}`, 0);
+      return { success: false, error: error.message || String(error) };
+    }
   }
 
   /**
@@ -342,9 +516,14 @@ const AutoSync = (function() {
   return {
     syncHistory,
     syncFavorites,
+    syncConversation,
     syncAll,
     enableAutoSync,
-    checkServerAvailability
+    checkServerAvailability,
+    isConversationReadyForMirror,
+    isUsefulConversationTitle,
+    hasStableConversationUrl,
+    hasStableConversationIdentity
   };
 })();
 

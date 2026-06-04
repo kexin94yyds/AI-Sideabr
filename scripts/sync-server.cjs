@@ -12,9 +12,14 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const {
+  SYNC_DIR,
+  getMarkdownBaseDir,
+  sanitizeFileName,
+  upsertConversationMarkdown
+} = require('./conversation-markdown.cjs');
 
 const PORT = 3456;
-const SYNC_DIR = path.join(__dirname, 'sync');
 
 // 确保 sync 目录存在
 if (!fs.existsSync(SYNC_DIR)) {
@@ -123,6 +128,41 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // POST /sync/conversations - 同步完整会话到 Markdown
+  if (req.method === 'POST' && req.url === '/sync/conversations') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body || '{}');
+        const conversation = parsed && parsed.conversation ? parsed.conversation : null;
+        const projectName = sanitizeFileName(parsed.project || conversation?.project || 'AI-Sidebar', 'AI-Sidebar');
+
+        if (!conversation || !Array.isArray(conversation.messages) || conversation.messages.length === 0) {
+          throw new Error('conversation.messages is required');
+        }
+
+        const result = upsertConversationMarkdown(projectName, conversation);
+        console.log(`📝 Conversation Markdown 已同步: ${result.filePath}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: true,
+          project: projectName,
+          path: result.filePath,
+          date: result.dateKey,
+          blockId: result.blockId,
+          created: result.created,
+          updated: result.updated
+        }));
+      } catch (error) {
+        console.error('❌ Conversation Markdown 同步失败:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: error.message }));
+      }
+    });
+    return;
+  }
+
   // 404 - 未找到
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found' }));
@@ -137,6 +177,8 @@ server.listen(PORT, 'localhost', () => {
   console.log(`  - GET  /sync/favorites  - 获取收藏`);
   console.log(`  - POST /sync/history    - 同步历史记录`);
   console.log(`  - POST /sync/favorites  - 同步收藏`);
+  console.log(`  - POST /sync/conversations - 同步完整会话 Markdown`);
+  console.log(`📁 Markdown 目录: ${getMarkdownBaseDir()}`);
   console.log(`\n按 Ctrl+C 停止服务器\n`);
 });
 
@@ -148,4 +190,3 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
-
