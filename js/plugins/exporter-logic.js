@@ -1896,8 +1896,8 @@
 
         if (typeof window.saveConversation === 'function') {
           await window.saveConversation(result.data);
-          await syncSavedConversationToNativeHost(result.data);
-          showStatus('✓ Saved to library', 'success');
+          const mirrored = await syncSavedConversationToNativeHost(result.data);
+          showStatus(mirrored ? '✓ Saved to history & folder' : '✓ Saved to history; folder sync pending', 'success');
           setTimeout(closePanel, 1500);
           return;
         }
@@ -1991,7 +1991,7 @@
       if (typeof autoSaveCurrentConversation === 'function') {
         const saved = await autoSaveCurrentConversation(true);
         if (saved?.ok) {
-          setStatus('✓ Saved to history & folder', 'success');
+          setStatus(saved.mirrored ? '✓ Saved to history & folder' : '✓ Saved to history; folder sync pending', 'success');
           return;
         }
       }
