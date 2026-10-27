@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Conversation History - AI Chat Exporter</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="history-tokens.css">
   <style>
     * {
       margin: 0;
@@ -12,8 +14,8 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #fff;
-      color: #000;
+      background-color: var(--library-surface);
+      color: var(--library-text);
       padding: 40px;
       line-height: 1.5;
     }
@@ -21,13 +23,13 @@
     .container {
       max-width: 1000px;
       margin: 0 auto;
-      background-color: #fff;
-      border: 1px solid #000;
+      background-color: var(--library-surface);
+      border: 1px solid var(--library-border);
     }
     
     .header {
-      background: #000;
-      color: #fff;
+      background: var(--library-inverse-surface);
+      color: var(--library-inverse-text);
       padding: 40px;
       text-transform: uppercase;
       letter-spacing: -1px;
@@ -41,16 +43,16 @@
     
     .header p {
       opacity: 0.7;
-      font-size: 12px;
+      font-size: var(--font-size-control);
       letter-spacing: 1px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     
     .toolbar {
       padding: 30px;
-      border-bottom: 1px solid #000;
+      border-bottom: 1px solid var(--library-border);
       display: flex;
-      gap: 20px;
+      gap: var(--space-5);
       flex-wrap: wrap;
       align-items: center;
     }
@@ -62,10 +64,10 @@
     
     .search-box input {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #000;
+      padding: var(--space-3);
+      border: 1px solid var(--library-border);
       border-radius: 0;
-      font-size: 14px;
+      font-size: var(--font-size-label);
       font-family: inherit;
     }
     
@@ -76,22 +78,22 @@
     }
     
     select {
-      padding: 12px;
-      border: 1px solid #000;
+      padding: var(--space-3);
+      border: 1px solid var(--library-border);
       border-radius: 0;
-      font-size: 13px;
-      background-color: #fff;
+      font-size: var(--font-size-body);
+      background-color: var(--library-surface);
       cursor: pointer;
       font-weight: 500;
       text-transform: uppercase;
     }
     
     button {
-      padding: 12px 24px;
-      border: 1px solid #000;
+      padding: var(--space-3) var(--space-6);
+      border: 1px solid var(--library-border);
       border-radius: 0;
       cursor: pointer;
-      font-size: 13px;
+      font-size: var(--font-size-body);
       font-weight: 700;
       transition: all 0.15s ease;
       text-transform: uppercase;
@@ -99,24 +101,24 @@
     }
     
     .btn-primary, .btn-danger, .btn-secondary {
-      background-color: #fff;
-      color: #000;
+      background-color: var(--library-surface);
+      color: var(--library-text);
     }
     
     .btn-primary:hover, .btn-danger:hover, .btn-secondary:hover {
-      background-color: #000;
-      color: #fff;
+      background-color: var(--library-inverse-surface);
+      color: var(--library-inverse-text);
     }
     
     .btn-small {
-      padding: 8px 16px;
-      font-size: 11px;
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--font-size-caption);
     }
     
     .stats {
       padding: 30px;
-      background-color: #fff;
-      border-bottom: 1px solid #000;
+      background-color: var(--library-surface);
+      border-bottom: 1px solid var(--library-border);
       display: flex;
       gap: 40px;
       flex-wrap: wrap;
@@ -129,7 +131,7 @@
     
     .stat-label {
       font-size: 10px;
-      color: #666;
+      color: var(--library-text-secondary);
       margin-bottom: 5px;
       text-transform: uppercase;
       font-weight: 700;
@@ -139,7 +141,7 @@
     .stat-value {
       font-size: 28px;
       font-weight: 800;
-      color: #000;
+      color: var(--library-text);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     
@@ -148,10 +150,10 @@
     }
     
     .conversation-item {
-      border: 1px solid #000;
+      border: 1px solid var(--library-border);
       border-radius: 0;
       padding: 25px;
-      margin-bottom: 20px;
+      margin-bottom: var(--space-5);
       transition: all 0.15s ease;
     }
     
@@ -170,7 +172,7 @@
     .conversation-title {
       font-size: 20px;
       font-weight: 700;
-      color: #000;
+      color: var(--library-text);
       margin-bottom: 10px;
       flex: 1;
       text-decoration: underline;
@@ -178,9 +180,9 @@
     
     .conversation-meta {
       display: flex;
-      gap: 20px;
-      font-size: 12px;
-      color: #666;
+      gap: var(--space-5);
+      font-size: var(--font-size-control);
+      color: var(--library-text-secondary);
       margin-bottom: 15px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
@@ -193,18 +195,18 @@
     
     .provider-badge {
       display: inline-block;
-      padding: 4px 10px;
-      border: 1px solid #000;
+      padding: var(--space-1) 10px;
+      border: 1px solid var(--library-border);
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      background: #fff;
-      color: #000;
+      background: var(--library-surface);
+      color: var(--library-text);
     }
     
     .provider-chatgpt, .provider-claude, .provider-gemini, .provider-deepseek, .provider-unknown { 
-      background-color: #fff; 
-      color: #000; 
+      background-color: var(--library-surface);
+      color: var(--library-text);
     }
     
     .conversation-actions {
@@ -223,18 +225,18 @@
     }
     
     .favorite-btn:hover {
-      border-color: #000;
+      border-color: var(--library-border);
     }
     
     .favorite-btn.active {
-      color: #000;
+      color: var(--library-text);
       background: #eee;
     }
     
     .empty-state {
       text-align: center;
-      padding: 80px 20px;
-      color: #000;
+      padding: 80px var(--space-5);
+      color: var(--library-text);
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 1px;
@@ -242,7 +244,7 @@
     
     .empty-state-icon {
       font-size: 48px;
-      margin-bottom: 20px;
+      margin-bottom: var(--space-5);
     }
     
     .empty-state h3 {
@@ -262,10 +264,10 @@
     }
     
     .modal-content {
-      background-color: #fff;
+      background-color: var(--library-surface);
       margin: 50px auto;
       padding: 40px;
-      border: 2px solid #000;
+      border: 2px solid var(--library-border);
       border-radius: 0;
       max-width: 900px;
       max-height: 85vh;
@@ -278,8 +280,8 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 30px;
-      border-bottom: 2px solid #000;
-      padding-bottom: 20px;
+      border-bottom: 2px solid var(--library-border);
+      padding-bottom: var(--space-5);
     }
     
     .modal-title {
@@ -289,11 +291,11 @@
     }
     
     .close-btn {
-      background: #000;
+      background: var(--library-inverse-surface);
       border: none;
       font-size: 24px;
       cursor: pointer;
-      color: #fff;
+      color: var(--library-inverse-text);
       width: 40px;
       height: 40px;
       display: flex;
@@ -308,7 +310,7 @@
     .loading {
       text-align: center;
       padding: 60px;
-      color: #000;
+      color: var(--library-text);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       text-transform: uppercase;
       letter-spacing: 2px;
@@ -378,7 +380,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title" id="modalTitle">Conversation</h2>
-        <button class="close-btn" onclick="closeModal()">&times;</button>
+        <button id="closeViewModal" class="close-btn" type="button" aria-label="Close conversation">&times;</button>
       </div>
       <div id="modalContent"></div>
     </div>

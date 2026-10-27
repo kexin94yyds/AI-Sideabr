@@ -95,12 +95,16 @@ npm run sync
 ## Build
 
 ```bash
+npm run build
 npm run lint
+npm test
 npm run package:webstore
 ```
 
 说明：
+- `npm run build` 使用项目根目录的 `tsconfig.json` 检查 Remotion TypeScript 源码
 - `npm run lint` 会跑 ESLint
+- `npm test` 会跑 Node 回归测试
 - `npm run package:webstore` 会生成 Web Store 上传包
 
 ## Permissions

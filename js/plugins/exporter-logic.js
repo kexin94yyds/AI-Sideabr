@@ -1309,12 +1309,49 @@
   // ============================================================================
   // Communication Bridge for AI-Sidebar
   // ============================================================================
+  const SIDEBAR_ORIGIN = (() => {
+    try {
+      return new URL(chrome.runtime.getURL('')).origin;
+    } catch (_) {
+      return '';
+    }
+  })();
+
+  const SIDEBAR_COMMAND_TYPES = new Set([
+    'AISB_SHOW_EXPORT_PANEL',
+    'AISB_SHORTCUT_SAVE_TOGGLE_EXPORT_PANEL',
+    'AI_SIDEBAR_SHORTCUT_SAVE_ACK',
+    'AI_SIDEBAR_EXPORT_REQUEST',
+    'AI_SIDEBAR_SAVE_TO_LIBRARY_REQUEST',
+    'AI_SIDEBAR_SAVE_EXPORT_REQUEST',
+    'AI_SIDEBAR_SAVE_EXPORT_CONFIRMED'
+  ]);
+
+  function isTrustedSidebarMessage(event) {
+    return Boolean(
+      SIDEBAR_ORIGIN &&
+      window.parent !== window &&
+      event.source === window.parent &&
+      event.origin === SIDEBAR_ORIGIN
+    );
+  }
+
+  function postToSidebar(payload) {
+    if (!SIDEBAR_ORIGIN || window.parent === window) return false;
+    try {
+      window.parent.postMessage(payload, SIDEBAR_ORIGIN);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   const markShortcutTarget = () => {
     try {
       if (window.top === window) {
         chrome.runtime?.sendMessage?.({ type: 'AISB_SHORTCUT_TARGET', surface: 'page' });
-      } else if (window.parent !== window) {
-        window.parent.postMessage({ type: 'AISB_SHORTCUT_TARGET' }, '*');
+      } else {
+        postToSidebar({ type: 'AISB_SHORTCUT_TARGET' });
       }
     } catch (_) {}
   };
@@ -1324,6 +1361,10 @@
 
   window.addEventListener('message', async (event) => {
     const data = event.data || {};
+
+    if (SIDEBAR_COMMAND_TYPES.has(data.type) && !isTrustedSidebarMessage(event)) {
+      return;
+    }
 
     if (data.type === 'ai-url-changed') {
       if (window.top !== window) return;
@@ -1373,17 +1414,17 @@
       }
       
       if (result) {
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_EXPORT_RESPONSE',
           format: data.format,
           result: result
-        }, '*');
+        });
       } else {
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_EXPORT_RESPONSE',
           format: data.format,
           error: 'Failed to capture chat data'
-        }, '*');
+        });
       }
     }
 
@@ -1393,25 +1434,25 @@
       try {
         const result = window.exportChatToMarkdown();
         if (!result) {
-          window.parent.postMessage({
+          postToSidebar({
             type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
             error: 'Failed to capture chat data'
-          }, '*');
+          });
           return;
         }
         
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
           data: result.data,
           content: result.content,
           meta: data.meta || null
-        }, '*');
+        });
       } catch (err) {
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
           error: err.message,
           meta: data.meta || null
-        }, '*');
+        });
       }
     }
 
@@ -1432,11 +1473,11 @@
           if (duplicate) {
             // We can't show confirm() easily from iframe to sidebar, 
             // so we send a message back to sidebar to ask the user.
-            window.parent.postMessage({
+            postToSidebar({
               type: 'AI_SIDEBAR_CONFIRM_UPDATE',
               duplicate: { title: duplicate.title, id: duplicate.id },
               result: result
-            }, '*');
+            });
             return;
           }
         }
@@ -1444,24 +1485,24 @@
         // Save if storage manager is present
         if (typeof window.saveConversation === 'function') {
           await window.saveConversation(result.data);
-          window.parent.postMessage({
+          postToSidebar({
             type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
             result: result,
             saved: true
-          }, '*');
+          });
         } else {
-          window.parent.postMessage({
+          postToSidebar({
             type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
             result: result,
             saved: false,
             warning: 'Storage manager not found, only exported'
-          }, '*');
+          });
         }
       } catch (err) {
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
           error: err.message
-        }, '*');
+        });
       }
     }
 
@@ -1476,11 +1517,11 @@
         } else {
           await window.saveConversation(result.data);
         }
-        window.parent.postMessage({
+        postToSidebar({
           type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
           result: result,
           saved: true
-        }, '*');
+        });
       }
     }
   });
@@ -1908,13 +1949,9 @@
           content: result.content
         };
 
-        // Try postMessage first (works if in sidebar iframe)
-        if (window.parent !== window) {
-          window.parent.postMessage(saveData, '*');
-        }
-
-        // Fallback to background queue only when storage manager is unavailable.
-        if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+        // Prefer the authenticated sidebar bridge; otherwise use the extension queue.
+        const postedToSidebar = postToSidebar(saveData);
+        if (!postedToSidebar && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
           try {
             chrome.runtime.sendMessage(saveData);
           } catch (e) {
@@ -1977,13 +2014,12 @@
         return;
       }
 
-      if (window.parent !== window) {
-        window.parent.postMessage({
+      if (postToSidebar({
           type: 'AI_SIDEBAR_SAVE_TO_LIBRARY_RESPONSE',
           data: result.data,
           content: result.content,
           meta: { shortcut: true }
-        }, '*');
+        })) {
         setStatus('Saving to history...', 'info');
         return;
       }

@@ -690,7 +690,7 @@
     const matchNodes = [];
     let node;
     
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       matchNodes.push(node);
     }
     

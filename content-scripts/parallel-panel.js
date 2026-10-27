@@ -158,6 +158,20 @@
     style.id = 'parallel-ai-panel-styles';
     style.textContent = `
       .parallel-ai-panel {
+        /* Inherited only by this injected panel, never by the host page. */
+        --aisb-panel-control: #e5e7eb;
+        --aisb-panel-control-hover: #d1d5db;
+        --aisb-panel-header: #f9fafb;
+        --aisb-panel-control-text: #374151;
+        --aisb-panel-text-secondary: #5f6368;
+        --aisb-panel-danger-surface: #fecaca;
+        --aisb-panel-danger: #dc2626;
+        --aisb-panel-sync-surface: rgba(52, 211, 153, 0.3);
+        --aisb-panel-sync-hover: rgba(52, 211, 153, 0.5);
+        --aisb-panel-font-caption: 11px;
+        --aisb-panel-font-control: 12px;
+        --aisb-panel-font-body: 13px;
+        --aisb-panel-radius: 12px;
         position: fixed;
         top: 60px;
         left: 20px;
@@ -168,7 +182,7 @@
         max-width: calc(100vw - ${PANEL_VIEWPORT_MARGIN * 2}px);
         max-height: calc(100vh - ${PANEL_VIEWPORT_MARGIN * 2}px);
         background: white;
-        border-radius: 12px;
+        border-radius: var(--aisb-panel-radius);
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
         z-index: 999999;
         display: none;
@@ -183,14 +197,14 @@
         justify-content: space-between;
         gap: 10px;
         padding: 10px 14px;
-        background: #f9fafb;
-        color: #374151;
-        border-radius: 12px 12px 0 0;
+        background: var(--aisb-panel-header);
+        color: var(--aisb-panel-control-text);
+        border-radius: var(--aisb-panel-radius) var(--aisb-panel-radius) 0 0;
         border-bottom: 1px solid #e5e7eb;
         min-width: 0;
       }
       .parallel-ai-panel .panel-title {
-        font-size: 13px;
+        font-size: var(--aisb-panel-font-body);
         font-weight: 500;
         display: flex;
         align-items: center;
@@ -209,30 +223,30 @@
         min-width: 0;
       }
       .parallel-ai-panel .panel-btn {
-        background: #e5e7eb;
+        background: var(--aisb-panel-control);
         border: none;
-        color: #374151;
+        color: var(--aisb-panel-control-text);
         min-width: 28px;
         height: 28px;
         padding: 0 10px;
         border-radius: 6px;
-        font-size: 11px;
+        font-size: var(--aisb-panel-font-caption);
         cursor: pointer;
         transition: all 0.2s ease;
         white-space: nowrap;
       }
-      .parallel-ai-panel .panel-btn:hover { background: #d1d5db; }
+      .parallel-ai-panel .panel-btn:hover { background: var(--aisb-panel-control-hover); }
       .parallel-ai-panel .panel-btn.sync {
-        background: rgba(52, 211, 153, 0.3);
-        border-color: rgba(52, 211, 153, 0.5);
+        background: var(--aisb-panel-sync-surface);
+        border-color: var(--aisb-panel-sync-hover);
       }
-      .parallel-ai-panel .panel-btn.sync:hover { background: rgba(52, 211, 153, 0.5); }
+      .parallel-ai-panel .panel-btn.sync:hover { background: var(--aisb-panel-sync-hover); }
       .parallel-ai-panel .panel-select {
         background: white;
         color: #333;
         border: none;
         border-radius: 4px;
-        font-size: 11px;
+        font-size: var(--aisb-panel-font-caption);
         padding: 5px 8px;
         cursor: pointer;
         outline: none;
@@ -240,23 +254,23 @@
         max-width: 120px;
       }
       .parallel-ai-panel .panel-btn.add {
-        background: #e5e7eb;
-        color: #374151;
+        background: var(--aisb-panel-control);
+        color: var(--aisb-panel-control-text);
         border: none;
         font-weight: 600;
         font-size: 14px;
         padding: 4px 10px;
       }
       .parallel-ai-panel .panel-btn.add:hover {
-        background: #d1d5db;
+        background: var(--aisb-panel-control-hover);
         transform: scale(1.05);
       }
       .parallel-ai-panel .panel-btn.close {
-        background: #e5e7eb;
+        background: var(--aisb-panel-control);
         padding: 5px 8px;
         border: none;
       }
-      .parallel-ai-panel .panel-btn.close:hover { background: #fecaca; color: #dc2626; }
+      .parallel-ai-panel .panel-btn.close:hover { background: var(--aisb-panel-danger-surface); color: var(--aisb-panel-danger); }
       .parallel-ai-panel .panel-content {
         flex: 1;
         position: relative;
@@ -279,7 +293,7 @@
         background: rgba(255, 255, 255, 0.96);
         box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
         color: #334155;
-        font-size: 12px;
+        font-size: var(--aisb-panel-font-control);
       }
       .parallel-ai-panel .fallback-overlay.visible {
         display: flex;
@@ -302,7 +316,7 @@
         background: #ffffff;
         color: #0f172a;
         padding: 0 8px;
-        font-size: 12px;
+        font-size: var(--aisb-panel-font-control);
         cursor: pointer;
       }
       .parallel-ai-panel .fallback-actions button:hover {
@@ -337,7 +351,7 @@
         animation: parallel-spin 1s linear infinite;
       }
       @keyframes parallel-spin { to { transform: rotate(360deg); } }
-      .parallel-ai-panel .loading-text { font-size: 13px; color: #5f6368; }
+      .parallel-ai-panel .loading-text { font-size: var(--aisb-panel-font-body); color: var(--aisb-panel-text-secondary); }
       .parallel-ai-panel .drag-handle { cursor: move; user-select: none; }
       .parallel-ai-panel .resize-handle {
         position: absolute;
@@ -345,7 +359,7 @@
         width: 28px; height: 28px;
         cursor: se-resize;
         background: linear-gradient(135deg, transparent 42%, rgba(156, 163, 175, 0.9) 42%);
-        border-radius: 0 0 12px 0;
+        border-radius: 0 0 var(--aisb-panel-radius) 0;
         z-index: 2;
       }
       .parallel-ai-panel .resize-handle::before {
@@ -359,8 +373,8 @@
       .parallel-ai-panel .panel-status {
         padding: 8px 16px;
         background: #f1f3f4;
-        font-size: 11px;
-        color: #5f6368;
+        font-size: var(--aisb-panel-font-caption);
+        color: var(--aisb-panel-text-secondary);
         border-top: 1px solid #e8eaed;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -732,7 +746,21 @@
     setTimeout(() => {
       panel.remove();
       panels = panels.filter(p => p.element !== panel);
+      if (panels.length === 0) void setParallelEmbedEnabled(false);
     }, 200);
+  }
+
+  async function setParallelEmbedEnabled(enabled) {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'AI_SIDEBAR_SET_PARALLEL_EMBED',
+        enabled: Boolean(enabled)
+      });
+      return response?.ok === true;
+    } catch (error) {
+      console.warn('[AI-Sidebar] Failed to update parallel embed rules:', error);
+      return false;
+    }
   }
 
   // 同步上下文（复制到剪贴板）
@@ -773,32 +801,48 @@
 
   // 监听来自扩展的消息
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    switch (request.action) {
-      case 'toggleParallelPanel':
-        // 使用传入的 provider，默认为 chatgpt
-        const provider = request.provider || 'chatgpt';
-        const providerUrl = request.providerUrl || null;
-        const isVisible = togglePanel(provider, providerUrl);
-        sendResponse({ success: true, visible: isVisible, provider: provider, providerUrl: providerUrl });
-        break;
+    void (async () => {
+      switch (request.action) {
+        case 'toggleParallelPanel': {
+          const provider = request.provider || 'chatgpt';
+          const providerUrl = request.providerUrl || null;
+          const willShow = panels.length === 0 || !panels.some((item) => item.element.classList.contains('visible'));
+          if (willShow && !(await setParallelEmbedEnabled(true))) {
+            sendResponse({ success: false, message: '无法安全启用并行面板嵌入' });
+            return;
+          }
+          const isVisible = togglePanel(provider, providerUrl);
+          if (!isVisible) await setParallelEmbedEnabled(false);
+          sendResponse({ success: true, visible: isVisible, provider, providerUrl });
+          return;
+        }
 
-      case 'createParallelPanel':
-        const createProvider = request.provider || 'chatgpt';
-        createPanel(createProvider, request.providerUrl || null);
-        sendResponse({ success: true });
-        break;
+        case 'createParallelPanel': {
+          if (!(await setParallelEmbedEnabled(true))) {
+            sendResponse({ success: false, message: '无法安全启用并行面板嵌入' });
+            return;
+          }
+          const provider = request.provider || 'chatgpt';
+          createPanel(provider, request.providerUrl || null);
+          sendResponse({ success: true });
+          return;
+        }
 
-      case 'getParallelPanelStatus':
-        sendResponse({ 
-          success: true, 
-          panelCount: panels.length,
-          anyVisible: panels.some(p => p.element.classList.contains('visible'))
-        });
-        break;
+        case 'getParallelPanelStatus':
+          sendResponse({
+            success: true,
+            panelCount: panels.length,
+            anyVisible: panels.some((item) => item.element.classList.contains('visible'))
+          });
+          return;
 
-      default:
-        sendResponse({ success: false, message: '未知操作' });
-    }
+        default:
+          sendResponse({ success: false, message: '未知操作' });
+      }
+    })().catch((error) => {
+      console.error('[AI-Sidebar] Parallel panel message failed:', error);
+      sendResponse({ success: false, message: error?.message || String(error) });
+    });
     return true;
   });
 

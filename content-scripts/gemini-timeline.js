@@ -13487,7 +13487,7 @@
     }
     return (h >>> 0).toString(36);
   }
-  var TURN_LABEL_PREFIXES = /^[\u200B\u200C\u200D\u200E\u200F\uFEFF]*(?:you said|you wrote|user message|your prompt|you asked)[:\s]*/i;
+  var TURN_LABEL_PREFIXES = /^[\u200B-\u200F\uFEFF]*(?:you said|you wrote|user message|your prompt|you asked)[:\s]*/i;
   var TimelineManager = class _TimelineManager {
     scrollContainer = null;
     conversationContainer = null;
@@ -14798,7 +14798,7 @@
         const walker = document.createTreeWalker(marker.element, NodeFilter.SHOW_TEXT);
         const matches = [];
         let node;
-        while (node = walker.nextNode()) {
+        while ((node = walker.nextNode())) {
           const idx = node.textContent?.toLowerCase().indexOf(lowerQuery) ?? -1;
           if (idx !== -1)
             matches.push({ node, index: idx });

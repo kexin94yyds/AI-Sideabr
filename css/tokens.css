@@ -1,0 +1,61 @@
+/* AI Sidebar chrome. Shared by local documents, never injected into host pages. */
+:root {
+  /* 统一的颜色变量 - 减少重复定义 */
+  --btn-blue-start: #5a84ff;
+  --btn-blue-end: #436af7;
+  --btn-blue-border: #395fe0;
+  --btn-blue-shadow: rgba(67, 106, 247, 0.35);
+  --btn-text: #ffffff;
+
+  /* 通用颜色 */
+  --surface-raised: #ffffff;
+  --bg-white: var(--surface-raised); /* compatibility for existing consumers */
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-light: #e5e7eb;
+  --border-hover: #dbe1e8;
+  --bg-hover: #f3f7ff;
+  --bg-active: #e8f0fe;
+  --shadow-light: rgba(15, 23, 42, 0.08);
+  --shadow-medium: rgba(15, 23, 42, 0.18);
+
+  /* 通用尺寸 */
+  --border-radius: 12px;
+  --border-radius-small: 8px;
+  --border-radius-full: 9999px;
+  --transition: all 0.2s ease;
+  /* Semantic surfaces and states. Values preserve the current light appearance. */
+  --surface-canvas: #ffffff;
+  --surface-hover: #f8fafc;
+  --surface-pressed: #f1f5f9;
+  --surface-danger: #fef2f2;
+  --text-default: #333;
+  --text-control: #111827;
+  --text-muted: #94a3b8;
+  --text-label: #334155;
+  --text-link: #2563eb;
+  --text-danger: #ef4444;
+  --border-subtle: #f1f5f9;
+  --border-section: #eef2f7;
+  --border-control: #e2e8f0;
+  --focus-ring: #4285f4;
+  --search-miss-surface: #fff3cd;
+  --toast-surface: #111827;
+  --toast-error-surface: #b91c1c;
+  --toast-warning-surface: #92400e;
+
+  /* Reused type/spacing scale; geometry and one-off artwork stay local. */
+  --font-size-caption: 11px;
+  --font-size-control: 12px;
+  --font-size-body: 13px;
+  --font-size-label: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --radius-compact: 4px;
+  --radius-control: 6px;
+
+}

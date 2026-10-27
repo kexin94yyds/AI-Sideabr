@@ -72,8 +72,12 @@ const DNR_CONFIG = {
 };
 
 const NATIVE_HOST_NAME = 'com.aisidebar.bridge';
+const CUSTOM_DNR_RULE_ID_MIN = 1000;
+const PARALLEL_SESSION_RULE_ID_MIN = 1000000;
 let lastShortcutTarget = { surface: '', tabId: null, at: 0 };
 const AISB_AUTOSAVE_DEBUG = true;
+let saveQueueMutation = Promise.resolve();
+let dnrMutation = Promise.resolve();
 
 function aisbAutosaveDebug(scope, payload = {}) {
   if (!AISB_AUTOSAVE_DEBUG) return;
@@ -95,46 +99,242 @@ function aisbConversationSummary(conversation) {
   };
 }
 
-// 生成DNR规则的工厂函数
-function createDnrRules() {
-  return DNR_CONFIG.domains.map((domain, index) => ({
-    id: index + 1,
+function createHeaderRemovalRule(id, urlFilter, extraCondition = {}) {
+  return {
+    id,
     priority: 1,
     action: {
       type: "modifyHeaders",
       responseHeaders: DNR_CONFIG.commonHeaders
     },
     condition: {
-      urlFilter: domain,
-      resourceTypes: ["main_frame", "sub_frame"]
+      urlFilter,
+      initiatorDomains: [chrome.runtime.id],
+      resourceTypes: ["sub_frame"],
+      ...extraCondition
     }
-  }));
+  };
 }
 
-// 应用DNR规则
-function applyBaseDnrRules() {
-  const rules = createDnrRules();
-  const ruleIds = rules.map(rule => rule.id);
-  
-  chrome.declarativeNetRequest.updateDynamicRules({
-    addRules: rules,
-    removeRuleIds: ruleIds
+// 生成仅由扩展页面发起的基础 DNR 规则。
+function createDnrRules() {
+  return DNR_CONFIG.domains.map((domain, index) => createHeaderRemovalRule(index + 1, domain));
+}
+
+function serializeDnrMutation(mutator) {
+  const operation = dnrMutation.then(mutator);
+  dnrMutation = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
+function normalizeHttpOrigin(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.origin;
+  } catch (_) {
+    return '';
+  }
+}
+
+function isOwnedCustomDnrRule(rule) {
+  if (!Number.isInteger(rule?.id) || rule.id < CUSTOM_DNR_RULE_ID_MIN || rule.id >= PARALLEL_SESSION_RULE_ID_MIN) {
+    return false;
+  }
+  if (rule?.action?.type !== 'modifyHeaders' || typeof rule?.condition?.urlFilter !== 'string') return false;
+  return (rule.action.responseHeaders || []).some((header) => (
+    String(header?.header || '').toLowerCase() === 'x-frame-options' && header?.operation === 'remove'
+  ));
+}
+
+function getOriginFromCustomRule(rule) {
+  const filter = String(rule?.condition?.urlFilter || '');
+  return filter.endsWith('/*') ? normalizeHttpOrigin(filter.slice(0, -2)) : '';
+}
+
+async function applyPersistentDnrRules() {
+  const baseRules = createDnrRules();
+  const baseRuleIds = baseRules.map((rule) => rule.id);
+  const [stored, existing] = await Promise.all([
+    chrome.storage.local.get(['aiDnrRules']),
+    chrome.declarativeNetRequest.getDynamicRules()
+  ]);
+  const storedMap = stored.aiDnrRules && typeof stored.aiDnrRules === 'object'
+    ? stored.aiDnrRules
+    : {};
+  const ownedExisting = existing.filter(isOwnedCustomDnrRule);
+  const candidates = new Map();
+
+  for (const [rawOrigin, rawId] of Object.entries(storedMap)) {
+    const origin = normalizeHttpOrigin(rawOrigin);
+    const id = Number(rawId);
+    if (origin && Number.isInteger(id) && id >= CUSTOM_DNR_RULE_ID_MIN && id < PARALLEL_SESSION_RULE_ID_MIN) {
+      candidates.set(origin, id);
+    }
+  }
+  for (const rule of ownedExisting) {
+    const origin = getOriginFromCustomRule(rule);
+    if (origin && !candidates.has(origin)) candidates.set(origin, rule.id);
+  }
+
+  const removedCustomIds = new Set([
+    ...ownedExisting.map((rule) => rule.id),
+    ...Object.values(storedMap)
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id >= CUSTOM_DNR_RULE_ID_MIN && id < PARALLEL_SESSION_RULE_ID_MIN)
+  ]);
+  const reservedIds = new Set(
+    existing
+      .filter((rule) => !baseRuleIds.includes(rule.id) && !removedCustomIds.has(rule.id))
+      .map((rule) => rule.id)
+  );
+  for (const id of baseRuleIds) reservedIds.add(id);
+
+  let nextId = CUSTOM_DNR_RULE_ID_MIN;
+  const customRules = [];
+  const nextMap = {};
+  for (const [origin, preferredId] of candidates) {
+    let id = preferredId;
+    if (reservedIds.has(id)) {
+      while (reservedIds.has(nextId)) nextId += 1;
+      id = nextId;
+      nextId += 1;
+    }
+    reservedIds.add(id);
+    nextMap[origin] = id;
+    customRules.push(createHeaderRemovalRule(id, `${origin}/*`));
+  }
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [...baseRules, ...customRules],
+    removeRuleIds: [...new Set([...baseRuleIds, ...removedCustomIds])]
+  });
+  await chrome.storage.local.set({ aiDnrRules: nextMap });
+}
+
+function refreshPersistentDnrRules() {
+  void serializeDnrMutation(applyPersistentDnrRules).catch((error) => {
+    console.error('Failed to apply scoped DNR rules:', error);
   });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  applyBaseDnrRules();
+  refreshPersistentDnrRules();
   try { setupContextMenus(); } catch (_) {}
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  applyBaseDnrRules();
+  refreshPersistentDnrRules();
   try { setupContextMenus(); } catch (_) {}
 });
 
 // Also apply immediately when the service worker (re)starts
-applyBaseDnrRules();
+refreshPersistentDnrRules();
 try { setupContextMenus(); } catch (_) {}
+
+function createSaveQueueId() {
+  try {
+    return crypto.randomUUID();
+  } catch (_) {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+function normalizeSaveQueueItem(item) {
+  if (!item || typeof item !== 'object') return null;
+  return {
+    ...item,
+    queueId: String(item.queueId || createSaveQueueId())
+  };
+}
+
+function mutateSaveQueue(mutator) {
+  const operation = saveQueueMutation.then(async () => {
+    const stored = await chrome.storage.local.get(['__saveQueue']);
+    const current = Array.isArray(stored.__saveQueue)
+      ? stored.__saveQueue.map(normalizeSaveQueueItem).filter(Boolean)
+      : [];
+    const next = await mutator(current);
+    const normalized = Array.isArray(next) ? next.map(normalizeSaveQueueItem).filter(Boolean) : [];
+    await chrome.storage.local.set({ __saveQueue: normalized });
+    return normalized;
+  });
+
+  saveQueueMutation = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
+function isExtensionPageSender(sender) {
+  const senderUrl = String(sender?.url || sender?.documentUrl || '');
+  return senderUrl.startsWith(chrome.runtime.getURL(''));
+}
+
+function getParallelInitiatorDomain(tabUrl) {
+  const origin = normalizeHttpOrigin(tabUrl);
+  if (!origin) return '';
+  try {
+    return new URL(origin).hostname.toLowerCase();
+  } catch (_) {
+    return '';
+  }
+}
+
+function isParallelSessionRule(rule) {
+  return Number.isInteger(rule?.id) && rule.id >= PARALLEL_SESSION_RULE_ID_MIN;
+}
+
+async function setParallelEmbedRules(tabId, tabUrl, enabled) {
+  return serializeDnrMutation(async () => {
+    const sessionRules = await chrome.declarativeNetRequest.getSessionRules();
+    const removeRuleIds = sessionRules
+      .filter((rule) => isParallelSessionRule(rule) && rule.condition?.tabIds?.includes(tabId))
+      .map((rule) => rule.id);
+
+    if (!enabled) {
+      if (removeRuleIds.length > 0) {
+        await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds, addRules: [] });
+      }
+      return 0;
+    }
+
+    const initiatorDomain = getParallelInitiatorDomain(tabUrl);
+    if (!initiatorDomain) throw new Error('Parallel embed requires an HTTP(S) tab');
+
+    const dynamicRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const removedIds = new Set(removeRuleIds);
+    const usedIds = new Set([
+      ...dynamicRules.map((rule) => rule.id),
+      ...sessionRules.filter((rule) => !removedIds.has(rule.id)).map((rule) => rule.id)
+    ]);
+    let nextId = PARALLEL_SESSION_RULE_ID_MIN;
+    const addRules = DNR_CONFIG.domains.map((urlFilter) => {
+      while (usedIds.has(nextId)) nextId += 1;
+      const id = nextId;
+      usedIds.add(id);
+      nextId += 1;
+      return createHeaderRemovalRule(id, urlFilter, {
+        initiatorDomains: [initiatorDomain],
+        tabIds: [tabId]
+      });
+    });
+
+    await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds, addRules });
+    return addRules.length;
+  });
+}
+
+function clearParallelEmbedRules(tabId) {
+  void setParallelEmbedRules(tabId, '', false).catch((error) => {
+    console.warn('Failed to clear parallel-panel DNR rules:', error);
+  });
+}
+
+try {
+  chrome.tabs.onRemoved.addListener((tabId) => clearParallelEmbedRules(tabId));
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (changeInfo.status === 'loading') clearParallelEmbedRules(tabId);
+  });
+} catch (_) {}
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -275,63 +475,111 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, result });
         return;
       }
-      if (msg && msg.type === 'ai-add-host' && typeof msg.origin === 'string') {
-        const origin = msg.origin.replace(/\/$/, '');
-        const storage = await chrome.storage.local.get(['aiDnrRules']);
-        const rulesMap = storage.aiDnrRules || {}; // { origin: ruleId }
-        // Find existing dynamic rules to avoid duplicate IDs and duplicates by urlFilter
-        const existing = await chrome.declarativeNetRequest.getDynamicRules();
-        const existForOrigin = existing.find(r => r?.condition?.urlFilter === origin + '/*');
-        if (existForOrigin) {
-          // persist in storage for future lookups
-          rulesMap[origin] = existForOrigin.id;
-          await chrome.storage.local.set({ aiDnrRules: rulesMap });
-          sendResponse({ ok: true, ruleId: existForOrigin.id, existed: true });
+      if (msg && msg.type === 'AI_SIDEBAR_GET_SAVE_QUEUE') {
+        if (!isExtensionPageSender(sender)) {
+          sendResponse({ ok: false, error: 'forbidden' });
           return;
         }
-        // allocate a new rule id (avoid collision with built-ins 1..999 and dynamic ones)
-        const used = new Set([...Object.values(rulesMap), ...existing.map(r => r.id)]);
-        let next = 1000;
-        while (used.has(next)) next++;
-        const rule = {
-          id: next,
-          priority: 1,
-          action: {
-            type: 'modifyHeaders',
-            responseHeaders: [
-              { header: 'content-security-policy', operation: 'remove' },
-              { header: 'content-security-policy-report-only', operation: 'remove' },
-              { header: 'x-frame-options', operation: 'remove' },
-              { header: 'cross-origin-opener-policy', operation: 'remove' },
-              { header: 'cross-origin-embedder-policy', operation: 'remove' },
-              { header: 'cross-origin-resource-policy', operation: 'remove' },
-              { header: 'permissions-policy', operation: 'remove' }
-            ]
-          },
-          condition: {
-            urlFilter: origin + '/*',
-            resourceTypes: ['main_frame', 'sub_frame']
+        const queue = await mutateSaveQueue((current) => current);
+        sendResponse({ ok: true, items: queue });
+        return;
+      }
+      if (msg && msg.type === 'AI_SIDEBAR_ACK_SAVE_QUEUE_ITEMS') {
+        if (!isExtensionPageSender(sender)) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return;
+        }
+        const ids = new Set(
+          (Array.isArray(msg.queueIds) ? msg.queueIds : [])
+            .map((value) => String(value || ''))
+            .filter(Boolean)
+        );
+        const queue = await mutateSaveQueue((current) => current.filter((item) => !ids.has(item.queueId)));
+        sendResponse({ ok: true, remaining: queue.length });
+        return;
+      }
+      if (msg && msg.type === 'AI_SIDEBAR_SET_PARALLEL_EMBED') {
+        const tabId = sender?.tab?.id;
+        if (!Number.isInteger(tabId)) {
+          sendResponse({ ok: false, error: 'missing_tab' });
+          return;
+        }
+        const count = await setParallelEmbedRules(tabId, sender.tab.url || '', Boolean(msg.enabled));
+        sendResponse({ ok: true, enabled: Boolean(msg.enabled), ruleCount: count });
+        return;
+      }
+      if (msg && msg.type === 'ai-add-host' && typeof msg.origin === 'string') {
+        if (!isExtensionPageSender(sender)) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return;
+        }
+        const origin = normalizeHttpOrigin(msg.origin);
+        if (!origin) {
+          sendResponse({ ok: false, error: 'invalid_origin' });
+          return;
+        }
+        const result = await serializeDnrMutation(async () => {
+          const storage = await chrome.storage.local.get(['aiDnrRules']);
+          const rulesMap = storage.aiDnrRules && typeof storage.aiDnrRules === 'object'
+            ? storage.aiDnrRules
+            : {};
+          const existing = await chrome.declarativeNetRequest.getDynamicRules();
+          const existingForOrigin = existing.find((rule) => getOriginFromCustomRule(rule) === origin);
+          const used = new Set(existing.map((rule) => rule.id));
+          let id = Number(rulesMap[origin]);
+
+          if (!Number.isInteger(id) || id < CUSTOM_DNR_RULE_ID_MIN || id >= PARALLEL_SESSION_RULE_ID_MIN) {
+            id = existingForOrigin?.id;
           }
-        };
-        await chrome.declarativeNetRequest.updateDynamicRules({ addRules: [rule], removeRuleIds: [] });
-        rulesMap[origin] = next;
-        await chrome.storage.local.set({ aiDnrRules: rulesMap });
-        sendResponse({ ok: true, ruleId: next });
+          if (!Number.isInteger(id) || (used.has(id) && existingForOrigin?.id !== id)) {
+            id = CUSTOM_DNR_RULE_ID_MIN;
+            while (used.has(id)) id += 1;
+          }
+
+          const removeRuleIds = existingForOrigin ? [existingForOrigin.id] : (used.has(id) ? [id] : []);
+          await chrome.declarativeNetRequest.updateDynamicRules({
+            addRules: [createHeaderRemovalRule(id, `${origin}/*`)],
+            removeRuleIds
+          });
+          rulesMap[origin] = id;
+          await chrome.storage.local.set({ aiDnrRules: rulesMap });
+          return { id, existed: Boolean(existingForOrigin) };
+        });
+        sendResponse({ ok: true, ruleId: result.id, existed: result.existed });
         return;
       }
       if (msg && msg.type === 'ai-remove-host' && typeof msg.origin === 'string') {
-        const origin = msg.origin.replace(/\/$/, '');
-        const storage = await chrome.storage.local.get(['aiDnrRules']);
-        const rulesMap = storage.aiDnrRules || {};
-        const id = rulesMap[origin];
-        if (id) {
-          await chrome.declarativeNetRequest.updateDynamicRules({ addRules: [], removeRuleIds: [id] });
-          delete rulesMap[origin];
-          await chrome.storage.local.set({ aiDnrRules: rulesMap });
-          sendResponse({ ok: true, removed: true });
+        if (!isExtensionPageSender(sender)) {
+          sendResponse({ ok: false, error: 'forbidden' });
           return;
         }
-        sendResponse({ ok: true, removed: false });
+        const origin = normalizeHttpOrigin(msg.origin);
+        if (!origin) {
+          sendResponse({ ok: false, error: 'invalid_origin' });
+          return;
+        }
+        const removed = await serializeDnrMutation(async () => {
+          const storage = await chrome.storage.local.get(['aiDnrRules']);
+          const rulesMap = storage.aiDnrRules && typeof storage.aiDnrRules === 'object'
+            ? storage.aiDnrRules
+            : {};
+          const existing = await chrome.declarativeNetRequest.getDynamicRules();
+          const ruleIds = existing
+            .filter((rule) => getOriginFromCustomRule(rule) === origin)
+            .map((rule) => rule.id);
+          const storedId = Number(rulesMap[origin]);
+          if (Number.isInteger(storedId) && storedId >= CUSTOM_DNR_RULE_ID_MIN && storedId < PARALLEL_SESSION_RULE_ID_MIN) {
+            ruleIds.push(storedId);
+          }
+          const uniqueRuleIds = [...new Set(ruleIds)];
+          if (uniqueRuleIds.length > 0) {
+            await chrome.declarativeNetRequest.updateDynamicRules({ addRules: [], removeRuleIds: uniqueRuleIds });
+          }
+          delete rulesMap[origin];
+          await chrome.storage.local.set({ aiDnrRules: rulesMap });
+          return uniqueRuleIds.length > 0;
+        });
+        sendResponse({ ok: true, removed });
         return;
       }
     } catch (e) {
@@ -343,16 +591,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Forward save to library request to sidebar via storage
     if (msg && msg.type === 'AI_SIDEBAR_SAVE_TO_LIBRARY') {
       try {
-        // Store in chrome.storage.local for sidebar to pick up
-        const saveQueue = (await chrome.storage.local.get(['__saveQueue'])).__saveQueue || [];
-        saveQueue.push({
-          data: msg.data,
-          content: msg.content,
-          timestamp: Date.now()
-        });
-        await chrome.storage.local.set({ __saveQueue: saveQueue });
+        const queue = await mutateSaveQueue((current) => [
+          ...current,
+          {
+            queueId: createSaveQueueId(),
+            data: msg.data,
+            content: msg.content,
+            timestamp: Date.now()
+          }
+        ]);
         console.log('[AI Sidebar BG] Queued conversation for sidebar');
-        sendResponse({ ok: true });
+        sendResponse({ ok: true, queued: queue.length });
         return;
       } catch (e) {
         console.error('[AI Sidebar BG] Save queue error:', e);

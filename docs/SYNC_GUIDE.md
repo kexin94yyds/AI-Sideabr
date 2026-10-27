@@ -46,6 +46,18 @@ node scripts/sync-server.cjs
 
 服务器会在 `http://localhost:3456` 监听。
 
+同步服务只接受没有浏览器 `Origin` 头的本机命令行，以及
+`chrome-extension://...` 来源的 Chrome 扩展页面。普通网页来源和非本机
+`Host` 会收到 `403 Forbidden`，避免网页读取或覆盖本地历史。
+
+如需把服务锁定到一个确定的扩展 ID，可在启动时设置：
+
+```bash
+AI_SIDEBAR_EXTENSION_ID=你的32位扩展ID npm run sync
+```
+
+请求体上限为 10 MB；History 与 Favorites 写入使用同目录临时文件后原子替换。
+
 2. **打开或重新加载扩展**
 
 扩展会自动检测同步服务器，并每分钟同步一次数据。

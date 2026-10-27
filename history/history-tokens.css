@@ -1,0 +1,9 @@
+/* The library intentionally uses a monochrome editorial theme. */
+:root {
+  --library-surface: #fff;
+  --library-inverse-surface: #000;
+  --library-text: #000;
+  --library-inverse-text: #fff;
+  --library-text-secondary: #666;
+  --library-border: #000;
+}

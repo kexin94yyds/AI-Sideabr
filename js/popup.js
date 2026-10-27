@@ -1550,7 +1550,7 @@ blockquote{border-left:4px solid #ddd;margin:0;padding-left:16px;color:#666;}</s
             empty = document.createElement('div');
             empty.id = emptyId;
             empty.style.padding = '8px 12px';
-            empty.style.color = '#64748b';
+            empty.style.color = 'var(--text-secondary)';
             empty.textContent = 'No matches';
             panel.querySelector('.hp-list')?.appendChild(empty);
           }
@@ -1850,7 +1850,7 @@ async function renderFavoritesPanel() {
             empty = document.createElement('div');
             empty.id = emptyId;
             empty.style.padding = '8px 12px';
-            empty.style.color = '#64748b';
+            empty.style.color = 'var(--text-secondary)';
             empty.textContent = 'No matches';
             panel.querySelector('.fp-list')?.appendChild(empty);
           }
@@ -2038,14 +2038,14 @@ let __dragKey = null;
 
 const getTabsCollapsed = async () => {
   try {
-    const { tabsCollapsed } = await chrome.storage?.local.get(['tabsCollapsed']);
+    const { tabsCollapsed } = await chrome.storage.local.get(['tabsCollapsed']);
     return !!tabsCollapsed;
   } catch (_) {
     return false;
   }
 };
 const setTabsCollapsed = async (v) => {
-  try { await chrome.storage?.local.set({ tabsCollapsed: !!v }); } catch (_) {}
+  try { await chrome.storage.local.set({ tabsCollapsed: !!v }); } catch (_) {}
 };
 
 // 渲染右侧垂直导航栏
@@ -3879,7 +3879,7 @@ initializeBar();
         document.body.appendChild(box);
       }
       box.textContent = String(text || '');
-      box.style.background = level === 'error' ? '#b91c1c' : (level === 'warn' ? '#92400e' : '#111827');
+      box.style.background = level === 'error' ? 'var(--toast-error-surface)' : (level === 'warn' ? 'var(--toast-warning-surface)' : 'var(--toast-surface)');
       box.style.display = 'block';
       clearTimeout(toast._t);
       toast._t = setTimeout(()=>{ try { box.style.display = 'none'; } catch (_) {} }, 2200);
@@ -3893,7 +3893,7 @@ initializeBar();
         aisbPendingInsert,
         aisbPendingScreenshot,
         aisbPendingNotify
-      } = await chrome.storage?.local.get([
+      } = await chrome.storage.local.get([
         'aisbPendingExportPanel',
         'aisbPendingInsert',
         'aisbPendingScreenshot',
@@ -4094,7 +4094,7 @@ initializeBar();
             try { target.contentWindow.focus(); } catch (_) {}
             try { target.contentWindow.postMessage({ type: 'AI_SIDEBAR_FOCUS' }, '*'); } catch (_) {}
             const poke = () => { try { target.focus(); target.contentWindow?.postMessage({ type: 'AI_SIDEBAR_FOCUS' }, '*'); } catch (_) {} };
-            ;[40,120,240,420,700,1000].forEach(ms => setTimeout(poke, ms));
+            [40,120,240,420,700,1000].forEach(ms => setTimeout(poke, ms));
           }
           return;
         }
@@ -4227,7 +4227,7 @@ initializeBar();
           searchInput.style.backgroundColor = '';
         } else {
           searchCount.textContent = '未找到';
-          searchInput.style.backgroundColor = '#fff3cd';
+          searchInput.style.backgroundColor = 'var(--search-miss-surface)';
         }
       } else {
         // 无法使用window.find，显示提示
@@ -4253,7 +4253,7 @@ initializeBar();
         searchInput.style.backgroundColor = '';
       } else {
         searchCount.textContent = '未找到';
-        searchInput.style.backgroundColor = '#fff3cd';
+        searchInput.style.backgroundColor = 'var(--search-miss-surface)';
       }
     }
   });
@@ -4365,10 +4365,11 @@ initializeBar();
 // Process save queue from background script
 (async function processSaveQueue() {
   try {
-    const { __saveQueue } = await chrome.storage.local.get(['__saveQueue']);
-    if (__saveQueue && __saveQueue.length > 0) {
-      const remaining = [];
-      for (const item of __saveQueue) {
+    const response = await chrome.runtime.sendMessage({ type: 'AI_SIDEBAR_GET_SAVE_QUEUE' });
+    const items = response?.ok && Array.isArray(response.items) ? response.items : [];
+    if (items.length > 0) {
+      const completedQueueIds = [];
+      for (const item of items) {
         try {
           const convData = {
             ...item.data,
@@ -4379,16 +4380,23 @@ initializeBar();
           };
           if (typeof window.ChatHistoryDB?.saveConversation === 'function') {
             await window.ChatHistoryDB.saveConversation(convData);
+            completedQueueIds.push(String(item.queueId || ''));
             console.log('[AI Sidebar] Processed queued conversation:', convData.title);
-          } else {
-            remaining.push(item);
           }
         } catch (e) {
           console.error('[AI Sidebar] Failed to save queued item:', e);
-          remaining.push({ ...item, lastError: String(e), retryAt: Date.now() });
         }
       }
-      await chrome.storage.local.set({ __saveQueue: remaining });
+      const queueIds = completedQueueIds.filter(Boolean);
+      if (queueIds.length > 0) {
+        const ack = await chrome.runtime.sendMessage({
+          type: 'AI_SIDEBAR_ACK_SAVE_QUEUE_ITEMS',
+          queueIds
+        });
+        if (!ack?.ok) {
+          console.warn('[AI Sidebar] Failed to acknowledge queued saves:', ack?.error || 'unknown_error');
+        }
+      }
     }
   } catch (e) {
     console.error('[AI Sidebar] processSaveQueue error:', e);
