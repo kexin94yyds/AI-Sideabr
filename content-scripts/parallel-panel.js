@@ -22,7 +22,7 @@
     claude: { label: 'Claude', iframeUrl: 'https://claude.ai' },
     deepseek: { label: 'DeepSeek', iframeUrl: 'https://chat.deepseek.com/' },
     grok: { label: 'Grok', iframeUrl: 'https://grok.com/' },
-    notebooklm: { label: 'NotebookLM', iframeUrl: 'https://notebooklm.google.com/' },
+    notebooklm: { label: 'NotebookLM', iframeUrl: 'https://notebook.google.com/' },
     ima: { label: 'IMA', iframeUrl: 'https://ima.qq.com/' },
     kimi: { label: 'Kimi', iframeUrl: 'https://kimi.moonshot.cn/' },
     v0: { label: 'v0', iframeUrl: 'https://v0.dev/chat' },

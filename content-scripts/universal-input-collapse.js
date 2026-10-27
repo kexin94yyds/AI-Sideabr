@@ -92,7 +92,8 @@
 
   function getCurrentConfig() {
     const hostname = location.hostname;
-    return PLATFORM_CONFIGS[hostname] || null;
+    // notebook.google.com 是 NotebookLM 的新域名，沿用同一套配置
+    return PLATFORM_CONFIGS[hostname === 'notebook.google.com' ? 'notebooklm.google.com' : hostname] || null;
   }
 
   function getInputContainer() {
@@ -402,7 +403,7 @@
   }
 
   async function init() {
-    if (location.hostname.includes('notebooklm.google.com')) {
+    if (location.hostname.includes('notebooklm.google.com') || location.hostname.includes('notebook.google.com')) {
       return;
     }
 

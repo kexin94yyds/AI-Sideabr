@@ -156,7 +156,7 @@
     if (hostname.includes('claude.ai')) return 'claude';
     if (hostname.includes('gemini.google.com')) return 'gemini';
     if (hostname.includes('deepseek.com')) return 'deepseek';
-    if (hostname.includes('notebooklm.google.com')) return 'notebooklm';
+    if (hostname.includes('notebooklm.google.com') || hostname.includes('notebook.google.com')) return 'notebooklm';
     return 'unknown';
   }
 

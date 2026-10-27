@@ -114,8 +114,9 @@ const PROVIDERS = {
   notebooklm: {
     label: 'NotebookLM',
     icon: 'images/providers/notebooklm.png',
-    baseUrl: 'https://notebooklm.google.com',
-    iframeUrl: 'https://notebooklm.google.com/',
+    // 2026-10 起 NotebookLM 改名 Gemini Notebook，主域名迁到 notebook.google.com（旧域名会跳转过来）
+    baseUrl: 'https://notebook.google.com',
+    iframeUrl: 'https://notebook.google.com/',
     authCheck: null
   },
   ima: {
@@ -394,7 +395,7 @@ const getActiveNotebookLMUrl = async () => {
     const isNotebookUrl = (url) => {
       try {
         const parsed = new URL(url);
-        if (parsed.hostname !== 'notebooklm.google.com') return null;
+        if (parsed.hostname !== 'notebook.google.com' && parsed.hostname !== 'notebooklm.google.com') return null;
         if (!/(^|\/)notebook\/[^/?#]+/.test(parsed.pathname)) return null;
         return parsed.href;
       } catch (_) {
@@ -3975,8 +3976,25 @@ initializeBar();
       try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
       try { target.focus(); } catch (_) {}
       try { target.contentWindow.focus(); } catch (_) {}
-      // 追加并要求聚焦
-      target.contentWindow.postMessage({ type: 'AI_SIDEBAR_INSERT', text: msg.text || '', mode: 'append', focus: true }, '*');
+      // 追加并要求聚焦；iframe 回报 AI_SIDEBAR_INSERT_RESULT 后才提示成功
+      const requestId = `ins-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      let settled = false;
+      const onResult = (ev) => {
+        const data = ev.data || {};
+        if (data.type !== 'AI_SIDEBAR_INSERT_RESULT' || data.requestId !== requestId) return;
+        if (ev.source !== target.contentWindow) return;
+        settled = true;
+        window.removeEventListener('message', onResult);
+        if (data.ok) toast('已将选中文本注入输入框');
+        else toast('没找到这个 AI 页面的输入框，文本未注入。', 'warn');
+      };
+      window.addEventListener('message', onResult);
+      setTimeout(() => {
+        if (settled) return;
+        window.removeEventListener('message', onResult);
+        toast('这个 AI 页面没有响应，文本可能未注入（该站点可能还没适配）。', 'warn');
+      }, 1500);
+      target.contentWindow.postMessage({ type: 'AI_SIDEBAR_INSERT', text: msg.text || '', mode: 'append', focus: true, requestId }, '*');
 
       // 多次尝试确保焦点最终在输入框（处理面板刚打开或站点懒加载）
       const pokeFocus = () => {
@@ -3987,7 +4005,6 @@ initializeBar();
       };
       const attempts = [40, 120, 240, 420, 700];
       attempts.forEach((ms)=> setTimeout(pokeFocus, ms));
-      toast('已将选中文本注入输入框');
     } catch (e) {
       toast('注入失败：' + String(e), 'error');
     }
@@ -4029,10 +4046,12 @@ initializeBar();
         if (!message || !message.type) return;
         if (message.type === 'aisb.notify') {
           toast(message.text || '', message.level || 'info');
+          try { sendResponse({ ok: true }); } catch (_) {}
           return;
         }
         if (message.type === 'aisb.insert-text') {
           routeInsertText(message);
+          try { sendResponse({ ok: true }); } catch (_) {}
           return;
         }
         if (message.type === 'AISB_SHOW_EXPORT_PANEL') {
@@ -4100,6 +4119,7 @@ initializeBar();
         }
         if (message.type === 'aisb.receive-screenshot') {
           showScreenshotOverlay(message);
+          try { sendResponse({ ok: true }); } catch (_) {}
           return;
         }
         if (message.type === 'aisb.type-proxy') {

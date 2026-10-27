@@ -2,7 +2,7 @@
   'use strict';
 
   if (window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__) return;
-  if (!location.hostname.includes('notebooklm.google.com')) return;
+  if (!location.hostname.includes('notebooklm.google.com') && !location.hostname.includes('notebook.google.com')) return;
   window.__AISB_NOTEBOOKLM_SIDEBAR_HIDE_LOADED__ = true;
 
   const STYLE_ID = 'aisb-notebooklm-sidebar-hide-style';

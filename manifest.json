@@ -72,6 +72,7 @@
     "https://*.deepseek.com/*",
     "https://deepseek.com/*",
     "https://notebooklm.google.com/*",
+    "https://notebook.google.com/*",
     "https://ima.qq.com/*",
     "https://*.ptlogin2.qq.com/*",
     "https://ssl.ptlogin2.qq.com/*",
@@ -128,6 +129,7 @@
         "https://*.deepseek.com/*",
         "https://deepseek.com/*",
         "https://notebooklm.google.com/*",
+        "https://notebook.google.com/*",
         "https://ima.qq.com/*",
         "https://*.ptlogin2.qq.com/*",
         "https://ssl.ptlogin2.qq.com/*",
@@ -190,7 +192,8 @@
     },
     {
       "matches": [
-        "https://notebooklm.google.com/*"
+        "https://notebooklm.google.com/*",
+        "https://notebook.google.com/*"
       ],
       "all_frames": true,
       "run_at": "document_idle",

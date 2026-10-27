@@ -32,6 +32,7 @@ const DNR_CONFIG = {
     "https://aistudio.google.com/*",
     "https://claude.ai/*",
     "https://notebooklm.google.com/*",
+    "https://notebook.google.com/*",
     "https://chat.deepseek.com/*",
     "https://*.deepseek.com/*",
     "https://deepseek.com/*",

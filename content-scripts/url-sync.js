@@ -350,7 +350,7 @@
     // NotebookLM helpers
     const resolveNotebookLMHref = () => {
       try {
-        if (location.hostname !== 'notebooklm.google.com') return null;
+        if (location.hostname !== 'notebooklm.google.com' && location.hostname !== 'notebook.google.com') return null;
         if (/\/notebook\/[^/?#]+/.test(location.pathname)) {
           return location.href;
         }
@@ -365,7 +365,7 @@
     };
     const resolveNotebookLMTitle = () => {
       try {
-        if (location.hostname !== 'notebooklm.google.com') return null;
+        if (location.hostname !== 'notebooklm.google.com' && location.hostname !== 'notebook.google.com') return null;
         
         const notUseful = (t) => {
           if (!t) return true;
@@ -558,7 +558,7 @@
 
     // NotebookLM-specific title observer (watches for changes in project title)
     try {
-      if (window.MutationObserver && location.origin === 'https://notebooklm.google.com') {
+      if (window.MutationObserver && (location.origin === 'https://notebooklm.google.com' || location.origin === 'https://notebook.google.com')) {
         // Wait for DOM to be ready, then find and observe title elements
         const observeNotebookLMTitle = () => {
           const titleInner = deepFind(document, (el) => {
@@ -913,10 +913,15 @@
       const data = event.data || {};
       if (!data || (data.type !== 'AI_SIDEBAR_INSERT' && data.type !== 'AI_SIDEBAR_FOCUS')) return;
       const el = findPromptElement();
-      if (!el) return;
+      const reply = (ok) => {
+        if (data.type !== 'AI_SIDEBAR_INSERT' || !data.requestId) return;
+        try { event.source?.postMessage({ type: 'AI_SIDEBAR_INSERT_RESULT', requestId: data.requestId, ok }, event.origin || '*'); } catch (_) {}
+      };
+      if (!el) { reply(false); return; }
       if (data.type === 'AI_SIDEBAR_INSERT') {
         setElementText(el, data.text || '', data.mode || 'append');
         if (data.focus !== false) { try { el.focus(); placeCaretAtEnd(el); } catch (_) {} }
+        reply(true);
       } else if (data.type === 'AI_SIDEBAR_FOCUS') {
         try { el.focus(); placeCaretAtEnd(el); } catch (_) {}
       }
