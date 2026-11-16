@@ -26,6 +26,7 @@ copy_path "content-scripts"
 copy_path "images"
 copy_path "rules"
 copy_path "history"
+copy_path "notice"
 
 find "$PKG_DIR" -name '.DS_Store' -delete
 
