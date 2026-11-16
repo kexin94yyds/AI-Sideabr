@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NotebookLM 当前地区不可用</title>
+  <style>
+    :root { color-scheme: light dark; --fg: #1f1f1f; --muted: #5f6368; --bg: #fff; --accent: #1a73e8; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #e8eaed; --muted: #9aa0a6; --bg: #202124; --accent: #8ab4f8; } }
+    body { margin: 0; padding: 24px 20px; font: 14px/1.6 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif; color: var(--fg); background: var(--bg); }
+    h1 { font-size: 17px; margin: 0 0 12px; }
+    p, li { color: var(--muted); }
+    ol { padding-left: 20px; }
+    code { font-size: 12px; }
+    a.btn { display: inline-block; margin-top: 8px; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: #fff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>NotebookLM 拒绝了当前网络位置</h1>
+  <p>Google 把这次请求判定为“地区不支持”（跳转到 <code>notebooklm.google/?location=unsupported</code>）。这个提示页不允许嵌在侧边栏里，所以原本会显示成「403 你没有此页面的访问权限」。这不是登录失效，也不是扩展出错。</p>
+  <ol>
+    <li>把代理切到 NotebookLM 支持的地区（例如美国、日本），或换一个出口节点。</li>
+    <li>切换后，点侧边栏的刷新，或重新选择 NotebookLM。</li>
+  </ol>
+  <a class="btn" href="https://notebook.google.com/" target="_blank" rel="noopener">在新标签页打开 NotebookLM 确认</a>
+</body>
+</html>

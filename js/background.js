@@ -117,9 +117,36 @@ function createHeaderRemovalRule(id, urlFilter, extraCondition = {}) {
   };
 }
 
+// Google 判定当前网络出口不在 NotebookLM 支持地区时，会把 notebook(lm).google.com
+// 302 到 notebooklm.google/?location=unsupported。这个落地页拒绝被 iframe 嵌入，
+// 直接返回 Google 的「403. 你没有此页面的访问权限」，看起来像扩展坏了（2026-11-16 回归误判）。
+// 只对本扩展发起的 sub_frame 做重定向，换成一张说明页，告诉用户真正原因。
+const NOTEBOOKLM_UNSUPPORTED_RULE_ID = 900;
+const NOTEBOOKLM_UNSUPPORTED_REGEX = '^https://notebook(lm)?\\.google/\\?(.*&)?location=unsupported';
+const NOTEBOOKLM_UNSUPPORTED_PAGE = '/notice/notebooklm-unsupported.html';
+
+function createNotebookLMUnsupportedRule() {
+  return {
+    id: NOTEBOOKLM_UNSUPPORTED_RULE_ID,
+    priority: 2,
+    action: {
+      type: 'redirect',
+      redirect: { extensionPath: NOTEBOOKLM_UNSUPPORTED_PAGE }
+    },
+    condition: {
+      regexFilter: NOTEBOOKLM_UNSUPPORTED_REGEX,
+      initiatorDomains: [chrome.runtime.id],
+      resourceTypes: ['sub_frame']
+    }
+  };
+}
+
 // 生成仅由扩展页面发起的基础 DNR 规则。
 function createDnrRules() {
-  return DNR_CONFIG.domains.map((domain, index) => createHeaderRemovalRule(index + 1, domain));
+  return [
+    ...DNR_CONFIG.domains.map((domain, index) => createHeaderRemovalRule(index + 1, domain)),
+    createNotebookLMUnsupportedRule()
+  ];
 }
 
 function serializeDnrMutation(mutator) {
