@@ -823,7 +823,7 @@ const matchesShortcut = (event, shortcut) => {
 // Cache embedded elements per provider to preserve state between switches
 const cachedFrames = {};
 // Cache simple meta for frames (e.g., expected origin)
-const cachedFrameMeta = {}; // { [providerKey]: { origin: string } }
+const cachedFrameMeta = {}; // { [providerKey]: { origin: string, inputOrigins: Set<string> } }
 // Track the latest known URL and title inside each provider frame (from content script)
 const currentUrlByProvider = {};   // { [providerKey]: string }
 const currentTitleByProvider = {}; // { [providerKey]: string }
@@ -1154,7 +1154,7 @@ async function renderHistoryPanel() {
         rows = (conversations || []).map((conv)=>{
           const date = new Date(conv.updatedAt || conv.createdAt || Date.now());
           const ds = date.toLocaleString();
-          const escTitle = (conv.title || 'Untitled').replace(/[<>]/g,'');
+          const escTitle = escapeAttr(conv.title || 'Untitled');
           const msgCount = conv.messageCount || conv.messages?.length || 0;
           
           // Extract matching snippet if searching - show sentence containing keyword
@@ -1200,7 +1200,7 @@ async function renderHistoryPanel() {
               } else if (sentenceStart > 0) {
                 snippet = '...' + snippet;
               }
-              snippetHtml = `<div class="hp-snippet">${snippet}</div>`;
+              snippetHtml = `<div class="hp-snippet">${escapeAttr(snippet)}</div>`;
             } else if (titleMatch) {
               // Title matches but content doesn't - show indicator
               snippetHtml = `<div class="hp-snippet">标题匹配</div>`;
@@ -1208,12 +1208,12 @@ async function renderHistoryPanel() {
           }
           
           return `<div class="hp-item hp-content-item" data-conv-id="${escapeAttr(conv.id)}" data-provider="${escapeAttr(conv.provider || '')}">
-            <span class="hp-provider">${historyProviderLabel(conv.provider||'')}</span>
+            <span class="hp-provider">${escapeAttr(historyProviderLabel(conv.provider || ''))}</span>
             <div class="hp-content-info">
               <span class="hp-title" title="${escTitle}">${escTitle}</span>
               ${snippetHtml}
             </div>
-            <span class="hp-msg-count">${msgCount} msgs</span>
+            <span class="hp-msg-count">${escapeAttr(String(msgCount))} msgs</span>
             <span class="hp-time">${ds}</span>
             <span class="hp-actions">
               <button class="hp-view-conv" data-conv-id="${escapeAttr(conv.id)}">View</button>
@@ -1984,7 +1984,17 @@ const ensureFrame = async (container, key, provider) => {
     // Record expected origin for this provider (for message validation)
     try {
       const origin = new URL(provider.baseUrl || provider.iframeUrl).origin;
-      cachedFrameMeta[key] = { origin };
+      const inputOrigins = new Set();
+      for (const value of [provider.baseUrl, provider.iframeUrl]) {
+        if (!value) continue;
+        const url = new URL(value);
+        if (url.protocol === 'https:' || url.protocol === 'http:') inputOrigins.add(url.origin);
+      }
+      if (key === 'notebooklm') {
+        inputOrigins.add('https://notebook.google.com');
+        inputOrigins.add('https://notebooklm.google.com');
+      }
+      cachedFrameMeta[key] = { origin, inputOrigins };
       // Initialize with initial URL as a fallback until content script reports
       currentUrlByProvider[key] = urlToLoad || provider.iframeUrl || provider.baseUrl || '';
     } catch (_) {
@@ -3945,6 +3955,28 @@ initializeBar();
     }
   }
 
+  function getProviderInputOrigins(frame) {
+    const key = frame?.dataset.provider;
+    if (!Object.hasOwn(cachedFrames, key) || cachedFrames[key] !== frame) return undefined;
+    return cachedFrameMeta[key]?.inputOrigins;
+  }
+
+  function postProviderInput(frame, payload) {
+    const origins = getProviderInputOrigins(frame);
+    if (!frame?.contentWindow || !origins?.size) return false;
+    for (const origin of origins) frame.contentWindow.postMessage(payload, origin);
+    return true;
+  }
+
+  function isProviderInputReply(event, frame, requestId, type) {
+    return event.isTrusted &&
+      frame === getActiveProviderFrame() &&
+      event.source === frame.contentWindow &&
+      getProviderInputOrigins(frame)?.has(event.origin) &&
+      event.data?.requestId === requestId &&
+      event.data.type === type;
+  }
+
   function isEditableElement(element) {
     try {
       const tag = element?.tagName ? element.tagName.toLowerCase() : '';
@@ -3964,10 +3996,9 @@ initializeBar();
     }
   }
 
-  function routeInsertText(msg) {
+  function routeInsertText(msg, target = getActiveProviderFrame()) {
     try {
-      const target = getActiveProviderFrame();
-      if (!target || !target.contentWindow) {
+      if (!target?.contentWindow) {
         toast('未找到活动的 AI 面板。', 'warn');
         return;
       }
@@ -3977,30 +4008,32 @@ initializeBar();
       try { target.focus(); } catch (_) {}
       try { target.contentWindow.focus(); } catch (_) {}
       // 追加并要求聚焦；iframe 回报 AI_SIDEBAR_INSERT_RESULT 后才提示成功
-      const requestId = `ins-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      let settled = false;
+      const requestId = crypto.randomUUID();
       const onResult = (ev) => {
-        const data = ev.data || {};
-        if (data.type !== 'AI_SIDEBAR_INSERT_RESULT' || data.requestId !== requestId) return;
-        if (ev.source !== target.contentWindow) return;
-        settled = true;
+        if (!isProviderInputReply(ev, target, requestId, 'AI_SIDEBAR_INSERT_RESULT')) return;
         window.removeEventListener('message', onResult);
-        if (data.ok) toast('已将选中文本注入输入框');
+        clearTimeout(timeout);
+        if (ev.data.ok) toast('已将选中文本注入输入框');
         else toast('没找到这个 AI 页面的输入框，文本未注入。', 'warn');
       };
       window.addEventListener('message', onResult);
-      setTimeout(() => {
-        if (settled) return;
+      const timeout = setTimeout(() => {
         window.removeEventListener('message', onResult);
         toast('这个 AI 页面没有响应，文本可能未注入（该站点可能还没适配）。', 'warn');
       }, 1500);
-      target.contentWindow.postMessage({ type: 'AI_SIDEBAR_INSERT', text: msg.text || '', mode: 'append', focus: true, requestId }, '*');
+      if (!postProviderInput(target, { type: 'AI_SIDEBAR_INSERT', text: msg.text || '', mode: 'append', focus: true, requestId })) {
+        window.removeEventListener('message', onResult);
+        clearTimeout(timeout);
+        toast('当前面板没有可用的输入目标。', 'warn');
+        return;
+      }
 
       // 多次尝试确保焦点最终在输入框（处理面板刚打开或站点懒加载）
       const pokeFocus = () => {
         try {
+          if (target !== getActiveProviderFrame()) return;
           target.focus();
-          target.contentWindow?.postMessage({ type: 'AI_SIDEBAR_FOCUS' }, '*');
+          postProviderInput(target, { type: 'AI_SIDEBAR_FOCUS' });
         } catch (_) {}
       };
       const attempts = [40, 120, 240, 420, 700];
@@ -4020,14 +4053,15 @@ initializeBar();
       }
       
       // 发送截图数据到 iframe
-      target.contentWindow.postMessage({
+      if (!postProviderInput(target, {
         type: 'AI_SIDEBAR_INSERT_IMAGE',
-        dataUrl: msg.dataUrl,
-        tabTitle: msg.tabTitle || '',
-        tabUrl: msg.tabUrl || ''
-      }, '*');
-      
-      toast('截图已加载到输入框');
+        dataUrl: msg.dataUrl
+      })) {
+        toast('当前面板没有可用的输入目标。', 'warn');
+        return;
+      }
+
+      toast('已请求向当前面板插入截图');
       
       // 聚焦到 iframe
       try { window.focus(); } catch (_) {}
@@ -4085,23 +4119,21 @@ initializeBar();
             toast('未找到活动的 AI 面板。', 'warn');
             return;
           }
-          // 一次性监听 selection 结果
+          const requestId = crypto.randomUUID();
           const onMsg = (ev) => {
-            try {
-              const data = ev.data || {};
-              if (data && data.type === 'AI_SIDEBAR_SELECTION_RESULT') {
-                window.removeEventListener('message', onMsg, true);
-                const txt = String(data.text || '').trim();
-                if (txt) {
-                  routeInsertText({ text: txt });
-                } else {
-                  toast('未检测到选区，可用“右键菜单 → 发送选中文本”，无需授权。', 'warn');
-                }
-              }
-            } catch (_) {}
+            if (!isProviderInputReply(ev, target, requestId, 'AI_SIDEBAR_SELECTION_RESULT')) return;
+            window.removeEventListener('message', onMsg);
+            clearTimeout(timeout);
+            const text = typeof ev.data.text === 'string' ? ev.data.text.trim() : '';
+            if (text) routeInsertText({ text }, target);
+            else toast('未检测到选区，可用“右键菜单 → 发送选中文本”，无需授权。', 'warn');
           };
-          window.addEventListener('message', onMsg, true);
-          try { target.contentWindow.postMessage({ type: 'AI_SIDEBAR_REQUEST_SELECTION' }, '*'); } catch (_) {}
+          window.addEventListener('message', onMsg);
+          const timeout = setTimeout(() => window.removeEventListener('message', onMsg), 1500);
+          if (!postProviderInput(target, { type: 'AI_SIDEBAR_REQUEST_SELECTION', requestId })) {
+            window.removeEventListener('message', onMsg);
+            clearTimeout(timeout);
+          }
           return;
         }
         if (message.type === 'aisb.focus-only') {
@@ -4111,8 +4143,12 @@ initializeBar();
             try { document.body.tabIndex = -1; document.body.focus(); } catch (_) {}
             try { target.focus(); } catch (_) {}
             try { target.contentWindow.focus(); } catch (_) {}
-            try { target.contentWindow.postMessage({ type: 'AI_SIDEBAR_FOCUS' }, '*'); } catch (_) {}
-            const poke = () => { try { target.focus(); target.contentWindow?.postMessage({ type: 'AI_SIDEBAR_FOCUS' }, '*'); } catch (_) {} };
+            const poke = () => {
+              if (target !== getActiveProviderFrame()) return;
+              target.focus();
+              postProviderInput(target, { type: 'AI_SIDEBAR_FOCUS' });
+            };
+            poke();
             [40,120,240,420,700,1000].forEach(ms => setTimeout(poke, ms));
           }
           return;
@@ -4127,7 +4163,7 @@ initializeBar();
           if (target && target.contentWindow) {
             try { target.focus(); } catch (_) {}
             try { target.contentWindow.focus(); } catch (_) {}
-            target.contentWindow.postMessage({ type: 'AI_SIDEBAR_PROXY_TYPE', payload: message.payload || {} }, '*');
+            postProviderInput(target, { type: 'AI_SIDEBAR_PROXY_TYPE', payload: message.payload || {} });
           }
           return;
         }

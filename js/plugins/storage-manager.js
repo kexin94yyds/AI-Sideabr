@@ -4,6 +4,28 @@
  */
 
 (function() {
+  const isServiceWorker = typeof window === 'undefined';
+
+  async function requestHistory(type, data) {
+    const response = await chrome.runtime.sendMessage({ type, ...data });
+    if (!response?.ok) throw new Error(response?.error || 'History storage unavailable');
+    return response;
+  }
+
+  if (!isServiceWorker && window.location.protocol !== 'chrome-extension:') {
+    window.saveConversation = async (data) => {
+      const result = await requestHistory('AI_SIDEBAR_STORE_CONVERSATION', { data });
+      return result.id;
+    };
+    window.findDuplicate = async (conversationId, provider) => {
+      const result = await requestHistory('AI_SIDEBAR_FIND_CONVERSATION', {
+        conversationId, provider, url: window.location.href
+      });
+      return result.conversation;
+    };
+    return;
+  }
+
   const DB_NAME = 'AISidebarFullDB';
   const STORE_NAME = 'conversations';
   const DB_VERSION = 1;
@@ -122,16 +144,30 @@
 
   async function withStore(mode, fn) {
     const d = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = d.transaction([STORE_NAME], mode);
-      const os = tx.objectStore(STORE_NAME);
-      const res = fn(os, tx);
-      tx.oncomplete = () => resolve(res);
-      tx.onerror = () => reject(tx.error);
+    const tx = d.transaction([STORE_NAME], mode);
+    const completed = new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onabort = () => reject(tx.error || new Error('History transaction cancelled'));
     });
+    const [, result] = await Promise.all([completed, fn(tx.objectStore(STORE_NAME), tx)]);
+    return result;
   }
 
-  window.ChatHistoryDB = {
+  function recordOrigin(url) {
+    try {
+      const origin = new URL(url).origin;
+      return origin === 'https://notebooklm.google.com' ? 'https://notebook.google.com' : origin;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function matchingConversation(records, identity) {
+    const origin = recordOrigin(identity.url);
+    return records.find(record => record.provider === identity.provider && recordOrigin(record.url) === origin);
+  }
+
+  globalThis.ChatHistoryDB = {
     async getAll() {
       return withStore('readonly', (os) => new Promise((resolve, reject) => {
         const request = os.getAll();
@@ -228,37 +264,54 @@
       }));
     },
 
-    async findByConversationId(conversationId) {
+    async findByConversationId(conversationId, identity) {
       if (!conversationId) return null;
       return withStore('readonly', (os) => new Promise((resolve, reject) => {
         const index = os.index('conversationId');
-        const request = index.get(conversationId);
-        request.onsuccess = () => resolve(request.result || null);
+        const request = identity ? index.getAll(conversationId) : index.get(conversationId);
+        request.onsuccess = () => {
+          const value = identity ? matchingConversation(request.result, identity) : request.result;
+          resolve(value || null);
+        };
         request.onerror = () => reject(request.error);
       }));
     },
 
-    // Legacy support for older code calling saveConversation
     async saveConversation(data) {
-      if (data.conversationId) {
-        const existing = await this.findByConversationId(data.conversationId);
-        if (existing) {
-          aisbAutosaveDebug('storage.save.update_existing', {
-            id: existing.id,
-            conversation: aisbConversationSummary(data)
-          }, `storage.save.update_existing:${data.conversationId}`, 0);
-          return await this.update(existing.id, data);
-        }
+      if (!isServiceWorker) {
+        const result = await requestHistory('AI_SIDEBAR_STORE_CONVERSATION', { data });
+        queueConversationMirror(data);
+        return result.id;
       }
-      aisbAutosaveDebug('storage.save.add_new', {
-        conversation: aisbConversationSummary(data)
-      }, `storage.save.add_new:${data.conversationId || data.url || data.title}`, 0);
-      return await this.add(data);
+
+      const record = { ...data };
+      delete record.id;
+      return withStore('readwrite', (os) => new Promise((resolve, reject) => {
+        const store = (existing) => {
+          const now = Date.now();
+          const value = {
+            ...existing,
+            ...record,
+            timestamp: record.timestamp || existing?.timestamp || now,
+            createdAt: existing?.createdAt || record.createdAt || now,
+            modifiedAt: now
+          };
+          const write = existing ? os.put(value) : os.add(value);
+          write.onsuccess = () => resolve(write.result);
+          write.onerror = () => reject(write.error);
+        };
+        if (record.conversationId) {
+          const lookup = os.index('conversationId').getAll(record.conversationId);
+          lookup.onsuccess = () => store(matchingConversation(lookup.result, record));
+          lookup.onerror = () => reject(lookup.error);
+        } else {
+          store();
+        }
+      }));
     }
   };
 
-  // Global exports for content scripts
-  if (typeof window !== 'undefined') {
+  if (!isServiceWorker) {
     window.saveConversation = (data) => window.ChatHistoryDB.saveConversation(data);
     window.findDuplicate = (cid) => window.ChatHistoryDB.findByConversationId(cid);
     window.updateConversation = (id, updates) => window.ChatHistoryDB.update(id, updates);

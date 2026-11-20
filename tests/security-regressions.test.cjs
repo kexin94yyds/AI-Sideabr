@@ -81,7 +81,13 @@ function loadBackgroundHarness(options = {}) {
     btoa
   };
   const source = fs.readFileSync(`${ROOT}js/background.js`, 'utf8');
-  vm.runInNewContext(source, context, { filename: 'background.js' });
+  vm.createContext(context);
+  context.importScripts = (relativePath) => {
+    const imported = fs.readFileSync(path.join(ROOT, 'js', relativePath), 'utf8');
+    vm.runInContext(imported, context, { filename: relativePath });
+    if (options.history) context.ChatHistoryDB = options.history;
+  };
+  vm.runInContext(source, context, { filename: 'background.js' });
   const send = (message, sender = { url: 'https://example.test/' }) => new Promise((resolve) => {
     onMessage(message, sender, resolve);
   });
@@ -237,4 +243,97 @@ test('export bridge authenticates commands and never posts sensitive data to wil
   assert.match(source, /event\.origin === SIDEBAR_ORIGIN/);
   assert.match(source, /window\.parent\.postMessage\(payload, SIDEBAR_ORIGIN\)/);
   assert.doesNotMatch(source, /window\.parent\.postMessage\([\s\S]{0,400},\s*['"]\*['"]\s*\)/);
+});
+
+test('sidebar input accepts only browser-dispatched messages from its own extension parent', () => {
+  const source = fs.readFileSync(`${ROOT}content-scripts/url-sync.js`, 'utf8');
+  const helper = source.slice(source.indexOf('function isTrustedSidebarInput'), source.indexOf('\n(function () {'));
+  const extensionId = 'a'.repeat(32);
+  const parent = {};
+  const window = { parent };
+  const chrome = { runtime: { id: extensionId } };
+  const authenticate = vm.runInNewContext(`${helper}\nisTrustedSidebarInput`, { window, chrome });
+  const trustedEvent = { isTrusted: true, source: parent, origin: `chrome-extension://${extensionId}` };
+
+  assert.equal(authenticate(trustedEvent), true);
+  assert.equal(authenticate({ ...trustedEvent, isTrusted: false }), false);
+  assert.equal(authenticate({ ...trustedEvent, origin: 'https://example.invalid' }), false);
+  assert.equal(authenticate({ ...trustedEvent, source: {} }), false);
+  window.parent = window;
+  assert.equal(authenticate({ ...trustedEvent, source: window }), false);
+  window.parent = parent;
+  delete chrome.runtime.id;
+  assert.equal(authenticate(trustedEvent), false);
+
+  for (const type of ['INSERT', 'PROXY_TYPE', 'INSERT_IMAGE', 'REQUEST_SELECTION']) {
+    const offset = source.indexOf(`data.type !== 'AI_SIDEBAR_${type}'`);
+    assert.ok(offset >= 0, type);
+    const handler = source.slice(offset, source.indexOf('\n    window.addEventListener', offset));
+    assert.match(handler.split('\n').slice(0, 3).join('\n'), /if \(!isTrustedSidebarInput\(event\)\) return;/);
+  }
+});
+
+test('sidebar input is addressed to the registered provider and replies match the active request', () => {
+  const source = fs.readFileSync(`${ROOT}js/popup.js`, 'utf8');
+  const helper = source.slice(source.indexOf('  function getProviderInputOrigins'), source.indexOf('  function isEditableElement'));
+  const sent = [];
+  const contentWindow = { postMessage(_payload, origin) { sent.push(origin); } };
+  const frame = { dataset: { provider: 'notebooklm' }, contentWindow };
+  const knownOrigins = ['https://notebook.google.com', 'https://notebooklm.google.com'];
+  let active = frame;
+  const { postProviderInput, isProviderInputReply } = vm.runInNewContext(
+    `${helper}\n({ postProviderInput, isProviderInputReply })`, {
+      cachedFrames: { notebooklm: frame },
+      cachedFrameMeta: { notebooklm: { inputOrigins: new Set(knownOrigins) } },
+      getActiveProviderFrame: () => active
+    }
+  );
+
+  assert.equal(postProviderInput({ ...frame }, {}), false);
+  assert.equal(postProviderInput(frame, {}), true);
+  assert.deepEqual(sent, knownOrigins);
+  const event = { isTrusted: true, source: contentWindow, origin: knownOrigins[0], data: { requestId: 'fixture', type: 'response' } };
+  assert.equal(isProviderInputReply(event, frame, 'fixture', 'response'), true);
+  assert.equal(isProviderInputReply({ ...event, isTrusted: false }, frame, 'fixture', 'response'), false);
+  assert.equal(isProviderInputReply({ ...event, origin: 'https://example.invalid' }, frame, 'fixture', 'response'), false);
+  assert.equal(isProviderInputReply(event, frame, 'different-request', 'response'), false);
+  active = {};
+  assert.equal(isProviderInputReply(event, frame, 'fixture', 'response'), false);
+});
+
+test('background saves conversations for the originating provider and returns its write receipt', async () => {
+  const records = [];
+  const { chrome, send } = loadBackgroundHarness({
+    history: { async saveConversation(data) { records.push(data); return 42; } }
+  });
+  const data = { provider: 'chatgpt', url: 'https://chatgpt.com/c/fixture', conversationId: 'fixture', messages: [] };
+  const message = { type: 'AI_SIDEBAR_STORE_CONVERSATION', data };
+  const sender = { id: chrome.runtime.id, url: data.url };
+
+  assert.equal((await send(message, { ...sender, url: 'https://example.invalid/' })).error, 'forbidden');
+  assert.equal((await send(message, { ...sender, id: 'different-extension' })).error, 'forbidden');
+  assert.equal((await send({ ...message, data: { ...data, conversationId: [] } }, sender)).error, 'invalid_conversation');
+  assert.equal(records.length, 0);
+  const result = await send(message, sender);
+  assert.equal(result.ok, true);
+  assert.equal(result.id, 42);
+  assert.deepEqual(records, [data]);
+});
+
+test('content-script duplicate lookup returns a title rather than the stored conversation', async () => {
+  const stored = { title: 'Fixture', messages: [{ role: 'user', content: 'local fixture' }] };
+  const { chrome, send } = loadBackgroundHarness({
+    history: {
+      async findByConversationId(id, identity) {
+        assert.equal(id, 'fixture');
+        assert.equal(identity.provider, 'chatgpt');
+        assert.equal(identity.url, 'https://chatgpt.com/c/fixture');
+        return stored;
+      }
+    }
+  });
+  const url = 'https://chatgpt.com/c/fixture';
+  const sender = { id: chrome.runtime.id, url };
+  const result = await send({ type: 'AI_SIDEBAR_FIND_CONVERSATION', conversationId: 'fixture', provider: 'chatgpt', url }, sender);
+  assert.deepEqual({ ...result.conversation }, { title: 'Fixture' });
 });

@@ -1,3 +1,5 @@
+importScripts('plugins/storage-manager.js');
+
 // 优化的DNR规则配置 - 减少冗余
 const DNR_CONFIG = {
   // 通用的响应头移除配置
@@ -270,6 +272,13 @@ function isExtensionPageSender(sender) {
   return senderUrl.startsWith(chrome.runtime.getURL(''));
 }
 
+function isConversationSender(sender, url) {
+  if (sender?.id !== chrome.runtime.id) return false;
+  if (isExtensionPageSender(sender)) return true;
+  const origin = normalizeHttpOrigin(sender.url);
+  return Boolean(origin && origin === normalizeHttpOrigin(url));
+}
+
 function getParallelInitiatorDomain(tabUrl) {
   const origin = normalizeHttpOrigin(tabUrl);
   if (!origin) return '';
@@ -474,6 +483,38 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           throw new Error(result?.error || 'Native host failed');
         }
         sendResponse({ ok: true, result });
+        return;
+      }
+      if (msg?.type === 'AI_SIDEBAR_STORE_CONVERSATION') {
+        const data = msg.data;
+        if (!isConversationSender(sender, data?.url)) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return;
+        }
+        if (!data || typeof data !== 'object' || Array.isArray(data)
+          || (data.conversationId != null && typeof data.conversationId !== 'string')
+          || (!isExtensionPageSender(sender) && !Array.isArray(data.messages))) {
+          sendResponse({ ok: false, error: 'invalid_conversation' });
+          return;
+        }
+        const id = await ChatHistoryDB.saveConversation(data);
+        sendResponse({ ok: true, id });
+        return;
+      }
+      if (msg?.type === 'AI_SIDEBAR_FIND_CONVERSATION') {
+        if (!isConversationSender(sender, msg.url)) {
+          sendResponse({ ok: false, error: 'forbidden' });
+          return;
+        }
+        if (typeof msg.conversationId !== 'string' || typeof msg.provider !== 'string') {
+          sendResponse({ ok: false, error: 'invalid_conversation' });
+          return;
+        }
+        const row = await ChatHistoryDB.findByConversationId(msg.conversationId, {
+          provider: msg.provider,
+          url: msg.url
+        });
+        sendResponse({ ok: true, conversation: row ? { title: row.title } : null });
         return;
       }
       if (msg && msg.type === 'AI_SIDEBAR_GET_SAVE_QUEUE') {
@@ -996,6 +1037,7 @@ async function installTypingRelay(tabId) {
           };
           const onKeyDown = (e) => {
             try {
+              if (!e.isTrusted) return;
               const k = e.key;
               const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
 

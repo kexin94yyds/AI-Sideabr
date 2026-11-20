@@ -1469,13 +1469,13 @@
 
         // Check for duplicate if storage manager is present
         if (typeof window.findDuplicate === 'function' && result.data.conversationId) {
-          const duplicate = await window.findDuplicate(result.data.conversationId);
+          const duplicate = await window.findDuplicate(result.data.conversationId, result.data.provider);
           if (duplicate) {
             // We can't show confirm() easily from iframe to sidebar, 
             // so we send a message back to sidebar to ask the user.
             postToSidebar({
               type: 'AI_SIDEBAR_CONFIRM_UPDATE',
-              duplicate: { title: duplicate.title, id: duplicate.id },
+              duplicate: { title: duplicate.title },
               result: result
             });
             return;
@@ -1511,12 +1511,7 @@
       const result = data.result;
       if (typeof window.saveConversation === 'function') {
         // Find existing ID to update
-        const duplicate = await window.findDuplicate(result.data.conversationId);
-        if (duplicate && typeof window.updateConversation === 'function') {
-          await window.updateConversation(duplicate.id, result.data);
-        } else {
-          await window.saveConversation(result.data);
-        }
+        await window.saveConversation(result.data);
         postToSidebar({
           type: 'AI_SIDEBAR_SAVE_EXPORT_RESPONSE',
           result: result,

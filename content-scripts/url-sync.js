@@ -1,6 +1,17 @@
 // Robust URL + title reporter for provider iframes (ChatGPT, Gemini, etc.)
 // Posts { type: 'ai-url-changed', href, title, origin } to the top window.
 
+function isTrustedSidebarInput(event) {
+  const extensionId = globalThis.chrome?.runtime?.id;
+  return Boolean(
+    extensionId &&
+    event.isTrusted &&
+    window.parent !== window &&
+    event.source === window.parent &&
+    event.origin === `chrome-extension://${extensionId}`
+  );
+}
+
 (function () {
   try {
     const dbg = (...args) => {
@@ -912,10 +923,11 @@
     try {
       const data = event.data || {};
       if (!data || (data.type !== 'AI_SIDEBAR_INSERT' && data.type !== 'AI_SIDEBAR_FOCUS')) return;
+      if (!isTrustedSidebarInput(event)) return;
       const el = findPromptElement();
       const reply = (ok) => {
         if (data.type !== 'AI_SIDEBAR_INSERT' || !data.requestId) return;
-        try { event.source?.postMessage({ type: 'AI_SIDEBAR_INSERT_RESULT', requestId: data.requestId, ok }, event.origin || '*'); } catch (_) {}
+        try { event.source.postMessage({ type: 'AI_SIDEBAR_INSERT_RESULT', requestId: data.requestId, ok }, event.origin); } catch (_) {}
       };
       if (!el) { reply(false); return; }
       if (data.type === 'AI_SIDEBAR_INSERT') {
@@ -933,6 +945,7 @@
     try {
       const data = event.data || {};
       if (!data || data.type !== 'AI_SIDEBAR_PROXY_TYPE') return;
+      if (!isTrustedSidebarInput(event)) return;
       const el = findPromptElement();
       if (!el) return;
       const payload = data.payload || {};
@@ -1009,6 +1022,9 @@
     try {
       const data = event.data || {};
       if (!data || data.type !== 'AI_SIDEBAR_INSERT_IMAGE') return;
+      if (!isTrustedSidebarInput(event)) return;
+      const dataUrl = data.dataUrl;
+      if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/png;base64,')) return;
       
       const el = findPromptElement();
       if (!el) {
@@ -1017,9 +1033,6 @@
       }
       
       // 将 dataUrl 转换为 Blob
-      const dataUrl = data.dataUrl;
-      if (!dataUrl || typeof dataUrl !== 'string') return;
-      
       try {
         const response = await fetch(dataUrl);
         const blob = await response.blob();
@@ -1163,16 +1176,18 @@
     window.addEventListener('message', (event) => {
       try {
         const data = event.data || {};
-        if (!data || data.type !== 'AI_SIDEBAR_REQUEST_SELECTION') return;
+        if (data.type !== 'AI_SIDEBAR_REQUEST_SELECTION' || typeof data.requestId !== 'string') return;
+        if (!isTrustedSidebarInput(event)) return;
         const sel = window.getSelection && window.getSelection();
         const text = sel ? String(sel.toString() || '').trim() : '';
-        try { window.parent.postMessage({ type: 'AI_SIDEBAR_SELECTION_RESULT', text }, '*'); } catch (_) {}
+        event.source.postMessage({ type: 'AI_SIDEBAR_SELECTION_RESULT', requestId: data.requestId, text }, event.origin);
       } catch (_) {}
     });
     
     // 快捷键：Cmd/Ctrl+Shift+Y 将选区直接追加到输入框
     document.addEventListener('keydown', (e) => {
       try {
+        if (!e.isTrusted) return;
         const isY = (e.key === 'y' || e.key === 'Y');
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && isY) {
           const sel = window.getSelection && window.getSelection();
