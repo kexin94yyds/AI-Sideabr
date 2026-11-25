@@ -135,7 +135,7 @@
 
       if (state.state === 'connecting') {
         body.appendChild(el('div', 'tbpro-title', L('等待你在网页上确认…', 'Waiting for you to confirm on the web page…')));
-        body.appendChild(el('div', 'tbpro-note', L('请核对网页上的确认码和这里一致，再点「允许」。', 'Check that the confirmation code on the web page matches this one, then click Allow.')));
+        body.appendChild(el('div', 'tbpro-note', L('在网页上输入下面的 6 位确认码，再点「允许」。', 'Type this 6-digit code on the web page, then click Allow.')));
         body.appendChild(el('div', 'tbpro-code', state.confirmCode));
         var cancel = el('div', 'tbpro-actions');
         cancel.appendChild(button(L('取消', 'Cancel'), '', function () { pro.cancelConnect(); }));
@@ -150,6 +150,7 @@
       body.appendChild(el('div', 'tbpro-title', title));
       if (state.pro) body.appendChild(el('div', 'tbpro-note', planText(ent)));
       else if (state.graceExpired) body.appendChild(el('div', 'tbpro-note', L('需要联网确认会员状态。', 'Go online to confirm your membership.')));
+      else if (state.unverified) body.appendChild(el('div', 'tbpro-note', L('会员状态未能验证，请点「刷新会员状态」。', 'The membership could not be verified. Click "Refresh status".')));
       else if (ent.reason === 'expired') body.appendChild(el('div', 'tbpro-note', L('会员已过期或已取消。', 'The membership has expired or was cancelled.')));
 
       body.appendChild(await featureList(state.pro));

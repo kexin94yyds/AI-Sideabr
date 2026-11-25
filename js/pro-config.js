@@ -24,9 +24,15 @@
     linkTimeoutMs: 10 * 60 * 1000,
     requestTimeoutMs: 15000,
 
-    // Fallbacks until the server sends its own numbers (entitlement.recheck_after_s / grace_s).
+    // Fallback for the re-check interval until the server sends entitlement.recheck_after_s.
+    // (Offline grace is no longer a local number: the server signs it into the credential's exp.)
     recheckAfterS: 86400,
-    graceS: 14 * 86400,
+
+    // Public keys that verify the server-signed entitlement credential (review P1-1). { kid: JWK }, P-256,
+    // public part only (kty, crv, x, y). EMPTY ON PURPOSE: the key pair has not been generated yet (that is
+    // the owner's call; the private half becomes the server secret EXT_ENTITLEMENT_SIGNING_KEY). While this is
+    // empty, nothing can be Pro, which is the safe default. Several kids may be listed during a key rotation.
+    entitlementKeys: {},
 
     // ---- Placeholder 1: pricing
     pricing: {
