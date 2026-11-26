@@ -36,6 +36,7 @@
     var view = 'main';          // 'main' | 'consent'
     var busy = false;
     var open = false;
+    var connectError = null;    // 'offline' | 'unavailable' after a failed "Agree and continue"
 
     function close() { open = false; view = 'main'; modal.style.display = 'none'; modal.replaceChildren(); }
 
@@ -97,18 +98,29 @@
       ].forEach(function (text) { list.appendChild(el('li', '', text)); });
       body.appendChild(list);
       var actions = el('div', 'tbpro-actions');
-      actions.appendChild(button(L('取消', 'Cancel'), '', function () { view = 'main'; render(); }));
+      actions.appendChild(button(L('取消', 'Cancel'), '', function () { connectError = null; view = 'main'; render(); }));
       actions.appendChild(button(L('同意并继续', 'Agree and continue'), 'primary', async function () {
         if (busy) return;
         busy = true;
         try {
-          await pro.beginConnect();
-          view = 'main';
-          pro.waitForLink().then(render, render);
+          var started = await pro.beginConnect();
+          if (started && started.error) {
+            // Nothing was opened and nothing is pending; stay here so the user can try again.
+            connectError = started.error;
+          } else {
+            connectError = null;
+            view = 'main';
+            pro.waitForLink().then(render, render);
+          }
         } finally { busy = false; }
         render();
       }));
       body.appendChild(actions);
+      if (connectError) {
+        body.appendChild(el('div', 'tbpro-note tbpro-connect-error', connectError === 'offline'
+          ? L('连不上 tobooks.xin，没有开始连接。请检查网络后再点一次。', 'Could not reach tobooks.xin, so nothing was started. Check your network and try again.')
+          : L('ToBooks 暂时无法开始连接，请稍后再试。', 'ToBooks cannot start a connection right now. Please try again later.')));
+      }
     }
 
     async function mainView(body) {
@@ -149,6 +161,7 @@
         : L('已连接 ', 'Connected ') + (state.accountHint || '') + L(' · 还不是会员', ' · no membership yet');
       body.appendChild(el('div', 'tbpro-title', title));
       if (state.pro) body.appendChild(el('div', 'tbpro-note', planText(ent)));
+      else if (state.clockRolledBack) body.appendChild(el('div', 'tbpro-note', L('检测到这台电脑的时间被往回调过，Pro 已暂停。联网后点「刷新会员状态」即可恢复。', 'This computer\'s clock was set back, so Pro is paused. Go online and click "Refresh status" to restore it.')));
       else if (state.graceExpired) body.appendChild(el('div', 'tbpro-note', L('需要联网确认会员状态。', 'Go online to confirm your membership.')));
       else if (state.unverified) body.appendChild(el('div', 'tbpro-note', L('会员状态未能验证，请点「刷新会员状态」。', 'The membership could not be verified. Click "Refresh status".')));
       else if (ent.reason === 'expired') body.appendChild(el('div', 'tbpro-note', L('会员已过期或已取消。', 'The membership has expired or was cancelled.')));
@@ -163,7 +176,12 @@
         busy = true; status.textContent = L('正在检查…', 'Checking…');
         var result;
         try { result = await pro.refresh(); } finally { busy = false; }
-        if (result === 'offline') { await render(); var s = modal.querySelector('.tbpro-status'); if (s) s.textContent = L('暂时连不上，稍后再试。', 'Could not reach ToBooks. Try again later.'); }
+        if (result === 'offline' || result === 'unverified') {
+          await render();
+          var s = modal.querySelector('.tbpro-status');
+          if (s) s.textContent = result === 'offline' ? L('暂时连不上，稍后再试。', 'Could not reach ToBooks. Try again later.')
+            : L('ToBooks 的回答未能验证，会员状态没有更新。', 'The answer from ToBooks could not be verified; the status was not updated.');
+        }
       }));
       row.appendChild(button(L('断开', 'Disconnect'), '', function () { pro.disconnect(); }));
       row.appendChild(status);
@@ -231,7 +249,10 @@
     return {
       get: function () { return withStore('readonly', function (s) { return s.get('deviceToken'); }).then(function (v) { return v || null; }); },
       set: function (token) { return withStore('readwrite', function (s) { return s.put(token, 'deviceToken'); }); },
-      clear: function () { return withStore('readwrite', function (s) { return s.delete('deviceToken'); }); }
+      // { deviceId, iat }: the device id the credential must name, and the iat of the newest credential accepted.
+      getMeta: function () { return withStore('readonly', function (s) { return s.get('deviceMeta'); }).then(function (v) { return v || null; }); },
+      setMeta: function (meta) { return withStore('readwrite', function (s) { return s.put({ deviceId: meta.deviceId, iat: meta.iat }, 'deviceMeta'); }); },
+      clear: function () { return withStore('readwrite', function (s) { s.delete('deviceMeta'); return s.delete('deviceToken'); }); }
     };
   }
 

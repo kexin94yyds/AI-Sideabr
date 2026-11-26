@@ -17,9 +17,10 @@ const PUBLIC_JWK = SERVER_KEY.publicKey.export({ format: 'jwk' });
 const KID = 'test1';
 
 // Same format as ToBooks api/_ext/credential.mjs (the cross-repo e2e checks the two agree).
-function signCredential({ did = 'dev-1', token, pro, reason = pro ? 'paid' : 'none', iat, exp, kid = KID, key = SERVER_KEY.privateKey, aud = 'ai-sidebar' }) {
+function signCredential({ did = 'dev-1', token, pro, reason = pro ? 'paid' : 'none', iat, exp, kid = KID, key = SERVER_KEY.privateKey, aud = 'ai-sidebar', n }) {
   const tkh = createHash('sha256').update(token).digest('base64url').slice(0, 22);
   const payload = { v: 1, aud, did, tkh, pro, reason, plan: pro ? 'tobooks_member' : null, iat, exp };
+  if (n !== undefined) payload.n = n; // the nonce the extension sent with the request (review r2 P2-A)
   const head = `tbe1.${kid}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
   return `${head}.${nodeSign('sha256', Buffer.from(head), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url')}`;
 }
@@ -49,6 +50,7 @@ function harness(options = {}) {
   const calls = [];
   const opened = [];
   let token = options.token || null;
+  let meta = null; // { deviceId, iat } — lives next to the token (IndexedDB in the real extension)
   let clock = options.now || Date.parse('2026-12-01T00:00:00Z');
   const area = (data) => ({
     get: async (key) => structuredClone(data[key]),
@@ -57,11 +59,16 @@ function harness(options = {}) {
   });
   // respond(path, request) → { status, body } | 'network-error'
   let respond = options.respond || (() => ({ status: 404, body: { success: false, code: 'link_pending' } }));
+  // /api/ext-link-start (registering the pairing) succeeds unless a test says otherwise.
+  let start = options.start || (() => ({ status: 200, body: { success: true, expires_in: 600 } }));
   const pro = TBPro.createPro({
     config,
     kv: area(local),
     session: area(sessionData),
-    tokenStore: { get: async () => token, set: async (value) => { token = value; }, clear: async () => { token = null; } },
+    tokenStore: {
+      get: async () => token, set: async (value) => { token = value; }, clear: async () => { token = null; meta = null; },
+      getMeta: async () => structuredClone(meta), setMeta: async (value) => { meta = structuredClone(value); }
+    },
     now: () => clock,
     crypto: webcrypto,
     sleep: async () => { clock += 3000; },
@@ -70,7 +77,7 @@ function harness(options = {}) {
     fetch: async (url, init) => {
       const request = { url, path: new URL(url).pathname.replace('/api/', ''), headers: init.headers, body: JSON.parse(init.body), credentials: init.credentials };
       calls.push(request);
-      const answer = respond(request.path, request);
+      const answer = request.path === 'ext-link-start' ? start(request) : respond(request.path, request);
       if (answer === 'network-error') throw new TypeError('Failed to fetch');
       // Fake server: sign like api/_ext/credential.mjs, with the SERVER's clock (serverNow, default = clock).
       const body = answer.body && typeof answer.body === 'object' ? { ...answer.body } : answer.body;
@@ -81,7 +88,7 @@ function harness(options = {}) {
         const windowEnd = iat + (ent.recheck_after_s + ent.grace_s) * 1000;
         const mexp = ent.expires_at ? Date.parse(ent.expires_at) : NaN;
         const exp = !ent.pro ? iat + ent.recheck_after_s * 1000 : Number.isFinite(mexp) ? Math.min(mexp, windowEnd) : windowEnd;
-        if (TOKEN_LIKE.test(tok)) body.credential = signCredential({ did: body.device_id || 'dev-1', token: tok, pro: ent.pro, reason: ent.reason, iat, exp });
+        if (TOKEN_LIKE.test(tok)) body.credential = signCredential({ did: body.device_id || 'dev-1', token: tok, pro: ent.pro, reason: ent.reason, iat, exp, n: request.body.nonce });
       }
       return { status: answer.status, json: async () => body };
     }
@@ -89,6 +96,9 @@ function harness(options = {}) {
   return {
     pro, TBPro, config, local, sessionData, calls, opened,
     getToken: () => token,
+    getMeta: () => meta,
+    setMeta: (value) => { meta = value; },
+    setStart: (fn) => { start = fn; },
     advance: (ms) => { clock += ms; },
     setClock: (ms) => { clock = ms; },
     now: () => clock,
@@ -134,13 +144,19 @@ test('connect: only the challenge goes into the URL; the token never lands in ch
   assert.ok(!h.opened[0].includes(pending.verifier), 'the verifier must not be in the URL');
   assert.deepEqual([params.get('k'), params.get('v'), params.get('l')], ['chrome', '0.1.0', 'Chrome · macOS']);
   assert.match(confirmCode, /^\d{6}$/, 'a 6-digit code the user types on the web page');
-  const c = Buffer.from(params.get('c'), 'base64url');
-  assert.equal(confirmCode, String(c.readUInt32BE(0) % 1000000).padStart(6, '0'), 'same formula as ToBooks core.mjs confirmCodeFor');
+  assert.ok(!h.opened[0].includes(confirmCode) || params.get('c').includes(confirmCode), 'the code is not a URL parameter');
+  // The pairing is registered before the tab opens: challenge + code, nothing else, no credentials.
+  assert.deepEqual([h.calls.length, h.calls[0].path], [1, 'ext-link-start']);
+  assert.deepEqual(h.calls[0].body, { challenge: params.get('c'), confirm_code: confirmCode });
+  assert.equal(h.calls[0].headers.Authorization, undefined);
+  h.calls.length = 0;
 
   let state = await h.pro.getState();
   assert.deepEqual([state.state, state.confirmCode, state.pro], ['connecting', confirmCode, false]);
   assert.equal(await h.pro.pollOnce(), 'pending');
-  assert.deepEqual(h.calls[0].body, { verifier: pending.verifier });
+  assert.deepEqual(Object.keys(h.calls[0].body).sort(), ['nonce', 'verifier']);
+  assert.equal(h.calls[0].body.verifier, pending.verifier);
+  assert.match(h.calls[0].body.nonce, /^[A-Za-z0-9_-]{22}$/);
   assert.equal(h.calls[0].headers.Authorization, undefined);
   assert.equal(h.calls[0].credentials, 'omit');
 
@@ -271,8 +287,8 @@ test('every request goes to https://tobooks.xin/api/ext-* and nowhere else', asy
   await h.pro.disconnect();
   await h.pro.beginConnect();
   await h.pro.pollOnce();
-  assert.ok(h.calls.length >= 3);
-  for (const call of h.calls) assert.match(call.url, /^https:\/\/tobooks\.xin\/api\/ext-(link-exchange|entitlement|unlink)$/);
+  assert.ok(h.calls.length >= 4);
+  for (const call of h.calls) assert.match(call.url, /^https:\/\/tobooks\.xin\/api\/ext-(link-start|link-exchange|entitlement|unlink)$/);
 });
 
 test('a broken Pro module never blocks a free feature', async () => {
@@ -280,7 +296,7 @@ test('a broken Pro module never blocks a free feature', async () => {
   const boom = async () => { throw new Error('storage unavailable'); };
   const pro = TBPro.createPro({
     config, kv: { get: boom, set: boom, remove: boom }, session: { get: boom, set: boom, remove: boom },
-    tokenStore: { get: boom, set: boom, clear: boom }, crypto: webcrypto, fetch: boom, openTab: boom
+    tokenStore: { get: boom, set: boom, clear: boom, getMeta: boom, setMeta: boom }, crypto: webcrypto, fetch: boom, openTab: boom
   });
   assert.equal(await pro.has('core'), true);
   assert.equal(await pro.has('proPlaceholder'), false);
@@ -378,7 +394,9 @@ test('P1-1: the shipped config has no key, so nothing can be Pro until the owner
 });
 
 test('P1-1: setting the system clock back does not extend the offline grace', async () => {
-  const h = await linked();                       // Pro, signed at T0, exp = T0 + 15 days
+  // The server has its own clock: setting the computer's clock back does not move it.
+  let serverTime = Date.parse('2026-12-01T00:00:00Z');
+  const h = await linked({ serverNow: () => serverTime }); // Pro, signed at T0, exp = T0 + 15 days
   offline(h);
   h.advance(14 * DAY);
   await h.pro.maybeRefresh();
@@ -405,6 +423,7 @@ test('P1-1: setting the system clock back does not extend the offline grace', as
   assert.equal((await g.pro.getState()).pro, true);
 
   // Back online: the server re-anchors the clock and Pro returns, even with the clock still wrong.
+  serverTime += 23 * DAY;                         // 14 + 9 real days have passed for the server
   h.setRespond(() => ({ status: 200, body: { success: true, entitlement: entitlement(true), account_hint: 'y***@gmail.com', device_id: 'dev-1', scopes: ['entitlement:read'] } }));
   assert.equal(await h.pro.refresh(), 'ok');
   assert.equal((await h.pro.getState()).state, 'linked_pro');
@@ -455,6 +474,225 @@ test('P1-1: membership end inside the grace window wins (signed exp = min of the
   h.advance(2 * DAY + 1);
   await h.pro.maybeRefresh();
   assert.equal((await h.pro.getState()).pro, false, 'subscription ended on day 2; no 14 extra days');
+});
+
+// ---- Review round 2 (2026-11-26): P2-A replay / iat, P2-1 random code, P3-1/2/4 ---------------------------------
+
+const answerPro = () => ({ status: 200, body: { success: true, entitlement: entitlement(true), account_hint: 'y***@gmail.com', device_id: 'dev-1', scopes: ['entitlement:read'] } });
+const answerFree = () => ({ status: 200, body: { success: true, entitlement: entitlement(false, 'expired'), account_hint: 'y***@gmail.com', device_id: 'dev-1', scopes: ['entitlement:read'] } });
+
+test('P2-A: an old Pro credential put back into storage after the server said "not Pro" unlocks nothing', async () => {
+  const h = await linked();                          // Pro, signed at T0
+  const oldLink = structuredClone(h.local.tbLink);   // the user backs up chrome.storage.local
+  const oldClock = structuredClone(h.local.tbClockHW);
+  assert.equal((await h.pro.getState()).pro, true);
+  const t0 = h.now();
+  assert.deepEqual(h.getMeta(), { deviceId: 'dev-1', iat: t0 }, 'the newest accepted iat is kept next to the token');
+
+  h.advance(DAY);
+  h.setRespond(answerFree);                          // refund: the server signs pro:false at T0 + 1 day
+  assert.equal(await h.pro.refresh(), 'ok');
+  assert.equal((await h.pro.getState()).pro, false);
+  assert.equal(h.getMeta().iat, t0 + DAY);
+
+  offline(h);
+  h.local.tbLink = structuredClone(oldLink);         // restore the whole backed-up record
+  let state = await h.pro.getState();
+  assert.deepEqual([state.state, state.pro, state.unverified], ['linked_free', false, true], 'older than the newest accepted credential');
+  assert.equal(await h.pro.has('proPlaceholder'), false);
+  h.local.tbClockHW = structuredClone(oldClock);     // and the clock record too: still nothing
+  assert.equal((await h.pro.getState()).pro, false);
+  assert.equal(await h.pro.maybeRefresh(), 'offline');
+  assert.equal((await h.pro.getState()).pro, false);
+
+  // Why it holds: the floor lives with the token. This is the stated limit — whoever also rewrites that
+  // record (DevTools on the extension's own page) gets the old credential back until its signed exp.
+  h.setMeta({ deviceId: 'dev-1', iat: 0 });
+  assert.equal((await h.pro.getState()).pro, true, 'control: without the floor the old credential would verify');
+});
+
+test('P2-A: a recorded old server response is refused (nonce), and never moves the clock or the floor', async () => {
+  const h = await linked();
+  let recorded = null;
+  h.setRespond((path, request) => {
+    const answer = answerPro();
+    recorded = { request, answer };
+    return answer;
+  });
+  h.advance(DAY + 1);
+  assert.equal(await h.pro.refresh(), 'ok');
+  // The harness signs inside fetch; what was stored is exactly what the server sent.
+  const recordedBody = { ...recorded.answer.body, credential: h.local.tbLink.credential };
+  const nonce1 = recorded.request.body.nonce;
+  assert.match(nonce1, /^[A-Za-z0-9_-]{22}$/);
+
+  h.advance(DAY + 1);
+  h.setRespond(answerFree);
+  assert.equal(await h.pro.refresh(), 'ok');
+  assert.equal((await h.pro.getState()).pro, false);
+  const floor = h.getMeta().iat;
+  const clockBefore = structuredClone(h.local.tbClockHW);
+
+  // Someone in the middle answers every later request with the recorded "Pro" response.
+  let nonce2 = null;
+  h.setRespond((path, request) => { nonce2 = request.body.nonce; return { status: 200, body: structuredClone(recordedBody) }; });
+  h.advance(3600 * 1000);
+  assert.equal(await h.pro.refresh(), 'unverified');
+  assert.notEqual(nonce2, nonce1, 'a new nonce for every request');
+  const state = await h.pro.getState();
+  assert.deepEqual([state.state, state.pro], ['linked_free', false]);
+  assert.equal(await h.pro.has('proPlaceholder'), false);
+  assert.equal(h.getMeta().iat, floor, 'the floor did not move');
+  assert.equal(h.local.tbClockHW.skew, clockBefore.skew, 'the clock was not re-anchored to the old iat');
+  assert.equal(h.local.tbLink.entitlement.pro, false, 'not even the display text was replaced');
+
+  // A credential with the right nonce but an iat below the floor (server clock stepped back, or a second
+  // signer that lags) is refused as well.
+  const lag = harness({ serverNow: () => lagNow });
+  let lagNow = lag.now();
+  lag.setRespond((p) => p === 'ext-link-exchange'
+    ? { status: 200, body: { success: true, token: TOKEN, device_id: 'dev-1', scopes: ['entitlement:read'], entitlement: entitlement(false) } } : answerPro());
+  await lag.pro.beginConnect();
+  assert.equal(await lag.pro.pollOnce(), 'linked');
+  lagNow -= 60 * 1000;
+  assert.equal(await lag.pro.refresh(), 'unverified');
+  assert.equal((await lag.pro.getState()).pro, false);
+  lagNow += 120 * 1000;
+  assert.equal(await lag.pro.refresh(), 'ok');
+  assert.equal((await lag.pro.getState()).pro, true);
+});
+
+test('P2-A: a credential without the nonce, or with another nonce, is not accepted', async () => {
+  for (const n of [undefined, 'A'.repeat(22)]) {
+    const h = await linked({ pro: false });
+    h.setRespond(() => {
+      const body = answerPro().body;
+      body.credential = signCredential({ token: TOKEN, pro: true, iat: h.now(), exp: h.now() + 15 * DAY, n });
+      return { status: 200, body };
+    });
+    h.advance(1000);
+    assert.equal(await h.pro.refresh(), 'unverified', String(n));
+    assert.equal((await h.pro.getState()).pro, false, String(n));
+    assert.equal(await h.pro.has('proPlaceholder'), false, String(n));
+  }
+  // At link time too: an exchange answer whose credential lacks the nonce links the device but is not Pro.
+  const h = harness();
+  h.setRespond(() => ({ status: 200, body: { success: true, token: TOKEN, device_id: 'dev-1', scopes: ['entitlement:read'], entitlement: entitlement(true),
+    credential: signCredential({ token: TOKEN, pro: true, iat: h.now(), exp: h.now() + 15 * DAY }) } }));
+  await h.pro.beginConnect();
+  assert.equal(await h.pro.pollOnce(), 'linked');
+  offline(h);
+  const state = await h.pro.getState();
+  assert.deepEqual([state.state, state.pro, state.unverified], ['linked_free', false, true]);
+  assert.equal(h.local.tbLink.credential, null, 'an unverified credential is not even stored');
+});
+
+test('P3-1: the device id is checked strictly and comes from the token store, not from chrome.storage.local', async () => {
+  const h = await linked();
+  offline(h);
+  assert.equal((await h.pro.getState()).pro, true);
+  // Round 2 finding: emptying link.deviceId used to skip the device check. It no longer takes part.
+  h.local.tbLink.deviceId = null;
+  h.local.tbLink.credential = signCredential({ token: TOKEN, did: 'dev-OTHER', pro: true, iat: h.now(), exp: h.now() + 15 * DAY });
+  assert.equal((await h.pro.getState()).pro, false, 'another device id, link.deviceId emptied');
+  h.local.tbLink.deviceId = 'dev-OTHER';
+  assert.equal((await h.pro.getState()).pro, false, 'another device id, link.deviceId edited to match');
+  h.local.tbLink.credential = signCredential({ token: TOKEN, did: 'dev-1', pro: true, iat: h.now(), exp: h.now() + 15 * DAY });
+  assert.equal((await h.pro.getState()).pro, true, 'control');
+  for (const meta of [null, {}, { deviceId: '', iat: 0 }, { deviceId: 42, iat: 0 }]) {
+    h.setMeta(meta);
+    assert.equal((await h.pro.getState()).pro, false, `no usable device id (${JSON.stringify(meta)}) → not verified`);
+  }
+  const { TBPro, config } = loadModules();
+  const cred = signCredential({ token: TOKEN, pro: true, iat: 1, exp: 2 });
+  const tkh = createHash('sha256').update(TOKEN).digest('base64url').slice(0, 22);
+  assert.equal(await TBPro.verifyCredential(webcrypto, config.entitlementKeys, cred, { tokenBinding: tkh }), null, 'no expected device id');
+  assert.equal(await TBPro.verifyCredential(webcrypto, config.entitlementKeys, cred, { deviceId: 'dev-1' }), null, 'no expected token binding');
+  assert.equal((await TBPro.verifyCredential(webcrypto, config.entitlementKeys, cred, { deviceId: 'dev-1', tokenBinding: tkh })).pro, true);
+});
+
+test('P3-2: an answer that cannot be verified (unsigned server, rotated key) does not turn a paying user Free at once', async () => {
+  const unsigned = () => ({ status: 200, body: { ...answerPro().body, credential: null } });
+  const rotated = (h) => (path, request) => ({ status: 200, body: { ...answerPro().body,
+    credential: signCredential({ token: TOKEN, pro: true, iat: h.now(), exp: h.now() + 15 * DAY, kid: 'next', key: OTHER_KEY.privateKey, n: request.body.nonce }) } });
+  for (const make of [() => unsigned, rotated]) {
+    const h = await linked();
+    const before = h.local.tbLink.credential;
+    h.advance(DAY + 1);
+    h.setRespond(make(h));
+    assert.equal(await h.pro.maybeRefresh(), 'unverified');
+    let state = await h.pro.getState();
+    assert.deepEqual([state.state, state.pro, state.graceDaysLeft], ['offline_grace', true, 14], 'kept, shown like an offline check');
+    assert.equal(h.local.tbLink.credential, before);
+    assert.equal(await h.pro.has('proPlaceholder'), true);
+    // Bounded by the signed exp of the credential that was kept: no free extension.
+    h.advance(14 * DAY);
+    await h.pro.maybeRefresh();
+    state = await h.pro.getState();
+    assert.deepEqual([state.pro, state.graceExpired], [false, true]);
+    // The server signs properly again → back to normal.
+    h.setRespond(answerPro);
+    assert.equal(await h.pro.refresh(), 'ok');
+    assert.equal((await h.pro.getState()).state, 'linked_pro');
+  }
+  // A signed "not Pro" is still obeyed at once (this is not a way to ignore a refund).
+  const h = await linked();
+  h.advance(1000);
+  h.setRespond(answerFree);
+  assert.equal(await h.pro.refresh(), 'ok');
+  assert.equal((await h.pro.getState()).pro, false);
+});
+
+test('P3-4: has() re-checks after the signed validity ran out; overlapping refreshes share one request', async () => {
+  const h = await linked();
+  h.advance(15 * DAY + 1);                           // panel left open past exp; no maybeRefresh ran
+  let state = await h.pro.getState();
+  assert.deepEqual([state.pro, state.graceExpired], [false, true]);
+  h.setRespond(answerPro);                           // the user is online and still a member
+  assert.equal(await h.pro.has('proPlaceholder'), true, 'asks the server instead of refusing a paying user');
+  assert.equal(h.calls.filter((c) => c.path === 'ext-entitlement').length, 1);
+
+  h.calls.length = 0;
+  const results = await Promise.all([h.pro.refresh(), h.pro.refresh(), h.pro.has('core'), h.pro.refresh()]);
+  assert.deepEqual(results, ['ok', 'ok', true, 'ok']);
+  assert.equal(h.calls.length, 1, 'one request in flight at a time, so an older answer cannot land after a newer one');
+  assert.equal(await h.pro.refresh(), 'ok');
+  assert.equal(h.calls.length, 2, 'a later call asks again');
+});
+
+test('P2-1: the confirmation code is random, registered with the server first, and not derived from the challenge', async () => {
+  const codes = new Set();
+  for (let i = 0; i < 40; i++) {
+    const h = harness();
+    const { confirmCode } = await h.pro.beginConnect();
+    assert.match(confirmCode, /^\d{6}$/);
+    assert.equal((await h.pro.getState()).confirmCode, confirmCode);
+    assert.equal(h.calls[0].body.confirm_code, confirmCode);
+    codes.add(confirmCode);
+  }
+  assert.ok(codes.size >= 38, `40 connections gave ${codes.size} different codes`);
+
+  // Same verifier and challenge (random bytes pinned), different code source → different code: no formula links them.
+  const { TBPro } = loadModules();
+  const feed = (values) => ({ getRandomValues: (buf) => { buf[0] = values.shift(); return buf; } });
+  assert.equal(TBPro.randomConfirmCode(feed([123])), '000123');
+  assert.equal(TBPro.randomConfirmCode(feed([4294967295, 4294000000, 999999])), '999999', 'values that would bias the modulo are drawn again');
+  assert.equal(TBPro.randomConfirmCode(feed([4293999999])), '999999');
+  assert.equal(TBPro.confirmCodeFor, undefined, 'the challenge-derived formula is gone');
+
+  // Registration fails → nothing opens, nothing is pending, and the caller is told why.
+  for (const [start, error] of [[() => 'network-error', 'offline'], [() => ({ status: 503, body: { success: false, code: 'link_disabled' } }), 'unavailable'],
+    [() => ({ status: 409, body: { success: false, code: 'challenge_used' } }), 'unavailable'], [() => ({ status: 200, body: null }), 'unavailable']]) {
+    const h = harness({ start });
+    assert.deepEqual({ ...(await h.pro.beginConnect()) }, { error });
+    assert.equal(h.opened.length, 0);
+    assert.equal(h.sessionData.tbLinkPending, undefined);
+    assert.equal((await h.pro.getState()).state, 'unlinked');
+    assert.equal(await h.pro.pollOnce(), 'idle');
+  }
+  const ui = read('js/pro-ui.js');
+  assert.match(ui, /started\.error/);
+  assert.match(ui, /clockRolledBack/, 'P3-3: the panel says why Pro is paused after a clock roll-back');
 });
 
 test('undecided business rules are placeholders in one file, not decisions', () => {
