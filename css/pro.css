@@ -1,0 +1,23 @@
+/* ToBooks account panel (js/pro-ui.js). Lives inside the existing #settingsModal. */
+.tbpro-panel { max-width: 360px; width: calc(100% - 32px); }
+.tbpro-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; font-size: 13px; line-height: 1.55; color: var(--text-primary, #0f172a); }
+.tbpro-title { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.tbpro-note { color: var(--text-secondary, #64748b); }
+.tbpro-label { font-size: 12px; font-weight: 600; color: var(--text-secondary, #64748b); margin-bottom: 4px; }
+.tbpro-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--text-primary, #0f172a); }
+.tbpro-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 24px; font-weight: 700; letter-spacing: 4px; text-align: center; padding: 10px; border: 1px dashed var(--border-light, #e5e7eb); border-radius: 8px; }
+.tbpro-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tbpro-status { color: var(--text-secondary, #64748b); font-size: 12px; }
+.tbpro-row { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; border-top: 1px solid var(--border-light, #e5e7eb); padding-top: 12px; }
+.tbpro-btn { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border-light, #e5e7eb); background: var(--surface-raised, #fff); color: var(--text-primary, #0f172a); cursor: pointer; }
+.tbpro-btn:hover { background: var(--surface-hover, #f8fafc); }
+.tbpro-btn.primary { background: var(--btn-blue-end, #436af7); border-color: var(--btn-blue-border, #395fe0); color: #fff; font-weight: 600; }
+.tbpro-btn.link { border: 0; background: none; padding: 0 4px; font-size: 16px; line-height: 1; }
+.tbpro-features { border: 1px solid var(--border-light, #e5e7eb); border-radius: 10px; padding: 10px 12px; }
+.tbpro-feature { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; cursor: pointer; }
+.tbpro-feature.locked { cursor: default; color: var(--text-secondary, #64748b); }
+.tbpro-feature input { margin-top: 3px; flex: none; }
+.tbpro-feature-name { flex: 1; min-width: 0; }
+.tbpro-badge { flex: none; font-size: 11px; padding: 1px 6px; border-radius: 9999px; border: 1px solid var(--border-light, #e5e7eb); white-space: nowrap; }
+.tbpro-badge.pro { border-color: var(--btn-blue-border, #395fe0); color: var(--btn-blue-end, #436af7); }
+.tbpro-notice { display: flex; gap: 8px; justify-content: space-between; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #fff7ed; color: #9a3412; }
